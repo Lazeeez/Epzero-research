@@ -20,17 +20,17 @@ now include hnswlib; a three-seed small-sample comparison is validated.
 A new 1,800-trace audit identifies residual neighborhood coverage as the main
 target at the selected work budget. Published NGFix/RFix directly overlaps that
 mechanism, so it is now a required comparison for repair claims. Its four-control
-native screen is now independently verified from job7141656:1,600 real conditions
-and185,600 real/synthetic score checks. NGFix's small development gain is much less
+native screen is now independently verified from job 7141656:1,600 real conditions
+and 185,600 real/synthetic score checks. NGFix's small development gain is much less
 than its fitted-query gain; fitting and search-setting selection must be separated
-before interpreting performance at a target recall. The381 final held-out outcomes
+before interpreting performance at a target recall. The 381 final held-out outcomes
 remain untouched. This is competitor infrastructure, not a third successful method
 candidate. See [TRACE_PHASE_RESULTS.md](../development/TRACE_PHASE_RESULTS.md) and
 [NGFIX_RESULTS.md](../repair/NGFIX_RESULTS.md). Full-data and independently trained competitor
 comparisons remain required after the revised protocol and distinct method are ready.
 
-The revised [disjoint-role protocol](../repair/NGFIX_DISJOINT_PLAN.md) completed as job7148412;
-all24 selected points meet development mean recall. See [results](../repair/NGFIX_DISJOINT_RESULTS.md)
+The revised [disjoint-role protocol](../repair/NGFIX_DISJOINT_PLAN.md) completed as job 7148412;
+all 24 selected points meet development mean recall. See [results](../repair/NGFIX_DISJOINT_RESULTS.md)
 for the remaining raw-state identity/initialization limits before larger comparisons.
 A separate fit-only
 [regional-bound feasibility check](../repair/REGION_MARGIN_RESULTS.md) rejected that proposed
@@ -39,7 +39,7 @@ rule without a retrieval run. This does not close the novel-method requirement.
 ## Supporting evidence and final evaluation sequence
 
 Development relevance, IVF controls and the original HNSW native-cost comparison
-are now complete. Jobs7139467/8/9 reproduce all18 baseline states and supply54 native
+are now complete. Jobs 7139467/8/9 reproduce all 18 baseline states and supply 54 native
 timing cohorts; see [NATIVE_COST_RESULTS.md](../development/NATIVE_COST_RESULTS.md). The sequence
 below records the larger study requirements. Final held-out evaluation remains
 blocked on establishing and selecting a novel method with competitive performance,
