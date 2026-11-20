@@ -1,0 +1,13 @@
+# Build output and LongEval data (never committed)
+build/
+
+# Python
+__pycache__/
+.pytest_cache/
+*.egg-info/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
