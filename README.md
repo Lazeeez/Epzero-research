@@ -9,23 +9,25 @@ repository; this one contains the studies, their code, protocols, results and li
 | Path | Contents |
 | --- | --- |
 | [`research/longeval/`](research/longeval) | **The LongEval study**: does an approximate nearest-neighbour index change dense-retrieval conclusions as a collection grows? Code, tests, the frozen protocol, results and the CLEF 2027 manuscript draft. Start with its [README](research/longeval/README.md). |
-| [`scripts/pace/`](scripts/pace) | PACE cluster runbooks, job scripts and packagers for the LongEval study, indexed in [LONGEVAL.md](scripts/pace/LONGEVAL.md) |
+| [`scripts/`](scripts) | `verify.sh` (the one-command check), and the PACE cluster runbooks, job scripts and packagers, indexed in [scripts/pace/LONGEVAL.md](scripts/pace/LONGEVAL.md) |
+| [`REPRODUCE.md`](REPRODUCE.md) | How to reproduce the study, from a three-minute check to every result |
 | [`docs/research-plan.md`](docs/research-plan.md) | Research plan for an experimental study of in-memory graph search |
 | [`reports/`](reports) | Literature reviews, the LongEval novelty review and the LongEval statement of research |
 | [`research_notes/`](research_notes) | Source notes behind each literature review, one folder per report |
 
-## Running the LongEval code
+## Check it yourself
 
-The research code uses the released Epzero engine from PyPI. With Python 3.11 or later:
+A one-command check needs no LongEval data and takes about three minutes. It runs the tests,
+verifies the frozen protocol, and runs the pipeline end to end on synthetic data:
 
 ```sh
-python -m pip install -r research/longeval/requirements.txt
-python -m pytest -q research/longeval/tests
+python -m venv .venv && source .venv/bin/activate
+python -m pip install -r research/longeval/requirements.txt   # includes the released Epzero engine
+bash scripts/verify.sh
 ```
 
-Tests marked `linux_native` run only on Linux, and the `hnswlib` comparison runs only where that
-library is installed. Full experiments run on the PACE cluster; see
-[`scripts/pace/LONGEVAL.md`](scripts/pace/LONGEVAL.md).
+[REPRODUCE.md](REPRODUCE.md) goes further, up to recomputing every result from the official
+LongEval release. It gives the hardware and time needed at each level.
 
 ## Data policy
 
