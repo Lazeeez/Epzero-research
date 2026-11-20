@@ -2,7 +2,8 @@
 
 Usage: python figures.py BUILD_DIR OUTPUT_DIR
 Inputs: longeval-heldout-analysis-01/report.json, longeval-heldout-exploratory-01/cohort-ratios.json,
-longeval-development-order-01/report.json. Writes fig-gap-recall.{pdf,png} and fig-cohort.{pdf,png}.
+longeval-development-order-01/report.json, longeval-heldout-extension-analysis-01/report.json and the committed
+insertion-pilot-summary.json. Writes fig-gap-recall, fig-cohort, fig-recall-gap and fig-insertion-pilot (pdf and png).
 """
 import json
 import sys
@@ -160,10 +161,44 @@ def recall_gap(build, out):
     plt.close(fig)
 
 
+def insertion_pilot(summary, out):
+    """Sample pilot: miss ratio of the last arrival group against the first, by insertion order."""
+    r = json.loads(Path(summary).read_text())
+    orders = (('appended', 'As arrived'), ('shuffled', 'Shuffled'), ('reversed', 'Reversed'))
+    fig, ax = plt.subplots(figsize=(5.2, 1.9), constrained_layout=True)
+    for i, (order, _) in enumerate(orders):
+        for backend, dy in (('epzero', -.17), ('faiss_hnsw', .17)):
+            mean = r['contrasts'][backend]['cohort3_vs_cohort1']['seed_mean'][order]
+            lo, hi = mean['interval_95']
+            y = i + dy
+            seeds = [b['miss_ratio_cohort3_vs_cohort1']['ratio'] for b in r['builds']
+                     if b['backend'] == backend and b['order'] == order]
+            ax.plot(seeds, [y] * len(seeds), linestyle='none', marker='|', markersize=7, markeredgewidth=.9,
+                    color=COLOR[backend], alpha=.55)
+            ax.errorbar(mean['value'], y, xerr=[[mean['value'] - lo], [hi - mean['value']]], color=COLOR[backend],
+                        marker=MARKER[backend], markersize=4.5, elinewidth=.9, capsize=0)
+            if i == 0:
+                ax.annotate(NAME[backend], (hi, y), xytext=(5, 0), textcoords='offset points', va='center',
+                            fontsize=7, color=INK)
+    ax.set_yticks(range(len(orders)), [text for _, text in orders])
+    ax.set_ylim(len(orders) - .5, -.5)
+    ax.axvline(1, color=MUTED, linewidth=.6)
+    ax.set_xlim(.6, 2.0)
+    # Sample size and search width are stated in the caption.
+    ax.set_xlabel('Miss ratio, snapshot-3 arrivals vs snapshot-1 arrivals')
+    style(ax)
+    ax.grid(axis='y', visible=False)
+    ax.grid(axis='x', color=GRID, linewidth=.6)
+    for ext in ('pdf', 'png'):
+        fig.savefig(out / f'fig-insertion-pilot.{ext}', dpi=300)
+    plt.close(fig)
+
+
 if __name__ == '__main__':
     build, out = Path(sys.argv[1]), Path(sys.argv[2])
     out.mkdir(parents=True, exist_ok=True)
     gap_recall(build, out)
     cohort(build, out)
     recall_gap(build, out)
+    insertion_pilot(Path(__file__).resolve().parents[1] / 'insertion-pilot-summary.json', out)
     print('written', sorted(p.name for p in out.iterdir()))
