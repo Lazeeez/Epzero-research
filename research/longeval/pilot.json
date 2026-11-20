@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "seeds": [11, 29, 47],
+  "k": 10,
+  "M": 8,
+  "ef_construction": 64,
+  "ef": 16,
+  "ef_grid": [10, 16, 32, 64, 128],
+  "nlist": 2,
+  "nprobe": 1,
+  "nprobe_grid": [1, 2],
+  "ivf_iterations": 10,
+  "recall_target": 0.95,
+  "population": "explicit",
+  "threads": 1,
+  "regimes": ["frozen", "matched_recall"],
+  "arms": ["exact", "epzero_incremental", "epzero_replay", "epzero_shuffled", "faiss_hnsw_incremental", "faiss_hnsw_replay", "faiss_hnsw_shuffled", "faiss_ivf_frozen", "faiss_ivf_refreshed"]
+}
