@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import shlex
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -15,6 +16,7 @@ KEYS = ('LONGEVAL_NODE_STAGE', 'TMPDIR', 'TMP', 'TEMP', 'PIP_CACHE_DIR', 'UV_CAC
         'TRITON_CACHE_DIR', 'TORCHINDUCTOR_CACHE_DIR')
 
 
+@unittest.skipUnless(sys.platform.startswith('linux'), 'the helper is a shell script for Linux compute nodes')
 class NodeStorageTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix='longeval-node-env-', dir='/tmp')
