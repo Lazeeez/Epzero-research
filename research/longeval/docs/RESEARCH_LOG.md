@@ -91,46 +91,46 @@ lowers the GPU-memory minimum to 20 GiB and checks it before setup.
 Feasibility gates are fixed in [PSEUDO_QUERY_PLAN.md](repair/PSEUDO_QUERY_PLAN.md); no retrieval
 result exists yet. Commands: [LONGEVAL_PSEUDOQUERY.md](../../../scripts/pace/LONGEVAL_PSEUDOQUERY.md).
 
-**Latest verified screen:** job7148412 completes the three disjoint30/20/50 splits.
-All24 tuning-selected control/target combinations meet development mean recall;
-every control chooses ef200 for95% and ef400 for99%. NGFix adds0.04–0.18percentage
-points at ef200 with similar observed latency, without a speedup. All506 packaged
-files and505,600 score occurrences verify. The working-directory warnings are absent.
-Raw base-state hashes differ across builds although1,200 baseline ranking/score/counter
+**Latest verified screen:** job 7148412 completes the three disjoint 30/20/50 splits.
+All 24 tuning-selected control/target combinations meet development mean recall;
+every control chooses ef 200 for 95% and ef 400 for 99%. NGFix adds 0.04–0.18 percentage
+points at ef 200 with similar observed latency, without a speedup. All 506 packaged
+files and 505,600 score occurrences verify. The working-directory warnings are absent.
+Raw base-state hashes differ across builds although 1,200 baseline ranking/score/counter
 conditions match; unused serialized capacity is a demonstrated possible cause, not
 a proven explanation of the unreturned PACE bytes. Future adapters need explicit
 delete-flag initialization and canonical state fingerprints. See
 [NGFIX_DISJOINT_RESULTS.md](repair/NGFIX_DISJOINT_RESULTS.md). No novel method is validated.
 
 **New candidate feasibility result:** a fit-only regional progress certificate
-passes zero of58 overlapping proposal/split cases. Most proposals do not even
+passes zero of 58 overlapping proposal/split cases. Most proposals do not even
 improve on their source's score, which can still be compatible with finding more
 top-100 neighbors. Seven tests pass; do not promote this rule to PACE. See
 [REGION_MARGIN_RESULTS.md](repair/REGION_MARGIN_RESULTS.md). A distinct effective coverage
 method remains the central open research problem.
 
-**Earlier NGFix screen:** job7141656's returned evidence verifies locally:
-500 packaged files,1,600 real plus256 synthetic conditions, and185,600 score
+**Earlier NGFix screen:** job 7141656's returned evidence verifies locally:
+500 packaged files, 1,600 real plus 256 synthetic conditions, and 185,600 score
 occurrences independently recomputed. NGFix improves sample development recall
-from93.42% to93.88% at ef100, versus100% on its fitted queries. Selecting ef on those
-same fitted queries misses both95% and99% development targets; this is not an
-equal-quality speedup. Job7148412 subsequently implements separate fitting and tuning.
+from 93.42% to 93.88% at ef 100, versus 100% on its fitted queries. Selecting ef on those
+same fitted queries misses both 95% and 99% development targets; this is not an
+equal-quality speedup. Job 7148412 subsequently implements separate fitting and tuning.
 The complete log contains five working-directory warnings; one-core affinity and
 input/source checks pass, but their exact Slurm cause remains unresolved. See
 [NGFIX_RESULTS.md](repair/NGFIX_RESULTS.md). This verifies a competitor, not a new method.
 
-**Previous launch failure:** NGFix job7141318 failed after2s (exit1:0); the returned log
+**Previous launch failure:** NGFix job 7141318 failed after 2s (exit 1:0); the returned log
 confirms the missing-module error. A Python import-shadowing defect in the v02 launcher
-was reproduced locally and fixed in isolated **v03**, with22 packaged tests passing
+was reproduced locally and fixed in isolated **v03**, with 22 packaged tests passing
 and successful launch from the historical checkout. Native algorithm and inputs are
 unchanged. See [failure and corrected commands](repair/NGFIX_LAUNCH_FAILURE_7141318.md).
 
 **Full-data native comparison:** native-cost jobs **7139467 / 7139468 / 7139469** are fully
 verified: 18 baseline states reproduced, 54 cohorts, 2,700 query conditions and 8,100
-timed calls. At final ef200, Epzero takes 2.67–2.73ms versus FAISS2.46–2.52ms;
-Epzero seed11 still has two zero-recall failures. At ef3200 both exceed99.5% mean
+timed calls. At final ef 200, Epzero takes 2.67–2.73ms versus FAISS 2.46–2.52ms;
+Epzero seed 11 still has two zero-recall failures. At ef 3200 both exceed 99.5% mean
 recall, with FAISS lower observed mean latency. Calibration-selected FAISS uses
-ef400 for seeds29/47 and achieves higher recall, so its higher latency there is
+ef 400 for seeds 29/47 and achieves higher recall, so its higher latency there is
 not an equal-quality Epzero win. See [NATIVE_COST_RESULTS.md](development/NATIVE_COST_RESULTS.md).
 The baseline timing gap is closed; no new method has passed the promotion gate.
 
@@ -142,7 +142,7 @@ see [TRACE_PHASE_RESULTS.md](development/TRACE_PHASE_RESULTS.md). Closely relate
 NGFix/RFix now constrains the novelty claim. Its controlled native AVX-512 sample
 screen is independently verified; it shows modest development transfer and strong
 fit/tuning reuse effects. The isolated **PACE screen package v03** corrects v02's
-launch-path defect;22 packaged tests pass and11 tests ran on PACE. Synthetic checks
+launch-path defect; 22 packaged tests pass and 11 tests ran on PACE. Synthetic checks
 preceded corpus download; large data stayed on compute-node temporary disk. See
 [NGFIX_REPRODUCTION.md](repair/NGFIX_REPRODUCTION.md) and
 [corrected PACE commands](repair/NGFIX_LAUNCH_FAILURE_7141318.md). Seven trace-audit tests
@@ -152,9 +152,9 @@ pass. No new method has passed the promotion gate.
 completed 800 conditions but did not meaningfully transfer to development queries.
 All 32 added-edge destinations were calibration exact neighbors with single-query
 support. A full-corpus coverage audit finds only 7.62% shared development/calibration
-answer occurrences at snapshot3; this is a coverage diagnostic, not a bound on repair.
+answer occurrences at snapshot 3; this is a coverage diagnostic, not a bound on repair.
 See [WITNESS_REPAIR_RESULTS.md](repair/WITNESS_REPAIR_RESULTS.md). Neither prototype is
-promoted to a large sweep. New native adapters for Epzero, FAISS and hnswlib0.8.0
+promoted to a large sweep. New native adapters for Epzero, FAISS and hnswlib 0.8.0
 passed six tests and a nine-graph, three-seed, 3,600-condition local sample comparison;
 FAISS has lower times at its calibration-selected settings. See
 [STANDARD_GRAPH_RESULTS.md](repair/STANDARD_GRAPH_RESULTS.md). Nine repair tests also pass.
