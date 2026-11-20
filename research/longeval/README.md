@@ -65,7 +65,7 @@ work ([docs/repair/](docs/repair/)).
 | [paper/manuscript-clef2027.md](paper/manuscript-clef2027.md) | Manuscript draft with all results; figures in [paper/figures/](paper/figures/) |
 | [FINAL_PROTOCOL_V1.md](FINAL_PROTOCOL_V1.md) | The frozen held-out protocol |
 | [HELDOUT_RESULTS.md](HELDOUT_RESULTS.md) | Primary held-out results and their verification |
-| [HELDOUT_EXPLORATORY.md](HELDOUT_EXPLORATORY.md) | Post-freeze analyses, timing, shuffled order and the ef sweep |
+| [HELDOUT_EXPLORATORY.md](HELDOUT_EXPLORATORY.md) | Post-freeze analyses: timing, shuffled order, the ef sweep, external validation, the judging pool and the insertion-order pilot |
 | [../../reports/longeval-research-statement.pdf](../../reports/longeval-research-statement.pdf) | Four-page statement of research |
 | [docs/RESEARCH_LOG.md](docs/RESEARCH_LOG.md) | Chronological log of every decision and PACE job |
 
@@ -76,12 +76,13 @@ work ([docs/repair/](docs/repair/)).
 | `*.py` | The experiment code (module map below) |
 | `tests/` | Unit and regression tests (pytest) |
 | `paper/` | Manuscript, figure script and rendered figures |
-| `docs/protocol/` | The approved protocol candidate and the earlier draft |
+| `docs/protocol/` | The approved protocol candidate, the earlier draft, and the judge-validation thresholds recorded for the follow-up |
 | `docs/data/` | Release audit, vector ingestion, encoder and query-encoding validation |
 | `docs/development/` | Development experiments on training queries: trajectories, failures, IVF, cost |
 | `docs/repair/` | Pre-registered repair screens (RQ4), including the NGFix/RFix reproduction |
 | `docs/history/` | Superseded plans, the synthetic-pilot documentation and an earlier draft |
 | `trajectory-development.json`, `ivf-development.json` | Index configurations (frozen) |
+| `insertion-pilot-summary.json` | Aggregate counts and ratios of the insertion-order pilot (no identifiers) |
 | `requirements.txt`, `encoder-requirements.txt` | CPU research and GPU encoder dependencies |
 | `../../scripts/pace/LONGEVAL*.md`, `longeval-*` | PACE runbooks, job scripts and packagers |
 
@@ -94,7 +95,7 @@ work ([docs/repair/](docs/repair/)).
 | Exact search and evaluation | `oracle.py`, `evaluation.py`, `paired_inference.py`, `relevance_analysis.py`, `development_relevance.py` |
 | Index trajectories | `backends.py`, `trajectory.py`, `ivf_trajectory.py`, `ivf_verification.py`, `runner.py` |
 | Held-out protocol | `heldout.py`, `heldout_analysis.py`, `freeze_protocol.py` |
-| Post-freeze work | `heldout_cost.py`, `heldout_extension.py`, `heldout_exploratory.py` |
+| Post-freeze work | `heldout_cost.py`, `heldout_extension.py`, `heldout_exploratory.py`, `heldout_robustness.py`, `heldout_pool.py`, `insertion_pilot.py` |
 | Development diagnostics | `failure_diagnostic.py`, `trace_phases.py`, `work_budget.py`, `native_cost.py`, `native_cost_verification.py`, `retention_search.py`, `retention_diagnostic.py`, `feasibility.py` |
 | Repair screens (RQ4) | `frontier_search.py`, `frontier_pilot.py`, `witness_repair.py`, `witness_pilot.py`, `region_margin.py`, `ngfix_*.py`, `ngfix_driver.cpp`, `standard_graphs.py`, `standard_graph_pilot.py`, `pseudo_queries.py`, `pseudo_query_gates.py` |
 | Synthetic pilot | `contracts.py`, `fixture.py`, `pilot.json`, `__main__.py` ([docs/history/PILOT.md](docs/history/PILOT.md)) |
