@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "M": 16,
+  "ef_construction": 100,
+  "k": 100,
+  "ef": 200,
+  "ef_grid": [100, 200, 400, 800],
+  "recall_target": 0.95,
+  "threads": 1,
+  "batch_rows": 1024
+}
