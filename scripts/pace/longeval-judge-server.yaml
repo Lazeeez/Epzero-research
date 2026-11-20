@@ -1,0 +1,12 @@
+# Server settings for GPT-OSS-120B on one Hopper GPU (H100/H200).
+# The first four lines are the vLLM project's own recipe for this model on Hopper hardware
+# (vllm-project/recipes, OpenAI/GPT-OSS_Hopper.yaml). The rest pins what the pilot depends on.
+no-enable-prefix-caching: true
+max-cudagraph-capture-size: 2048
+max-num-batched-tokens: 8192
+stream-interval: 20
+# Prompts are a few thousand tokens and answers are capped at 4,096, so a 32k window is ample.
+max-model-len: 32768
+# Sampling defaults come from the model's own generation_config.json (sampling on, no temperature set).
+generation-config: auto
+seed: 20261121
