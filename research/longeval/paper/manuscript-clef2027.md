@@ -1,10 +1,10 @@
 # Does the Index Matter Over Time? Approximate Search, Index History and Collection Growth in Longitudinal Dense Retrieval
 
-**Draft for the CLEF 2027 conference track (LNCS, long paper). Version 2026-11-20.**
+**Draft for the CLEF 2027 conference track (LNCS, long paper). Version 2026-11-21.**
 This draft supersedes [the development-only draft](../docs/history/manuscript-development-draft.md), which is kept unchanged.
-Placeholders marked **[TIMING]** wait for the held-out native timing jobs
-(`scripts/pace/LONGEVAL_HELDOUT_COST.md`). Every other number comes from verified evidence:
-see `../HELDOUT_RESULTS.md` and the development result files.
+Every number comes from verified evidence: see `../HELDOUT_RESULTS.md`, `../HELDOUT_EXPLORATORY.md`
+and the development result files. Results marked *exploratory* were designed after the held-out
+results were seen.
 
 ## Abstract
 
@@ -17,31 +17,45 @@ We use three cumulative snapshots of LongEval-Sci 2026 (0.87M–1.66M documents,
 vectors) and compare exact search with two HNSW implementations and an IVF index. Each index is
 maintained incrementally and also rebuilt from the identical insertion history, with three
 construction seeds. The evaluation uses a pre-registered, hash-frozen protocol on 381 held-out
-test queries.
+test queries. Our exact search reproduces the lab's official dense baseline to within 0.0014
+nDCG@10.
 
-We find the following:
+Three findings need no relevance labels:
 
 - **History.** Incremental maintenance is exactly equivalent to rebuilding from the same history:
   the index states, rankings and scores are identical in all 27 comparisons.
+- **Recall drift.** At a fixed search width, neighbour recall falls by about one point while the
+  collection nearly doubles (94.5% to 93.5%). A 50-query calibration set keeps a width that is too
+  narrow in about one draw in five; about 200 queries are needed to detect the fall reliably.
+- **Newer documents.** In exploratory analyses, HNSW misses documents inserted at later snapshots
+  about 1.6 times as often as earlier ones at the same exact rank; IVF shows about 1.15 times. A
+  held-out rebuild in random order removes most of the excess. On a 300,000-document sample,
+  reversing the insertion order moves the excess onto the oldest documents (ratio 0.82–0.84).
+  The cause is the position in the insertion sequence, not the age of the document.
+
+Four findings are stated under the organisers' LLM relevance labels:
+
 - **Gap size.** At about 95% neighbour recall, the nDCG@10 lost to approximate search is below
-  0.012 at every snapshot.
+  0.012 at every snapshot. Served through any tested index, the official baseline would have kept
+  its leaderboard rank on these labels.
 - **Gap over time.** From snapshot 1 to snapshot 3, the gap's change is negligible within ±0.01
-  for two of three arms.
-- **The third arm.** Its calibration set never triggered a wider search while its recall on test
-  queries drifted from 94.5% to 93.5%, and its gap widened from −0.006 to −0.012.
-- **Newer documents.** In exploratory analyses, HNSW misses documents inserted at later
-  snapshots about 1.6 times as often as earlier ones at the same exact rank; IVF shows about 1.15
-  times. On fixed-width HNSW, queries about new content lose about three times the average. A
-  held-out rebuild in random insertion order removes most of the excess misses, but it does not
-  improve effectiveness.
-- **Search width is the lever.** An ef sweep shows the gap shrinking to about 0.002–0.004 at
-  every snapshot once recall reaches about 98%.
-- **Repair.** Four pre-registered graph-repair strategies fail to beat an ordinary wider search at
-  equal distance work.
+  for two of three arms. It is inconclusive for the third, whose calibration never triggered a
+  wider search while its gap widened from −0.006 to −0.012.
+- **Concentration.** At snapshot 3, 82–89% of queries lose nothing and the worst 5% carry 71–85%
+  of the loss. On fixed-width HNSW, queries about new content lose about three times the average.
+- **Search width is the lever.** The gap shrinks to about 0.002–0.004 at every snapshot once
+  recall reaches about 98%. Four pre-registered graph-repair strategies fail to beat an ordinary
+  wider search at equal distance work.
+
+These labels bound what can be claimed. They are lenient: on the 29 queries that also have human
+grades, they agree with them at a kappa of 0.24. They were pooled from the submitted systems, so
+76–82% of the documents that an HNSW index substitutes into the top 10 are ungraded and count as
+non-relevant. The measured gap is therefore an upper bound that judgment coverage inflates:
+restricted to graded documents it is 0.001–0.006.
 
 The practical rule is that exact-search longitudinal conclusions hold for ANN deployments to
-within about 0.01 nDCG@10, provided neighbour recall is re-checked on the evaluated queries at
-every snapshot. A target of about 98% recall makes the gap negligible and stable over time.
+within about 0.01 nDCG@10, provided neighbour recall is re-checked on enough queries at every
+snapshot. A target of about 98% recall makes the gap negligible and stable over time.
 
 ## 1 Introduction
 
@@ -76,9 +90,15 @@ environment-side account of temporal change [4].
 Our contributions are:
 
 - the first measurement of the ANN-minus-exact effectiveness gap over time on a relevance-judged
-  collection, under a pre-registered, hash-frozen held-out protocol;
+  collection, under a pre-registered, hash-frozen held-out protocol, with an external check
+  against the lab's official baseline;
 - an exact equivalence result for incremental maintenance versus rebuild under append-only growth;
-- a diagnosis that ties the gap's change to neighbour-recall drift and to calibration;
+- a diagnosis that ties the gap's change to neighbour-recall drift, and a measurement of how many
+  calibration queries are needed to detect that drift;
+- evidence that an HNSW index built by appending under-retrieves its latest arrivals, and that
+  the insertion position causes it;
+- an account of what the released labels can support, including how much of the measured gap is
+  judgment coverage;
 - pre-registered negative results for four graph-repair strategies at equal search work;
 - a fully checksummed artifact.
 
@@ -106,8 +126,18 @@ They evaluate neighbour recall and throughput, not judged effectiveness.
 queries. We screen this family against equal-work controls.
 
 **ANN effectiveness in IR.** Lin [1] and Tu et al. [2] measure the ANN-versus-flat nDCG loss on
-static collections. Insertion-order sensitivity of HNSW is known [20]; we treat it as a control,
-not as a contribution.
+static collections. Zerhoudi et al. [21] compare flat, HNSW and IVF search on MS MARCO subsets of
+increasing size. Their subsets are static and sampled independently, with fixed search settings
+and no control of neighbour recall, so they have no time axis, no index maintenance and no
+insertion order.
+
+**Insertion order.** Elliott and Clark [20] show that HNSW recall depends on the order of
+insertion. We add which documents bear the loss when a collection grows by appending: the latest
+arrivals do, and reversing the order reverses it (§4.4).
+
+**LLM relevance labels.** The lab's overview [6] reports that its LLM assessors grade far more
+documents as relevant than click-derived labels do. We quantify this for the labels we use
+(§4.6), because it limits what a label-based gap can show.
 
 ## 3 Experimental Setup
 
@@ -157,7 +187,9 @@ queries at that snapshot.
 ### 3.3 Measures
 
 - **Effectiveness:** nDCG@10 with linear gains, deterministic tie-breaking, and unjudged documents
-  counted as non-relevant. The implementation agrees with pytrec_eval to 1e-12.
+  counted as non-relevant. The implementation agrees with pytrec_eval to 1e-12. Throughout,
+  "effectiveness" means effectiveness under the stated label set; §4.6 examines how far the
+  labels carry.
 - **Other effectiveness measures:** relevant-document R@100 and judged@10.
 - **Index fidelity:** neighbour recall@100 against exact search, including the worst-decile mean
   and counts of zero-recall queries.
@@ -168,7 +200,9 @@ The protocol was approved and then frozen on 19 November 2026, before any test-q
 ran. Freezing hashed the protocol, the configurations, the analysis code and the job scripts:
 55 files. It also recorded that no held-out outcome existed.
 
-**Primary labels.** The released GPT-OSS-120B judgments. The panel is fixed: the 374 test queries
+**Primary labels.** The released GPT-OSS-120B judgments. The organisers graded a depth-10 pool
+of the 24 systems submitted to the lab, from the query alone [6]; the grade of a query–document
+pair is the same at every snapshot where it appears. The panel is fixed: the 374 test queries
 with a positive judgment at all three snapshots.
 
 **Primary contrast.** For each arm A among Epzero HNSW (incremental, calibrated), FAISS HNSW
@@ -207,6 +241,12 @@ only if it changes the history.
 
 ### 4.2 Approximation over time (RQ2)
 
+**External check.** Over every query that each label set judged, our exact search scores an
+nDCG@10 of 0.7896 / 0.7953 / 0.7989 at the three snapshots under the GPT-OSS-120B labels. The
+lab's overview reports 0.791 / 0.796 / 0.800 for its dense baseline, which uses the same vectors
+[6]. Under the click-derived DCTR labels the values are 0.2334 / 0.2015 / 0.1330 against
+0.234 / 0.201 / 0.133. The largest difference is 0.0014.
+
 **Table 1.** Primary contrasts on 374 queries with GPT-OSS-120B labels. Figure 1(a) plots the gaps.
 
 | Arm | Gap at s1 | Gap at s2 | Gap at s3 | D (s3 − s1) | 95% interval | Holm p | Decision |
@@ -231,6 +271,20 @@ GPT-OSS-20B labels (377 queries) give the same picture:
 
 On the 29 human-judged queries at snapshot 3, every gap lies within ±0.0005.
 
+**Would the index have changed the lab's results?** *(Exploratory.)* We placed the official dense
+baseline, served through each index, among the other 21 official systems, which keep their
+published scores. Under the LLM labels the baseline keeps rank 5 at every snapshot with every
+index. Under DCTR it keeps ranks 16 and 20 at snapshots 1 and 2; at snapshot 3, where four
+systems lie within 0.002 of each other, it drops from rank 18 to 19 for two of the four index
+settings. The lab's robustness measure, the relative change in nDCG@10 from snapshot 1, moves by
+at most 0.02 on DCTR, while it ranges from 0.17 to 0.56 across all but two of the official
+systems at snapshot 3.
+
+**The loss is concentrated.** *(Exploratory.)* The mean gap is not a small loss spread over all
+queries. At snapshot 3, 82–89% of the 374 queries have the same nDCG@10 as exact search,
+depending on the arm, and the 18 worst queries (5%) carry 71–85% of the total loss. Their mean
+loss is 0.12–0.22, and the largest single loss is 0.87.
+
 **The two HNSW implementations diverge because of calibration.** At fixed ef 200, both lose
 neighbour recall at the same rate on the test queries: Epzero from 94.5% to 93.5%, FAISS from
 94.4% to 93.6% (Table 2). FAISS's secondary fixed-ef D is −0.0022 [−0.0053, +0.0013].
@@ -245,6 +299,23 @@ What differs is calibration:
 
 The change in the gap thus tracks the change in neighbour recall on the evaluated queries
 (Figure 1). A calibrated setting prevents drift only if a small calibration set detects it.
+
+**Fifty queries cannot detect a one-point drift.** *(Exploratory.)* Per-query neighbour recall at
+ef 200 has a standard deviation of 0.11–0.12 on the test queries, so the mean of 50 queries has a
+standard error of about 1.6 points. We drew calibration sets from the test queries and applied
+the protocol's rule at snapshot 3, where the true recall at ef 200 is 93.5–93.6%:
+
+| Calibration queries | 25 | 50 | 100 | 200 | 400 |
+| --- | --- | --- | --- | --- | --- |
+| Rule keeps ef 200 (Epzero / FAISS) | 32% / 32% | 21% / 22% | 11% / 12% | 4% / 4% | 1% / 1% |
+| Paired test detects the fall from snapshot 1 (Epzero / FAISS) | 35% / 33% | 51% / 51% | 73% / 73% | 89% / 90% | 96% / 98% |
+
+The second row tests the per-query change between snapshots instead of the level (one-sided
+paired t-test at 5%). It removes the variation between queries: recall at snapshots 1 and 3
+correlates at 0.92–0.95 within a query, which halves the standard error. Either way, about 200
+queries are needed to detect a one-point fall in nine cases out of ten. Sampling noise is
+therefore enough to explain why Epzero's calibration stayed at ef 200; nothing points to the
+implementation.
 
 **Figure 1** (`figures/fig-gap-recall.pdf`). (a) ANN-minus-exact nDCG@10 by snapshot at
 calibrated settings, mean over 374 queries and three seeds, with 95% query-bootstrap intervals.
@@ -316,6 +387,31 @@ analysed runs exactly). Shuffling lowered the snapshot-3 ratio:
 Both are close to IVF's level. Most of the HNSW excess is therefore an insertion-order effect: in
 a graph built by appending, later insertions are less reachable.
 
+**Reversing the order moves the blind spot.** Shuffling shows that the order matters. It does not
+show which position is the bad one. We therefore built both HNSW implementations on a fixed
+sample of 300,000 snapshot-3 documents (study settings, ef 200, three seeds, exact neighbours
+within the sample) in three orders: as the documents arrived, shuffled, and with the three
+arrival blocks reversed. The table gives the miss ratio of snapshot-3 arrivals against snapshot-1
+arrivals, as the mean over seeds with 95% intervals (Figure 4):
+
+| Implementation | As arrived | Shuffled | Reversed | As arrived − reversed, paired |
+| --- | --- | --- | --- | --- |
+| FAISS HNSW | 1.41 [1.24, 1.59] | 1.08 [0.96, 1.21] | 0.84 [0.72, 0.96] | +0.57 [+0.45, +0.71] |
+| Epzero HNSW | 1.48 [1.32, 1.65] | 1.10 [0.99, 1.21] | 0.82 [0.71, 0.94] | +0.65 [+0.53, +0.80] |
+
+The same documents are missed more when they are inserted last and less when they are inserted
+first. The paired difference is above zero in each of the six builds. The shuffled ratio of about
+1.1 is the part that belongs to the documents themselves, and the insertion position multiplies
+or divides it by about 1.3.
+
+The graph shows why. Base-layer incoming links fall with insertion position in every order and in
+both implementations, from 28–29 for the first tenth of insertions to 12–15 for the last tenth.
+At most 0.02% of documents have no incoming link, so late insertions are weakly connected, not
+unreachable. Recall@100 is 0.942–0.947 in every order: the order decides who bears the misses,
+not how many there are.
+
+This is a pilot on 18% of snapshot 3. The reversed order has not been run on the full collection.
+
 **Effect on effectiveness.** We split the 374 queries by the share of their exact snapshot-3
 top 10 that is new content (inserted after snapshot 1).
 
@@ -347,6 +443,10 @@ new-document blind spot is therefore a wider search (§4.5), not a periodic reor
 after snapshot 1, relative to snapshot-1 documents, on held-out queries at snapshot 3, with 95%
 query-bootstrap intervals. (b) The same ratio on development queries: filled markers show
 appended (incremental) insertion order, hollow markers a shuffled-order rebuild.
+
+**Figure 4** (`figures/fig-insertion-pilot.pdf`). Miss ratio of snapshot-3 arrivals against
+snapshot-1 arrivals by insertion order, on a 300,000-document sample at ef 200. Markers are means
+over three seeds with 95% query-bootstrap intervals; short ticks are the single seeds.
 
 ### 4.5 How wide a search, and at what cost (exploratory)
 
@@ -381,7 +481,50 @@ costs about 11 times (31 ms). The 98% setting therefore stays at a few milliseco
 recall@100 across the ef sweep, for incrementally maintained (a) Epzero and (b) FAISS HNSW,
 averaged over three seeds and 374 queries. Darker lines are later snapshots.
 
-### 4.6 Graph repair versus wider search (RQ4, development)
+### 4.6 What the labels can support (exploratory)
+
+The gaps above are measured under the organisers' LLM labels. Two properties of those labels
+limit what the gaps show.
+
+**Coverage.** The labels cover a depth-10 pool of the submitted systems, which includes the
+exact-search baseline. Exact search therefore has 99.5–99.6% of its top 10 graded at every
+snapshot. Epzero's share falls from 97.6% to 96.6%, because 76–82% of the documents that an HNSW
+index substitutes into the top 10 are ungraded and count as non-relevant. Over all rankings and
+snapshots, the top 10 of exact search and of every primary run contain 5,383 distinct
+query–document pairs on the panel, of which 426 were never graded.
+
+Two rescoring rules bracket the effect without any new judgment. The *carried* rule gives an
+ungraded occurrence the grade that the organisers gave the same pair at another snapshot. The
+*condensed* rule removes ungraded documents from every ranking before scoring.
+
+| Arm (calibrated) | Gap at s3: official | carried | condensed | D: official | carried | condensed |
+| --- | --- | --- | --- | --- | --- | --- |
+| Epzero HNSW | −0.0117 | −0.0089 | −0.0056 | −0.0059 | −0.0034 | −0.0048 |
+| FAISS HNSW | −0.0055 | −0.0033 | −0.0007 | −0.0007 | +0.0015 | +0.0004 |
+| IVF, frozen | −0.0080 | −0.0046 | −0.0017 | −0.0015 | +0.0019 | +0.0003 |
+
+The loss on graded documents is 0.001–0.006 nDCG@10, about half of the official gap or less.
+The pattern over time survives: FAISS and IVF stay flat, and only Epzero, whose search was never
+widened, drifts. The carried rule adds 131 grades at snapshot 3 but only 2 at snapshot 1, so its
+D is biased upwards and is shown for completeness only. Deciding how much of the gap is real
+needs grades for the 426 pairs, which is the planned follow-up.
+
+**Leniency.** For 29 test queries the release also holds human grades at snapshot 3 (1,581
+pairs). The GPT-OSS-120B labels grade 87% of these pairs as relevant, the human grades 60%, and
+71% of the pairs that the human grades call non-relevant are relevant under the LLM labels.
+Binary agreement is 0.70 [0.62, 0.78] and the linear-weighted kappa is 0.24 [0.14, 0.36]. Exact
+search scores 0.93 nDCG@10 under the LLM labels and 0.56 under the human grades on these queries,
+and the per-query values are uncorrelated. The comparison is not clean: the human grades assess a
+formalized topic and the LLM labels the query alone. It still shows that nDCG@10 under these
+labels sits near its ceiling and separates rankings poorly.
+
+Under lenient labels a substitute costs little when it is graded and its full gain when it is
+not, so coverage drives the measured gap. The results on neighbour recall and on arrival groups
+(§4.1, §4.3, §4.4) do not depend on any label set. The effectiveness results should be read as
+bounds under the organisers' labels: the gap at 95% recall is at most about 0.012, and at most
+about 0.006 on graded documents.
+
+### 4.7 Graph repair versus wider search (RQ4, development)
 
 We pre-registered four repair strategies, each against controls that receive the same distance
 work. All were screened on development queries only.
@@ -414,8 +557,12 @@ gains nothing, and rebuilding in a new order only redistributes misses. The deci
 is the search width.
 
 - Re-calibrate it as the collection grows, with a calibration set large enough, or a target with
-  enough margin, to detect a one-point drift. Our 50-query calibration with a grid that doubles at
-  each step was too coarse to trigger for one implementation.
+  enough margin, to detect a one-point drift. Our 50-query calibration kept a too-narrow width
+  for one implementation, which sampling noise alone explains: about 200 queries are needed
+  (§4.2).
+- Expect the misses of an appended HNSW index to fall on its newest documents. A system whose
+  users mostly look for new content should measure recall on those documents, not only on
+  average.
 - Alternatively, target about 98% recall instead of 95%. The gap is then about 0.002–0.004 at
   every snapshot, at a cost of a few milliseconds per query.
 
@@ -428,16 +575,8 @@ is the search width.
    GPT-OSS-120B grade is 0.77–1.01, against 1.54 for the kept neighbours (HNSW, snapshot 3, all
    seeds).
 3. The replacement documents have a mean grade of only 0.21–0.25, but 76–82% of them are
-   unjudged and therefore count as non-relevant.
-
-The released judgments were presumably pooled from exact-search-style runs, so the measured ANN
-gap is partly a pooling artifact.
-
-A condensed-list analysis removes unjudged documents from every ranking before scoring. It
-shrinks the snapshot-1 gaps from −0.005 to −0.006 down to −0.001 to −0.002. The pattern over time
-is unchanged: FAISS and IVF stay flat (D = +0.0004 and +0.0003), and Epzero still drifts
-(D = −0.0048 [−0.0116, +0.0003]). The loss on judged documents is therefore about 0.001–0.006
-nDCG@10.
+   ungraded and therefore count as non-relevant. The gap is thus partly an artifact of judgment
+   coverage (§4.6).
 
 ## 6 Limitations
 
@@ -445,10 +584,16 @@ nDCG@10.
   append-only. The equivalence result does not cover deletions or rewritten documents. LongEval
   Web, which has deletions, is the natural next test.
 - **Pooling.** Most documents that approximate search substitutes into the top 10 are
-  unjudged, which biases the gap towards larger losses.
-- **Labels.** The primary labels are LLM-generated. Human labels exist for only 29 queries, at
-  snapshot 3 only. The click labels judge 6–38% of the top 10 results, so they cannot support
-  an index comparison.
+  ungraded, which biases the gap towards larger losses. The carried and condensed rescoring
+  bound the bias but do not remove it; 426 pairs on the panel have no grade at any snapshot.
+- **Labels.** The primary labels are LLM-generated and lenient. On the 29 queries with human
+  grades at snapshot 3 they agree with them at a kappa of 0.24. The human grades cover one
+  snapshot, so they cannot confirm a change over time. The click labels judge 6–38% of the
+  top 10 results, so they cannot support an index comparison.
+- **Exploratory analyses.** The test queries were used once for the frozen analysis. Every
+  analysis marked exploratory reuses them and was designed after those results were seen.
+- **Insertion-order reversal.** The reversed order was run on a 300,000-document sample at one
+  search width, not on the full collection.
 - **Calibration design.** Calibration uses 50 queries and a coarse grid. This is a design choice,
   and it is what separates the two HNSW arms.
 - **Repair screens.** These are development screens, some on an 8,192-vector sample. They are
@@ -456,10 +601,13 @@ nDCG@10.
 
 ## 7 Conclusion
 
-The index does matter over time, but only through neighbour recall, and only by about 0.01
-nDCG@10 when recall is held near 95%. Incremental maintenance is equivalent to rebuilding.
-Re-checking recall on the evaluated queries at each snapshot is what keeps exact-search
-longitudinal conclusions valid for deployed ANN systems.
+The index does matter over time, but only through neighbour recall. Incremental maintenance is
+equivalent to rebuilding. At a fixed search width, recall falls by about a point as the
+collection nearly doubles, and an index built by appending loses its newest documents first.
+Under the organisers' labels this costs at most about 0.01 nDCG@10 when recall is held near 95%,
+and at most about 0.006 on graded documents. Re-checking recall at each snapshot, on enough
+queries to see a one-point fall, is what keeps exact-search longitudinal conclusions valid for
+deployed ANN systems.
 
 ## Reproducibility
 
@@ -495,3 +643,4 @@ LongEval-derived data are not redistributed. The scripts rebuild them from the o
 18. Chen et al. RoarGraph. VLDB 2024.
 19. Malkov and Yashunin. Efficient and robust approximate nearest neighbor search using hierarchical navigable small world graphs. IEEE TPAMI 2020.
 20. Elliott and Clark. The impacts of data, ordering, and intrinsic dimensionality on recall in hierarchical navigable small worlds. 2024.
+21. Zerhoudi, Roegiest, Mitrović and Granitzer. As we may search: Local-first information retrieval. ICTIR 2026.
