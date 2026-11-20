@@ -3,6 +3,9 @@
 **Recorded 21 November 2026, before any local judge was run. Proposed by the author; pending
 advisor approval.**
 
+*Extended on 21 November 2026, still before any judge output: the comparison with the released
+human grades was added to section 5, and point 5 to section 6. The thresholds are unchanged.*
+
 This file fixes how a locally run relevance judge will be checked against the organisers' released
 grades, and what follows if the check fails. It is written down now so that the thresholds cannot
 be chosen after seeing the judge's output.
@@ -111,6 +114,19 @@ consequences:
   with the official 120B grades at least as well as the released 20B labels do (binary agreement
   0.932, kappa 0.835).
 
+### Agreement of the released LLM grades with the released human grades
+
+The release also holds human grades for 29 queries at snapshot 3 (1,581 pairs, scale 0–2). Against
+them the official 120B grades reach a binary agreement of 0.70 [0.62, 0.78] and a linear-weighted
+kappa of 0.24 [0.14, 0.36]; the model grades 87.0% of these pairs as relevant and the human grades
+60.4% (`heldout_pool.human_agreement`; details in section 11 of HELDOUT_EXPLORATORY.md).
+
+This sets the limit of what the validation above can show. Agreement with the official LLM grades
+means that the local judge reproduces the organisers' assessor, including its leniency. It does
+not mean that the grades agree with human judgment. The local judge's agreement with these human
+grades will be reported beside the three measures, with no threshold, so that a reader can see
+both.
+
 ## 6. Open points for the advisor
 
 1. Approve the three thresholds, or replace them with the stricter bar of section 5.
@@ -119,6 +135,8 @@ consequences:
    the full pool is graded anyway.
 4. Confirm the reference family (120B, or 20B if hardware requires it) before the validation
    sample is graded.
+5. Confirm that agreement with the released human grades is reported without a threshold, or set
+   one.
 
 ## Amendment log
 
