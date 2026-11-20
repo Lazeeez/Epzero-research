@@ -1,6 +1,6 @@
 # NGFix launcher correction v03
 
-PACE job7141318 ended FAILED, exit1:0, elapsed2s. The author subsequently provided its
+PACE job 7141318 ended FAILED, exit 1:0, elapsed 2s. The author subsequently provided its
 log, confirming `No module named research.longeval.ngfix_screen` at the first
 Python module invocation. This matches the independently reproduced launch-path
 defect below. The original log file has not been copied locally; the pasted evidence
@@ -18,10 +18,10 @@ All native sources, input artifacts, compiler flags and storage controls are byt
 to the compile-checked v02 package. Only the launcher and its instructions changed;
 the package adds a regression test and the derived-package builder.
 
-Corrected archive: `build/longeval-ngfix-screen-03.tar.gz`, 2,546,174bytes, SHA-256:
+Corrected archive: `build/longeval-ngfix-screen-03.tar.gz`, 2,546,174 bytes, SHA-256:
 `9be895484ad89c6246fc49346254609328aabadbb51e754b9c91c6e2c26e90d3`.
-All500 packaged files verify; launch from the historical checkout succeeds; shell
-syntax passes; all22 packaged tests pass. Native AVX-512 execution remains pending.
+All 500 packaged files verify; launch from the historical checkout succeeds; shell
+syntax passes; all 22 packaged tests pass. Native AVX-512 execution remains pending.
 
 The failure occurred before compilation, synthetic checks and corpus downloads.
 Keep the failed log as evidence; this was a launcher failure, not an algorithm result.
