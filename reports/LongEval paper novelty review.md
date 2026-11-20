@@ -181,3 +181,49 @@ Flags: **[UNVERIFIED]** means the notes mark the item, or the detail flagged, as
 - Elastic Search Labs. "Speeding up merging of HNSW graphs." https://www.elastic.co/search-labs/blog/hnsw-graphs-speed-up-merging
 - LongEval organisers' Qwen3-Embedding-4B baseline run metadata. https://github.com/clef-longeval/longeval-code/blob/main/clef26/scientific-retrieval/baseline-pyterrier-dense/baseline-qwen3-embedding-4b/ir-metadata.yml
 - CLEF LongEval 2026 task page. https://clef-longeval.github.io/tasks/
+
+## Addendum (20 November 2026): items verified after this review
+
+Five of the open items above were checked against primary sources.
+
+1. **"As We May Search"** (Zerhoudi, Roegiest, Mitrović and Granitzer; ICTIR 2026;
+   <https://arxiv.org/abs/2606.29652>) is a partial overlap and a must-cite, not a threat.
+   - It compares flat, HNSW and IVF search (FAISS, all-MiniLM-L6-v2) on MS MARCO subsets, and its
+     abstract reports HNSW "extending this to 1M with only 2% quality loss".
+   - Its subsets are static and independently sampled. Its search settings are fixed, with no
+     neighbour-recall control. It has no time axis, no index maintenance and no insertion order.
+   - Its Table 3 numbers (flat/HNSW/IVF nDCG@10 of 0.789/0.777/0.763 at 500K and
+     0.736/0.719/0.677 at 1M) were read through a summarizing tool, so confirm them in the PDF
+     before quoting them.
+2. **LongEval 2026 judgments** (extended overview, CEUR Vol-4283, paper 374). The LLM labels use
+   the UMBRELA prompt on a **depth-10 pool of the 24 Task 1 systems**, with GPT-OSS-120B judging
+   the query only. The official dense baseline is in that pool. This is why exact search is
+   99.5% judged at depth 10 while approximate search's substitutes are not. The overview does
+   not state the baseline's index type ("implemented with PyTerrier-Dense").
+3. **Snapshot sizes.** The overview's introduction says "roughly 870K to 1.7M documents"; the
+   "approximately 87K" in its Section 2 is a typo. The released vectors hold 869,902 documents.
+4. **Slipstream** (Yang and Zhao, arXiv 2606.02992, June 2026) speeds up streaming HNSW insertion
+   by reusing the previous insertion's candidates. It reports aggregate recall@10 only. It has no
+   recall by insertion time and no comparison of insertion orders, so it does not overlap with
+   claim 3. Its Sections 4.3 and 5 were read only in summary.
+5. **A practitioner report in the opposite direction.** A Chroma issue
+   (<https://github.com/chroma-core/chroma/issues/7963>, open) reports that a small group of
+   vectors inserted *early* became poorly linked after a much larger batch arrived, and that
+   inserting in the other order avoided it. It is a single unreviewed report. It shows that the
+   direction of an insertion-order effect is not obvious, so claim 3 needs a measured mechanism:
+   incoming links by arrival group, and a reversed-order build.
+
+Two further results bear on the positioning. Both are in
+`research/longeval/HELDOUT_EXPLORATORY.md`, sections 6 and 9:
+
+- Our exact search reproduces the official `baseline-qwen3-4b` nDCG@10 to within 0.0014 on both
+  label sets.
+- The top 10 of exact search and of every primary run, pooled over seeds and snapshots, holds
+  5,511 query–document pairs. The organisers never graded 445 of them, and 635 lack a grade at
+  one or more of the snapshots where they were retrieved. Filling those holes with the
+  organisers' own judge model is a small job.
+
+Checked on 21 November 2026: the repository <https://github.com/searchsim-org/ictir26-localfirst-ir>
+carries the title "As We May Search: Local-First Information Retrieval" and describes itself as
+the code, data and experiments for that paper. Its README names neither the venue nor the
+authors, so cite the paper itself and give the repository only as its artifact.
