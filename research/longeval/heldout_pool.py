@@ -26,6 +26,7 @@ import argparse
 import csv
 import json
 from pathlib import Path
+import zipfile
 
 import numpy as np
 
@@ -251,6 +252,93 @@ def label_agreement(qrels, exact, ids, *, reference='gpt-oss-120b', other='gpt-o
             'exact_top10_complete_lists': lists}
 
 
+def human_agreement(qrels, exact, ids, *, families=('gpt-oss-120b', 'gpt-oss-20b'), step=3, draws=2000, seed=20261121):
+    """How the released LLM grades relate to the released human grades (29 queries, snapshot 3 only).
+
+    The human file grades the formalized topic of each query on a 0-2 scale; the LLM labels used by
+    this study grade the original query on a 0-3 scale. The comparison is therefore between two
+    assessors with different information, not a test of one against a gold standard.
+    """
+    human = qrels['human'][step]
+    out = {'queries': len(human), 'pairs': sum(len(docs) for docs in human.values()), 'snapshot': step, 'families': {}}
+    for family in families:
+        llm = {}
+        for s in SNAPSHOTS:
+            for q, docs in qrels[family][s].items():
+                for d, grade in docs.items():
+                    llm[(q, d)] = grade
+        keys = sorted((q, d) for q, docs in human.items() for d in docs if (q, d) in llm)
+        left, right = np.array([human[q][d] for q, d in keys]), np.array([llm[k] for k in keys])
+        grades = int(max(left.max(), right.max())) + 1
+
+        def measures(rows):
+            confusion = np.zeros((grades, grades), dtype=np.int64)
+            np.add.at(confusion, (left[rows], right[rows]), 1)
+            return confusion, float(np.mean((left[rows] > 0) == (right[rows] > 0))), weighted_kappa(confusion)
+
+        confusion, binary, kappa = measures(np.arange(len(keys)))
+        by_query = {}
+        for i, (q, _) in enumerate(keys):
+            by_query.setdefault(q, []).append(i)
+        members = [np.array(rows) for rows in by_query.values()]
+        rng = np.random.default_rng(seed)
+        boot = np.array([measures(np.concatenate([members[j] for j in rng.integers(0, len(members), len(members))]))[1:]
+                         for _ in range(draws)])
+        # Exact-search nDCG@10 per query under each label set, each with its own full-judgment ideal.
+        panel_queries = sorted(q for q in human if q in ids)
+        scores = {name: evaluate(exact[step], labels, panel_queries, population='explicit')['per_query']
+                  for name, labels in (('human', human), ('llm', qrels[family][step]))}
+        a = np.array([scores['human'][q]['nDCG@10'] for q in panel_queries])
+        b = np.array([scores['llm'][q]['nDCG@10'] for q in panel_queries])
+        out['families'][family] = {
+            'overlapping_pairs': len(keys),
+            'confusion_human_rows_llm_columns': confusion.tolist(),
+            'human_positive_share': float(np.mean(left > 0)), 'llm_positive_share': float(np.mean(right > 0)),
+            'human_zero_graded_positive_by_llm': float(np.mean(right[left == 0] > 0)),
+            'human_positive_graded_zero_by_llm': float(np.mean(right[left > 0] == 0)),
+            'binary_agreement': binary, 'binary_agreement_interval_95': np.quantile(boot[:, 0], [.025, .975]).tolist(),
+            'linear_weighted_kappa': kappa, 'linear_weighted_kappa_interval_95': np.quantile(boot[:, 1], [.025, .975]).tolist(),
+            'exact_search_ndcg_at_10': {'queries': len(panel_queries), 'human': float(a.mean()), 'llm': float(b.mean()),
+                                        'per_query_pearson': float(np.corrcoef(a, b)[0, 1]) if a.std() and b.std() else None}}
+    out['bootstrap'] = {'unit': 'query', 'draws': draws, 'seed': seed}
+    return out
+
+
+def human_label_provenance(release, human):
+    """Is the human label file a copy of another released label set? Compare it with each of them.
+
+    Reads every member of the released LLM label archive and the snapshot-3 click labels, and
+    reports the exact-grade agreement on the pairs each shares with the human file.
+    """
+    release = Path(release)
+    pairs = {(q, d): grade for q, docs in human.items() for d, grade in docs.items()}
+
+    def compare(lines):
+        other = {}
+        for line in lines:
+            parts = line.split()
+            if len(parts) == 4 and parts[3].lstrip('-').isdigit():
+                other[(parts[0], parts[2])] = int(parts[3])
+        shared = [key for key in pairs if key in other]
+        return {'rows': len(other), 'shared_pairs': len(shared),
+                'exact_agreement': sum(pairs[k] == other[k] for k in shared) / len(shared) if shared else None}
+
+    llm = {}
+    with zipfile.ZipFile(release / 'llm_synthetic_qrels.zip') as archive:
+        for name in sorted(archive.namelist()):
+            if not name.endswith('/'):
+                llm[name.rsplit('/', 1)[-1]] = compare(archive.read(name).decode('utf-8', 'replace').splitlines())
+    covering = {name: item for name, item in llm.items() if item['shared_pairs'] == len(pairs)}
+    best = max((item['exact_agreement'], name) for name, item in llm.items() if item['shared_pairs'])
+    clicks = {family: compare((release / f'task1_longeval_adhoc-qrels-snapshot-09-11-{family}.txt').read_text().splitlines())
+              for family in ('dctr', 'raw')}
+    return {'human_pairs': len(pairs), 'llm_label_files': len(llm),
+            'llm_files_grading_every_human_pair': len(covering),
+            'rows_in_those_files': sorted({item['rows'] for item in covering.values()}),
+            'best_exact_agreement_with_an_llm_file': {'file': best[1], 'agreement': best[0]},
+            'click_labels': clicks}
+
+
 def _added(labels, judged, queries):
     return {str(s): sum(len(labels[s][q]) - len(judged[s].get(q, {})) for q in queries) for s in SNAPSHOTS}
 
@@ -278,6 +366,8 @@ def analyze(inputs, release, evidence, extension_evidence, output, *, dense=None
                                 'primary_panel': counts(rows, judged, population, level)}
                          for level, name in enumerate(SETS) if level < 2 or extension},
               'released_label_agreement': label_agreement(qrels, exact, ids),
+              'agreement_with_human_labels': human_agreement(qrels, exact, ids),
+              'human_label_provenance': human_label_provenance(release, qrels['human'][3]),
               'gaps': {'official': gaps(primary, exact, judged, population)}}
     for level, name in ((0, 'carried_within_reported_pool'), (1, 'carried_within_pool_with_all_lists')):
         labels, added = carried_labels(rows, judged, ids, level)
