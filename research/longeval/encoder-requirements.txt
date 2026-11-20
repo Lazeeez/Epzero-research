@@ -1,0 +1,5 @@
+# Install torch==2.9.0 from https://download.pytorch.org/whl/cpu first.
+# This environment is separate from the ANN experiments.
+transformers==4.57.1
+accelerate==1.11.0
+numpy==2.4.6
