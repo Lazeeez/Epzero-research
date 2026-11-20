@@ -2,3 +2,6 @@
 # so text files keep LF line endings on every platform. Binary files are detected and left alone.
 research/** text=auto eol=lf
 scripts/pace/** text=auto eol=lf
+# These two frozen files were hashed with CRLF endings; store them byte for byte.
+research/longeval/heldout_analysis.py -text
+research/longeval/ivf_trajectory.py -text
