@@ -1,0 +1,9 @@
+numpy==2.4.6
+faiss-cpu==1.16.0
+psutil==7.2.2
+pytest==9.2.0
+pytest-asyncio==1.5.0
+pytrec-eval-terrier==0.5.11
+lz4==4.4.5
+npids==0.1.3
+# Install Epzero from this checkout separately: python -m pip install ./engine
