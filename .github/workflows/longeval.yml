@@ -1,10 +1,10 @@
-name: longeval research foundation
+name: longeval research
 
 on:
   push:
-    paths: ["research/longeval/**", "engine/**", ".github/workflows/longeval.yml"]
+    paths: ["research/**", "scripts/pace/**", ".github/workflows/longeval.yml"]
   pull_request:
-    paths: ["research/longeval/**", "engine/**", ".github/workflows/longeval.yml"]
+    paths: ["research/**", "scripts/pace/**", ".github/workflows/longeval.yml"]
   workflow_dispatch:
 
 jobs:
@@ -22,16 +22,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install research dependencies and the native source build
-        run: |
-          python -m pip install -r research/longeval/requirements.txt
-          python -m pip install ./engine
-      - name: Validate contracts and IR regression fixes
-        run: python -m pytest -q research/longeval/tests engine/python/tests/test_ir.py
+      - name: Install research dependencies and the released engine
+        run: python -m pip install -r research/longeval/requirements.txt
+      - name: Run the research tests
+        run: python -m pytest -q research/longeval/tests scripts/pace/tests
       - name: Run the three-seed synthetic pilot
         run: |
           python -m research.longeval fixture build/longeval-fixture
-          python -m research.longeval run --dataset build/longeval-fixture/dataset.json --output build/longeval-pilot --native-origin checkout-build
+          python -m research.longeval run --dataset build/longeval-fixture/dataset.json --output build/longeval-pilot --native-origin released-wheel
           python -m research.longeval verify build/longeval-pilot --dataset build/longeval-fixture/dataset.json
       - uses: actions/upload-artifact@v4
         if: always()
