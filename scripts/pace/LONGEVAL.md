@@ -1,8 +1,8 @@
 # LongEval research jobs on PACE
 
-The LongEval study (`research/longeval/`) runs on the PACE ICE cluster. Its scripts are separate
-from the engine benchmarks in this folder, so its pinned environment and data never overwrite the
-older `.pace-bench` setup. Every job is described by a runbook, with the exact commands to submit it
+The LongEval study (`research/longeval/`) runs on the PACE ICE cluster. The engine benchmark scripts
+live in the Epzero repository; these use their own pinned environment and data, so they never
+overwrite the engine `.pace-bench` setup. Every job is described by a runbook, with the exact commands to submit it
 and to collect its evidence.
 
 ## Rules every job follows
