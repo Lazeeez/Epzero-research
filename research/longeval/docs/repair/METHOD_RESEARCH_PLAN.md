@@ -26,14 +26,14 @@ rechecks 1,800 full-data traces. Final development misses at the selected work
 budget occur after some true neighbors are found. Neighborhood coverage is the
 next target, but [NGFix/RFix](NGFIX_REPRODUCTION.md) already repairs that mechanism.
 Its pinned native sample screen is now independently verified; see
-[NGFIX_RESULTS.md](NGFIX_RESULTS.md). NGFix gains0.46percentage points on development
-at ef100 but6.12points on its fitting queries. Reusing those queries to choose ef
+[NGFIX_RESULTS.md](NGFIX_RESULTS.md). NGFix gains 0.46 percentage points on development
+at ef 100 but 6.12 points on its fitting queries. Reusing those queries to choose ef
 misses development recall targets; separate fitting and tuning roles are required.
 The next candidate needs algorithm-level differentiation from this competitor,
 not simply a new hardness score or a historical-query shortcut overlay.
 
-**Protocol correction completed:** job7148412 verifies all three30/20/50 splits;
-all24 selected points meet development mean-recall targets. NGFix shows small gains
+**Protocol correction completed:** job 7148412 verifies all three 30/20/50 splits;
+all 24 selected points meet development mean-recall targets. NGFix shows small gains
 and similar latency, not a new method win. See [NGFIX_DISJOINT_RESULTS.md](NGFIX_DISJOINT_RESULTS.md).
 The baseline rankings/counters reproduce, but raw saved-state hashes differ. Future
 adapters must initialize delete flags and export canonical active-state fingerprints;
@@ -41,7 +41,7 @@ do not equate raw serialization with graph identity across independent builds.
 
 **Additional feasibility rejection:** [REGION_MARGIN_RESULTS.md](REGION_MARGIN_RESULTS.md)
 tests a sufficient source-relative progress bound across fitting-query regions.
-None of58 overlapping proposal/split cases passes. This objective discards most
+None of 58 overlapping proposal/split cases passes. This objective discards most
 existing coverage shortcuts even at their generating query. Do not promote the
 isotropic-ball rule; it is not a distinct validated algorithm. Alpha-convergent
 graphs and delta-EMG also constrain any future geometric-guarantee novelty claim;
@@ -79,7 +79,7 @@ The additive prototype is `frontier_search.py`:
 
 Initial parameters, chosen before the small real-vector pilot: ef=200, reserve=256,
 R=8, at most 8 resumptions, k=100, caps 2,000 and 4,000. The initial pilot uses
-8,192 uniformly sampled snapshot-1 rows (NumPy seed 20261118), construction seed11,
+8,192 uniformly sampled snapshot-1 rows (NumPy seed 20261118), construction seed 11,
 M=16, efConstruction=100, all 100 already-exposed training queries. Exact references
 are computed **within this sample**, not borrowed from the full corpus. This pilot
 checks execution and possible failure modes; sampling can remove the actual traps.
@@ -132,10 +132,10 @@ parameter tuning or an empirical null result into the promised new method.
 | Comparison | Why needed | Current state / next action |
 | --- | --- | --- |
 | Epzero original, wide beam, patience, closest/random resume | Isolate the new rule from extra effort and candidate reuse | Original/replay validated; closest and overlap prototypes implemented; remaining ablations pending |
-| FAISS HNSW and hnswlib | Strong standard graph implementations | Full native Epzero/FAISS timings verified at original/calibrated/wide settings; FAISS lower final means at common ef; hnswlib0.8.0 three-seed sample comparison validated; tuned full native curves remain needed |
+| FAISS HNSW and hnswlib | Strong standard graph implementations | Full native Epzero/FAISS timings verified at original/calibrated/wide settings; FAISS lower final means at common ef; hnswlib 0.8.0 three-seed sample comparison validated; tuned full native curves remain needed |
 | DARTH and Ada-ef | Direct competitors for query-dependent work and recall control | Primary papers/artifacts located; reproduce paper-matched pinned versions before comparison |
 | In-memory DiskANN/Vamana | Alternative graph construction/search family | Select and pin a compatible CPU/IP configuration; include construction and memory budgets |
-| NGFix/RFix | Direct published neighborhood/route-repair competitor | Job7148412 disjoint-role sample verified: all24 target points met, modest recall gains at similar latency. Canonical state diagnostics, explicit flag initialization, full-data and broader training remain |
+| NGFix/RFix | Direct published neighborhood/route-repair competitor | Job 7148412 disjoint-role sample verified: all 24 target points met, modest recall gains at similar latency. Canonical state diagnostics, explicit flag initialization, full-data and broader training remain |
 | FAISS IVF-Flat, frozen and refreshed | Different search/maintenance mechanism | Three-seed full development controls verified; native cost measured |
 | Quake; RoarGraph/adaptive entry selection | Relevant if retaining maintenance or OOD-routing claims | Related work now; benchmark when the actual claim overlaps, with required training resources disclosed |
 
@@ -157,11 +157,11 @@ Use paired query-level analysis, retain every seed, and report failed target poi
 Only within-engine audited counters are directly comparable; FAISS and Epzero
 distance-count conventions differ. Python replay latency is not a competitor result.
 
-The `longeval-pace-native-cost-02.tar.gz` baseline jobs7139467/8/9 have returned and
+The `longeval-pace-native-cost-02.tar.gz` baseline jobs 7139467/8/9 have returned and
 passed independent verification; see [NATIVE_COST_RESULTS.md](../development/NATIVE_COST_RESULTS.md).
-They do not evaluate a new method. Epzero's lower time at its selected ef200 versus
-FAISS's selected ef400 for seeds29/47 accompanies lower achieved recall. The wide
-ef3200 comparison favors FAISS mean latency at similar mean recall. Neither
+They do not evaluate a new method. Epzero's lower time at its selected ef 200 versus
+FAISS's selected ef 400 for seeds 29/47 accompanies lower achieved recall. The wide
+ef 3200 comparison favors FAISS mean latency at similar mean recall. Neither
 comparison supplies a new-method win or a tuned minimum-cost99% operating point.
 All large PACE inputs/work files must remain on compute-node temporary disk.
 
