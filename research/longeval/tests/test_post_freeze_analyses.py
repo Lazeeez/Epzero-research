@@ -1,4 +1,7 @@
 """Hand-checked cases for the post-freeze pool ledger, label agreement and insertion-pilot ratios."""
+import json
+import zipfile
+
 import numpy as np
 import pytest
 
@@ -108,3 +111,81 @@ def test_rank_standardized_miss_ratio():
 def test_relative_change():
     assert relative_change(.25, .20) == pytest.approx(.2)
     assert relative_change(.25, .30) == pytest.approx(-.2)
+
+
+def test_human_agreement_and_provenance(tmp_path):
+    human = {'q1': {'a': 0, 'b': 2, 'c': 0}, 'q2': {'a': 1}}
+    llm = {1: {'q1': {'a': 2, 'b': 2}}, 2: {}, 3: {'q1': {'c': 0}, 'q2': {'a': 1}}}
+    qrels = {'human': {3: human}, 'gpt-oss-120b': llm}
+    exact = {3: {'q1': [('b', 1.0), ('a', .5)], 'q2': [('a', 1.0)]}}
+    r = heldout_pool.human_agreement(qrels, exact, ['q1', 'q2'], families=('gpt-oss-120b',), draws=20)
+    assert (r['queries'], r['pairs']) == (2, 4)
+    item = r['families']['gpt-oss-120b']
+    # The LLM grade of a pair is taken from whichever snapshot graded it.
+    assert item['overlapping_pairs'] == 4
+    assert item['confusion_human_rows_llm_columns'] == [[1, 0, 1], [0, 1, 0], [0, 0, 1]]
+    assert item['binary_agreement'] == pytest.approx(.75)
+    assert item['human_zero_graded_positive_by_llm'] == pytest.approx(.5)
+    assert item['human_positive_graded_zero_by_llm'] == 0.0
+    assert (item['human_positive_share'], item['llm_positive_share']) == (pytest.approx(.5), pytest.approx(.75))
+    # Human labels: q1 ranks its only relevant document first, q2 too. Snapshot-3 LLM labels: q1 has no positive.
+    assert item['exact_search_ndcg_at_10']['human'] == pytest.approx(1.0)
+    assert item['exact_search_ndcg_at_10']['llm'] == pytest.approx(.5)
+
+    (tmp_path / 'task1_longeval_adhoc-qrels-snapshot-09-11-dctr.txt').write_text('q1 0 a 0\nq9 0 z 1\n')
+    (tmp_path / 'task1_longeval_adhoc-qrels-snapshot-09-11-raw.txt').write_text('q9 0 z 1\n')
+    with zipfile.ZipFile(tmp_path / 'llm_synthetic_qrels.zip', 'w') as archive:
+        archive.writestr('llm_synthetic_qrels/copy.qrels.txt', 'q1 0 a 0\nq1 0 b 2\nq1 0 c 0\nq2 0 a 1\nq3 0 x 1\n')
+        archive.writestr('llm_synthetic_qrels/other.qrels.txt', 'q1 0 a 2\nq1 0 b 2\n')
+    prov = heldout_pool.human_label_provenance(tmp_path, human)
+    assert prov['human_pairs'] == 4 and prov['llm_label_files'] == 2
+    assert prov['llm_files_grading_every_human_pair'] == 1 and prov['rows_in_those_files'] == [5]
+    assert prov['best_exact_agreement_with_an_llm_file'] == {'file': 'copy.qrels.txt', 'agreement': 1.0}
+    assert prov['click_labels']['dctr'] == {'rows': 2, 'shared_pairs': 1, 'exact_agreement': 1.0}
+    assert prov['click_labels']['raw'] == {'rows': 1, 'shared_pairs': 0, 'exact_agreement': None}
+
+
+def small_sample(folder, n=600, dim=16, queries=12):
+    rng = np.random.default_rng(5)
+    vectors = rng.standard_normal((n, dim)).astype(np.float32)
+    vectors /= np.linalg.norm(vectors, axis=1, keepdims=True)
+    q = rng.standard_normal((queries, dim)).astype(np.float32)
+    cohort = np.repeat(np.array([1, 2, 3], dtype=np.int8), n // 3)
+    folder.mkdir()
+    np.save(folder / 'vectors.npy', vectors)
+    np.save(folder / 'cohort.npy', cohort)
+    np.save(folder / 'lexical-rank.npy', rng.permutation(n).astype(np.int64))
+    np.save(folder / 'queries.npy', q)
+    np.save(folder / 'exact-top100.npy', np.argsort(-(q.astype(np.float64) @ vectors.astype(np.float64).T), axis=1,
+                                                    kind='stable')[:, :100].astype(np.int32))
+    (folder / 'sample.json').write_text(json.dumps({'count': n}))
+    return folder
+
+
+def test_pilot_width_sweep_and_robustness_summary(tmp_path):
+    pytest.importorskip('faiss')
+    sample = small_sample(tmp_path / 'sample')
+    root = tmp_path / 'm8'
+    for order in ('appended', 'reversed', 'shuffled'):
+        report = insertion_pilot.run(sample, root / 'faiss_hnsw' / f'{order}-11', order=order, seed=11, ef=40, M=8,
+                                     ef_construction=40, efs=(10, 40, 600))
+        assert list(report['widths']) == ['10', '40', '600'] and report['M'] == 8
+        folder = root / 'faiss_hnsw' / f'{order}-11'
+        primary = np.load(folder / 'per-query.npy')
+        assert (primary == np.load(folder / 'per-query-ef40.npy')).all()
+        assert primary[..., 0].sum() == 12 * 100
+        recalls = [report['widths'][w]['recall_at_100'] for w in ('10', '40', '600')]
+        assert recalls[0] <= recalls[1] <= recalls[2] and recalls[2] > .95      # ef 600 visits every reachable document
+        assert report['widths']['40']['recall_at_100'] == report['recall_at_100']
+    # Same order and seed: the same graph, so the same misses.
+    again = insertion_pilot.run(sample, tmp_path / 'again', order='reversed', seed=11, ef=40, M=8, ef_construction=40)
+    assert (np.load(tmp_path / 'again/per-query.npy') == np.load(root / 'faiss_hnsw/reversed-11/per-query.npy')).all()
+    assert 'widths' not in again
+    out = insertion_pilot.robustness(sample, [root], tmp_path / 'robustness.json')
+    block = out['settings']['m8']
+    assert (block['M'], block['ef_construction']) == (8, 40)
+    widths = block['backends']['faiss_hnsw']['widths']
+    assert list(widths) == ['10', '40', '600']
+    assert set(widths['10']['contrasts']) == {'cohort3_vs_cohort1', 'cohort2_vs_cohort1', 'later_vs_cohort1'}
+    assert set(widths['10']['missed_by_cohort']) == {'appended-11', 'reversed-11', 'shuffled-11'}
+    assert json.loads((tmp_path / 'robustness.json').read_text())['settings']['m8']['backends']['faiss_hnsw']['builds'] == 3
