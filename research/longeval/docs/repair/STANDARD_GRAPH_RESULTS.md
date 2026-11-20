@@ -1,7 +1,7 @@
 # Native competitor harness check — 2026-11-18
 
-The new additive adapters now support **Epzero, FAISS HNSW and hnswlib0.8.0** under
-one explicit IP-query protocol. Nine graphs (three implementations x seeds11/29/47)
+The new additive adapters now support **Epzero, FAISS HNSW and hnswlib 0.8.0** under
+one explicit IP-query protocol. Nine graphs (three implementations x seeds 11/29/47)
 and 3,600 query conditions completed and passed independent ranking/score checks.
 These are small-sample local baseline measurements, not a full-scale method result.
 
@@ -9,17 +9,17 @@ These are small-sample local baseline measurements, not a full-scale method resu
 
 - Same 8,192-row snapshot-1 sample, 2,560 dimensions, float32, uncompressed IP,
   insertion order, k100, M16, efConstruction100, and 100 training queries.
-- Local WSL on Intel i5-13420H, process pinned to logical CPU0, one search/build
+- Local WSL on Intel i5-13420H, process pinned to logical CPU 0, one search/build
   thread. This is not an exclusive PACE allocation or a controlled compiler comparison.
 - Effort grid 100/200/400/800. For each implementation/seed, choose the smallest ef
   attaining mean calibration recall .95 or .99. Persist selection before evaluating
-  development queries. All methods/seeds select ef200 and ef400 respectively.
+  development queries. All methods/seeds select ef 200 and ef 400 respectively.
 - Each query gets one immediately preceding warmup and three native binding calls.
   Output conversion, score verification and state hashing are outside timing. Backend
   order rotates by query/grid/seed; construction order rotates by seed.
 - Float64 references and original external row-label mapping are checked. Every
   native repeat must return identical scores and labels. Serialized graph hashes
-  are identical before/after after restoring search settings. The seed11 Epzero
+  are identical before/after after restoring search settings. The seed 11 Epzero
   state reproduces the earlier pilot index byte-for-byte.
 
 ## Descriptive development measurements
@@ -31,15 +31,15 @@ of three calls; it is not a service throughput measurement.
 | --- | --- | ---: | ---: |
 | .95 / 200 | Epzero | 97.54–97.62% | 1.011–1.040 |
 | .95 / 200 | FAISS HNSW | 97.60–97.88% | 0.941–0.959 |
-| .95 / 200 | hnswlib0.8.0 | 97.52–97.64% | 1.133–1.180 |
+| .95 / 200 | hnswlib 0.8.0 | 97.52–97.64% | 1.133–1.180 |
 | .99 / 400 | Epzero | 99.42–99.44% | 1.642–1.687 |
 | .99 / 400 | FAISS HNSW | 99.34–99.54% | 1.532–1.552 |
-| .99 / 400 | hnswlib0.8.0 | 99.42% | 1.820–1.848 |
+| .99 / 400 | hnswlib 0.8.0 | 99.42% | 1.820–1.848 |
 
 FAISS has the lower measured times at these selected settings. These comparisons
 do not establish universally matched achieved recall: the coarse grid overshoots
 the targets and the achieved recalls differ. All .95-target development conditions
-exceed .95, but individual-query minima range from .87 to .91 at ef200. A mean
+exceed .95, but individual-query minima range from .87 to .91 at ef 200. A mean
 target is not a per-query guarantee.
 
 Serialized indexes are approximately 85.1 MB each; this does not measure process
