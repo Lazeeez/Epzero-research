@@ -36,17 +36,17 @@ base index; it is a read-only callback prototype, not a native repair implementa
 
 ## Fixed first screen
 
-Reuse the prior 8,192-row snapshot-1 sample and its seed11 base graph. Fit using only
+Reuse the prior 8,192-row snapshot-1 sample and its seed 11 base graph. Fit using only
 the 50 calibration queries. Freeze serialized overlay edges before any development
 queries run. Keep all 50 separate development queries and both distance caps 1,000
 and 2,000 at ef=100. The higher-search control uses ef=3,200 and identical actual
 distance work for every intervention query. Required arms:
 
-- Original graph at ef100 and wide search.
+- Original graph at ef 100 and wide search.
 - Witness overlay.
 - Direct-answer overlay with the same number of edges at the same sources, using
   the proposing calibration query's nearest eligible exact neighbor.
-- Random-destination overlay with the same per-source edge counts, seed20261118.
+- Random-destination overlay with the same per-source edge counts, seed 20261118.
 
 Record per-query returned rankings, actual distance/adjacency work, overlay reads,
 failure tails, learning costs, proposal provenance and graph/overlay hashes. Verify
@@ -79,7 +79,7 @@ the repair mechanism rather than renaming these existing optimizations.
 
 ## Competitor work alongside this screen
 
-Add pinned hnswlib0.8.0 without changing the earlier experiment environment. Validate
+Add pinned hnswlib 0.8.0 without changing the earlier experiment environment. Validate
 its IP semantics, external-label mapping, deterministic single-thread behavior and
 native timing harness against Epzero and FAISS. A small-sample operating-curve check
 is infrastructure validation; it cannot replace the pending full-data PACE timing
