@@ -19,11 +19,11 @@ The supplement has its own directory and manifest; it does not overwrite the
 original source, existing experiment supplements, or the shared Python environment.
 The package contains pinned upstream source, a compiler-derived Boost header
 closure, adapter/tests, and small query/reference files. It contains no dataset
-vectors or native indexes. GCC13.3.0 is required, matching the local compile check.
-Version01 failed the isolated compiler check because its header inventory omitted
-Boost headers marked as system headers. Use only version02.
+vectors or native indexes. GCC 13.3.0 is required, matching the local compile check.
+Version 01 failed the isolated compiler check because its header inventory omitted
+Boost headers marked as system headers. Use only version 02.
 
-The job requests one exclusive Gold6226 node, one computation thread, 8GB RAM,
+The job requests one exclusive Gold 6226 node, one computation thread, 8GB RAM,
 48GB node temporary storage and a two-hour ceiling. It verifies the package and
 CPU features, compiles the original AVX-512 kernels, runs verifier tests and three
 native rejection tests, then verifies a 512-vector synthetic run. The synthetic
