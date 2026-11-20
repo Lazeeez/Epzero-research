@@ -504,3 +504,58 @@ why the reversed arm is the decisive test.
 - The sample is 18% of snapshot 3, at one search width.
 - The reversed arm has not been run at full scale. That is the confirming experiment.
 
+## 11. The LLM grades against the released human grades
+
+The release holds one more label file for snapshot 3, named `…-human.txt`: 1,581 grades on a 0–2
+scale for 29 test queries. The frozen protocol uses it as a sensitivity family. This section
+compares it with the LLM grades pair by pair. The code is `heldout_pool.human_agreement` and
+`heldout_pool.human_label_provenance`; the output is `build/longeval-heldout-pool-02/report.json`,
+computed on 21 November 2026 from the released judgments only.
+
+**What the file is.** The overview of the lab does not say how this file was made, so its origin
+is inferred here, not documented. It is not a copy of another released label set: among the 318
+released LLM label files the best exact agreement is 54.3%, and it shares only 83 pairs with the
+DCTR click labels. Every one of its pairs lies in the depth-10 pool that the LLMs graded for the
+manually formalized topics (1,581 of 1,651 pairs at snapshot 3). It is read here as an independent
+human assessment of those formalized topics.
+
+| Measure, all 1,581 pairs | GPT-OSS-120B | GPT-OSS-20B |
+| --- | --- | --- |
+| Pairs graded relevant by the model (human: 60.4%) | 87.0% | 87.3% |
+| Human grade 0, graded relevant by the model | 71.1% | 72.4% |
+| Human grade above 0, graded 0 by the model | 2.6% | 2.8% |
+| Binary agreement | 0.70 [0.62, 0.78] | 0.70 [0.62, 0.77] |
+| Linear-weighted kappa | 0.24 [0.14, 0.36] | 0.21 [0.12, 0.32] |
+| Exact-search nDCG@10 on the 29 queries (human: 0.564) | 0.930 | 0.944 |
+| Correlation of per-query nDCG@10 with the human-label value | −0.04 | +0.12 |
+
+Intervals are 95%, from a bootstrap that resamples queries (2,000 draws).
+
+**The LLM grades are lenient.** The model grades 87.0% of these pairs as relevant, against 60.4%
+for the human grades, and it grades 71.1% of the human non-relevant pairs as relevant (445 of
+626). The overview says the same about its LLM assessors in general ("tend to over-label
+relevance").
+
+**Per-query effectiveness does not carry over.** Exact search scores 0.93 under the LLM grades and
+0.56 under the human grades, and the two per-query values are uncorrelated (−0.04). With most
+pooled documents graded relevant, nDCG@10 under the LLM grades sits near its ceiling and separates
+rankings poorly.
+
+**Two caveats.** The human grades assess a formalized topic with a description, while the LLM
+grades used in this study assess the original query alone, and the scales differ (0–2 against
+0–3). The comparison is therefore between two assessors with different information, on 29 queries
+at one snapshot. It is not a clean test of the model.
+
+**What this means for the study.**
+
+- The label-free results (neighbour recall, misses by arrival group, insertion order) do not depend
+  on any label set.
+- The effectiveness gaps are small under every label family, including the human one (within
+  ±0.0005 at snapshot 3, see HELDOUT_RESULTS.md). The human family has 29 queries and one snapshot,
+  so it cannot confirm the change over time.
+- Under lenient labels a substitute document costs little when it is graded and its full gain when
+  it is not. In section 2 the graded replacements have a mean grade of about 1.2 (0.22 ÷ 0.18),
+  above the 1.01 of the neighbours they replace. The measured gap is therefore driven mostly by
+  coverage, which is what the judgment-coverage experiment tests.
+- The paper should call the primary measure "effectiveness under the organisers' LLM labels", state
+  that those labels are lenient, and not present it as ground truth.
