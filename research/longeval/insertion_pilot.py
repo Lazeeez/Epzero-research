@@ -12,6 +12,9 @@ Measured at ef 200 with the 381 test queries: neighbour recall against exact sea
 sample, misses by cohort within exact-rank bands, and base-layer in-degree by cohort. If misses
 follow insertion position, the reversed build must move the excess onto cohort 1.
 
+A build can also be searched at further widths (`--efs`) and built with other graph settings
+(`--M`, `--ef-construction`), to check that the result does not rest on one setting.
+
 This is a mechanism pilot on a sample, not a result about the full collection.
 """
 from __future__ import annotations
@@ -77,7 +80,8 @@ def insertion_order(ids_sorted_rank, cohort, order, seed):
     raise ValueError('unknown order')
 
 
-def run(sample, output, *, order, seed, backend='faiss_hnsw', ef=200, M=16, ef_construction=100):
+def run(sample, output, *, order, seed, backend='faiss_hnsw', ef=200, M=16, ef_construction=100, efs=()):
+    """Build one index and score it at `ef`; `efs` lists further search widths for the same build."""
     import faiss
     faiss.omp_set_num_threads(1)
     if backend not in ('faiss_hnsw', 'epzero'):
@@ -101,9 +105,11 @@ def run(sample, output, *, order, seed, backend='faiss_hnsw', ef=200, M=16, ef_c
             for row in block:                               # one row per call keeps the order exact
                 index.add(row.reshape(1, -1))
         build_seconds = time.perf_counter() - started
-        index.hnsw.efSearch = ef
-        _, labels = index.search(np.ascontiguousarray(queries), 100)
-        found = sequence[labels]                            # storage position -> sample position
+
+        def search(width):
+            index.hnsw.efSearch = width
+            _, labels = index.search(np.ascontiguousarray(queries), 100)
+            return sequence[labels]                         # storage position -> sample position
         hnsw = index.hnsw
         neighbors = faiss.vector_to_array(hnsw.neighbors)
         offsets = faiss.vector_to_array(hnsw.offsets)
@@ -123,25 +129,39 @@ def run(sample, output, *, order, seed, backend='faiss_hnsw', ef=200, M=16, ef_c
             chunk = sequence[start:start + 1024]
             index.add(np.ascontiguousarray(vectors[chunk]), labels=chunk.astype(np.int64), threads=1)
         build_seconds = time.perf_counter() - started
-        labels, _ = index.search(np.ascontiguousarray(queries), k=100, ef=ef, rerank=0, rerank_z=0, patience=0, threads=1)
-        found = np.asarray(labels, dtype=np.int64)          # labels are sample positions
+
+        def search(width):
+            labels, _ = index.search(np.ascontiguousarray(queries), k=100, ef=width, rerank=0, rerank_z=0, patience=0,
+                                     threads=1)
+            return np.asarray(labels, dtype=np.int64)       # labels are sample positions
         indegree = np.zeros(n, dtype=np.int64)
         outdegree = np.zeros(n, dtype=np.int64)
         for label in range(n):
             links = np.asarray(index.neighbors(label, 0), dtype=np.int64)
             outdegree[label] = len(links)
             np.add.at(indegree, links, 1)
-    # Misses by cohort and exact-rank band, per query (for a query bootstrap).
-    per_query = np.zeros((len(queries), 3, len(BANDS), 2), dtype=np.int64)   # [query, cohort, band, (n, missed)]
-    for qi in range(len(queries)):
-        returned = set(found[qi].tolist())
-        for rank, doc in enumerate(exact[qi], 1):
-            band = next(i for i, b in enumerate(BANDS) if b[0] <= rank <= b[1])
-            per_query[qi, cohort[doc] - 1, band, 0] += 1
-            per_query[qi, cohort[doc] - 1, band, 1] += doc not in returned
-    recall = float(np.mean([len(set(found[qi].tolist()) & set(exact[qi].tolist())) / 100 for qi in range(len(queries))]))
+    def score(found):
+        # Misses by cohort and exact-rank band, per query (for a query bootstrap).
+        table = np.zeros((len(queries), 3, len(BANDS), 2), dtype=np.int64)   # [query, cohort, band, (n, missed)]
+        for qi in range(len(queries)):
+            returned = set(found[qi].tolist())
+            for rank, doc in enumerate(exact[qi], 1):
+                band = next(i for i, b in enumerate(BANDS) if b[0] <= rank <= b[1])
+                table[qi, cohort[doc] - 1, band, 0] += 1
+                table[qi, cohort[doc] - 1, band, 1] += doc not in returned
+        hits = float(np.mean([len(set(found[qi].tolist()) & set(exact[qi].tolist())) / 100 for qi in range(len(queries))]))
+        return table, hits
+
+    per_query, recall = score(search(ef))
     output.mkdir(parents=True, exist_ok=False)
     np.save(output / 'per-query.npy', per_query)
+    widths = {}
+    for width in efs:
+        table, hits = (per_query, recall) if width == ef else score(search(width))
+        np.save(output / f'per-query-ef{width}.npy', table)
+        widths[str(width)] = {'recall_at_100': hits,
+                              'miss_rate': {str(c): float(table[:, c - 1, :, 1].sum() / table[:, c - 1, :, 0].sum())
+                                            for c in (1, 2, 3)}}
     report = {'backend': backend, 'order': order, 'seed': seed, 'ef': ef, 'M': M, 'ef_construction': ef_construction, 'count': int(n),
               'build_seconds': build_seconds, 'recall_at_100': recall,
               'cohorts': {str(c): {'documents': int((cohort == c).sum()),
@@ -155,6 +175,8 @@ def run(sample, output, *, order, seed, backend='faiss_hnsw', ef=200, M=16, ef_c
                           for c in (1, 2, 3)},
               # In-degree by insertion decile, whatever the cohort.
               'indegree_by_insertion_decile': [float(indegree[(position * 10 // n) == d].mean()) for d in range(10)]}
+    if widths:
+        report['widths'] = widths
     (output / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
     return report
 
@@ -166,7 +188,7 @@ def _ratio(total, target, reference):
     observed = total[target, :, 1].sum()
     expected = sum(total[target, b, 0].sum() * total[reference - 1, b, 1] / max(1, total[reference - 1, b, 0])
                    for b in range(len(BANDS)))
-    return observed / expected
+    return float(observed / expected) if expected else float('nan')   # undefined without reference misses
 
 
 def _draws(queries, draws, seed):
@@ -181,12 +203,20 @@ def ratio(per_query, target, reference, *, draws=5000, seed=20261120):
             'interval_95': np.quantile(boot, [.025, .975]).tolist()}
 
 
-def summarize(root):
+def _table(folder, ef=None):
+    """Per-query miss table of one build, at its primary width or at one of its further widths."""
+    return np.load(Path(folder) / ('per-query.npy' if ef is None else f'per-query-ef{ef}.npy'))
+
+
+def summarize(root, ef=None):
     out = []
     for path in sorted(Path(root).glob('*/report.json')):
         report = json.loads(path.read_text())
         report.setdefault('backend', 'faiss_hnsw')          # the first pilot's reports predate the field
-        per_query = np.load(path.parent / 'per-query.npy')
+        per_query = _table(path.parent, ef)
+        if ef is not None:
+            report['ef'] = ef
+            report['recall_at_100'] = report['widths'][str(ef)]['recall_at_100']
         total = per_query.sum(axis=0)
         # Numerators and denominators behind every ratio: [cohort][band] = exact neighbours, missed.
         report['counts'] = {str(c): {f'{lo}-{hi}': {'exact_neighbours': int(total[c - 1, b, 0]), 'missed': int(total[c - 1, b, 1])}
@@ -198,7 +228,7 @@ def summarize(root):
     return out
 
 
-def contrast(root, *, draws=5000, seed=20261120):
+def contrast(root, *, ef=None, draws=5000, seed=20261120):
     """Paired comparison of insertion orders on the same queries.
 
     For each seed and for the mean over seeds: the miss ratio in each order, and the as-arrived
@@ -208,7 +238,7 @@ def contrast(root, *, draws=5000, seed=20261120):
     builds = {}
     for path in sorted(Path(root).glob('*/report.json')):
         report = json.loads(path.read_text())
-        builds[(report['order'], report['seed'])] = np.load(path.parent / 'per-query.npy')
+        builds[(report['order'], report['seed'])] = _table(path.parent, ef)
     seeds = sorted({seed_ for _, seed_ in builds})
     rows = _draws(len(next(iter(builds.values()))), draws, seed)
     out = {}
@@ -236,6 +266,42 @@ def contrast(root, *, draws=5000, seed=20261120):
         block['seed_mean']['shuffled_minus_reversed'] = item(mean['shuffled'][0] - mean['reversed'][0],
                                                              mean['shuffled'][1] - mean['reversed'][1])
         out[name] = block
+    return out
+
+
+def robustness(sample, roots, output):
+    """Aggregates of builds searched at several widths: {root name: {backend: {ef: ...}}}.
+
+    For each width: recall, the seed-mean miss ratios of each order with paired contrasts, and the
+    missed neighbours by cohort. Counts and ratios only.
+    """
+    out = {'kind': 'EXPLORATORY insertion-order pilot: graph settings and search widths (aggregates only)',
+           'sample': json.loads((Path(sample) / 'sample.json').read_text()),
+           'bootstrap': {'draws': 5000, 'seed': 20261120, 'unit': 'query'}, 'settings': {}}
+    for root in map(Path, roots):
+        reports = [json.loads(path.read_text()) for path in sorted(root.glob('*/*/report.json'))]   # root/backend/build
+        widths = sorted({int(w) for r in reports for w in r['widths']})
+        block = {'M': reports[0]['M'], 'ef_construction': reports[0]['ef_construction'], 'backends': {}}
+        if any((r['M'], r['ef_construction']) != (block['M'], block['ef_construction']) for r in reports):
+            raise ValueError(f'mixed graph settings in {root}')
+        for backend in sorted({r['backend'] for r in reports}):
+            mine = [r for r in reports if r['backend'] == backend]
+            folder = root / backend
+            per_width = {}
+            for ef in widths:
+                builds = summarize(folder, ef)
+                per_width[str(ef)] = {
+                    'recall_at_100': {order: [b['recall_at_100'] for b in builds if b['order'] == order]
+                                      for order in ('appended', 'shuffled', 'reversed')},
+                    'missed_by_cohort': {f"{b['order']}-{b['seed']}": {c: sum(v['missed'] for v in b['counts'][c].values())
+                                                                     for c in '123'} for b in builds},
+                    'contrasts': contrast(folder, ef=ef)}
+            block['backends'][backend] = {
+                'builds': len(mine), 'build_minutes_median': float(np.median([r['build_seconds'] for r in mine]) / 60),
+                'indegree_by_insertion_decile': {f"{r['order']}-{r['seed']}": r['indegree_by_insertion_decile'] for r in mine},
+                'widths': per_width}
+        out['settings'][root.name] = block
+    Path(output).write_text(json.dumps(out, indent=2) + '\n')
     return out
 
 
@@ -269,9 +335,16 @@ def main():
     p.add_argument('--order', choices=('appended', 'reversed', 'shuffled'), required=True)
     p.add_argument('--seed', type=int, default=11)
     p.add_argument('--backend', choices=('faiss_hnsw', 'epzero'), default='faiss_hnsw')
+    p.add_argument('--M', type=int, default=16)
+    p.add_argument('--ef-construction', type=int, default=100)
+    p.add_argument('--efs', type=int, nargs='*', default=(), help='further search widths for the same build')
     p = sub.add_parser('summary')
     p.add_argument('root', type=Path)
     p = sub.add_parser('aggregate')
+    p.add_argument('sample', type=Path)
+    p.add_argument('output', type=Path)
+    p.add_argument('roots', type=Path, nargs='+')
+    p = sub.add_parser('robustness')
     p.add_argument('sample', type=Path)
     p.add_argument('output', type=Path)
     p.add_argument('roots', type=Path, nargs='+')
@@ -279,10 +352,14 @@ def main():
     if a.command == 'prepare':
         r = prepare(a.dense, a.inputs, a.output, count=a.count)
     elif a.command == 'run':
-        r = run(a.sample, a.output, order=a.order, seed=a.seed, backend=a.backend)
-        r = {k: r[k] for k in ('order', 'seed', 'build_seconds', 'recall_at_100', 'cohorts')}
+        r = run(a.sample, a.output, order=a.order, seed=a.seed, backend=a.backend, M=a.M,
+                ef_construction=a.ef_construction, efs=tuple(a.efs))
+        r = {k: r[k] for k in ('order', 'seed', 'build_seconds', 'recall_at_100', 'cohorts', 'widths') if k in r}
     elif a.command == 'aggregate':
         r = aggregate(a.sample, a.roots, a.output)['contrasts']
+    elif a.command == 'robustness':
+        r = {name: {b: list(v['widths']) for b, v in block['backends'].items()}
+             for name, block in robustness(a.sample, a.roots, a.output)['settings'].items()}
     else:
         r = summarize(a.root)
     print(json.dumps(r, indent=2))
