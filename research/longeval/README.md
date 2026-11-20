@@ -101,12 +101,11 @@ work ([docs/repair/](docs/repair/)).
 
 ## Running the code
 
-The tests need Python 3.11 or later. From the repository root:
+The tests need Python 3.11 or later. The requirements install the released Epzero engine (0.5.0) from PyPI. From the repository root:
 
 ```sh
 python -m pip install -r research/longeval/requirements.txt
-python -m pip install ./engine
-python -m pytest -q research/longeval/tests engine/python/tests/test_ir.py
+python -m pytest -q research/longeval/tests
 ```
 
 Some tests skip under certain conditions:
