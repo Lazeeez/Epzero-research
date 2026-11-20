@@ -1,23 +1,23 @@
 # NGFix/RFix direct competitor — integration record, 2026-11-18
 
-Status: **PACE job7141656's native synthetic/sample evidence is independently
-verified**. See [NGFIX_RESULTS.md](NGFIX_RESULTS.md):1,600 real plus256 synthetic
-conditions,185,600 independently checked score occurrences and500 matching packaged
+Status: **PACE job 7141656's native synthetic/sample evidence is independently
+verified**. See [NGFIX_RESULTS.md](NGFIX_RESULTS.md):1,600 real plus 256 synthetic
+conditions, 185,600 independently checked score occurrences and 500 matching packaged
 files. Development transfer is modest; using fitted queries to select ef fails the
 development recall targets. This is an integration reproduction, not a full-data
 paper reproduction or speedup claim. The full log has five Slurm working-directory
 fallback warnings; exact cause remains unresolved despite passing integrity checks.
 
 **V03 supersedes v02 for launch:** [failure record and corrected commands](NGFIX_LAUNCH_FAILURE_7141318.md).
-Job7141318's pasted log confirms the missing-module failure. The independently reproduced
-working-directory import defect is fixed with Python safe-path mode;22 tests pass.
+Job 7141318's pasted log confirms the missing-module failure. The independently reproduced
+working-directory import defect is fixed with Python safe-path mode; 22 tests pass.
 The native source, compiler flags and inputs below remain unchanged.
 
 The previous `build/longeval-ngfix-screen-02.tar.gz` (2,543,714 bytes), SHA-256
 `5532d5b8a7954efe33a291e1a583cfccaa743a9831f6aaaa859670fed66661f6`.
 The isolated package's 498 files are verified, its native wrapper compiles using
 only bundled non-system dependencies, and all 20 packaged input/output validation
-tests pass on Linux. Version01 failed an isolated missing-header check; do not use it.
+tests pass on Linux. Version 01 failed an isolated missing-header check; do not use it.
 See [submission and retrieval instructions](../../../../scripts/pace/LONGEVAL_NGFIX.md).
 
 [Paper](https://arxiv.org/html/2510.22316v1),
@@ -61,8 +61,8 @@ timing. The wrapper writes all IDs/scores, per-call timing/counters, stage times
 and before/after index states for independent verification. Upstream counters
 exclude the initial entry distance and are not equated to Epzero counters.
 
-The local wrapper compiled with GCC13.3.0, `-O3 -std=c++20 -fopenmp
--march=skylake-avx512`, the pinned checkout and extracted Ubuntu Boost1.83 headers.
+The local wrapper compiled with GCC 13.3.0, `-O3 -std=c++20 -fopenmp
+-march=skylake-avx512`, the pinned checkout and extracted Ubuntu Boost 1.83 headers.
 The local executable is `build/longeval-ngfix-driver-avx512`. This machine lacks
 AVX-512, so that binary has not been executed locally. The separately compiled PACE
 binary completed native fixture and real-sample execution with its identity recorded.
@@ -101,7 +101,7 @@ transfer, input preparation or download must occur in compute-node temporary loc
 The existing native-cost-02 package remains a separate, unchanged baseline job.
 
 The new job enforces that storage requirement and performs a synthetic native
-correctness run before downloading snapshot1. It tests four controls on the
+correctness run before downloading snapshot 1. It tests four controls on the
 verified sample and records 1,600 query conditions / 4,800 timed calls. The independent
 verifier checks every returned score, calibration-only setting selection, repeated
 counter stability, and unchanged query-time graph hashes. Tests explicitly reject
