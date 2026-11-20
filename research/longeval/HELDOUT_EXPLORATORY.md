@@ -87,9 +87,10 @@ Unjudged documents count as grade 0.
    explains why the nDCG@10 gap (about 1%) is much smaller than the neighbour-recall shortfall
    (about 6%).
 2. **Replacements are mostly unjudged.** Only 18–24% of HNSW replacements carry a judgment, and
-   unjudged documents count as non-relevant. The released judgments were presumably pooled from
-   exact-search-style runs, so the measured ANN gap is partly a pooling artifact and is likely an
-   upper bound on the true loss. The paper should state this. Judging a sample of the
+   unjudged documents count as non-relevant. The organisers' overview says the LLM grades cover
+   a depth-10 pool of the 24 systems submitted to Task 1 (CEUR Vol-4283, paper 374), so documents
+   that only an approximate index returns were mostly never graded. The measured ANN gap is
+   therefore partly a pooling artifact and is likely an upper bound on the true loss. The paper should state this. Judging a sample of the
    replacement documents would test it (see "Improvements").
 
 ## 3. Condensed-list check of the pooling bias
@@ -205,3 +206,301 @@ single-query results on the 381 test queries, as the mean of per-query medians:
 | HNSW, ef 3,200 | 31–32 ms | about 30,000 |
 | IVF at the calibrated nprobe 128 (primary jobs) | 129 → 184 ms | 160k → 228k comparisons |
 | IVF at the frozen snapshot-1 nprobe | up to 243 ms | 302k comparisons |
+
+## 6. External validation: the official baseline and its leaderboard position
+
+The code is `heldout_robustness.py`, with output in `build/longeval-heldout-robustness-02/`. The
+official numbers come from the extended overview of the CLEF 2026 LongEval lab (CEUR Vol-4283,
+paper 374, Tables 3 and 4).
+
+**Our exact search reproduces the organisers' dense baseline.** The table gives nDCG@10 over every
+query that the label set judged at each snapshot:
+
+| Labels | Ours (s1 / s2 / s3) | Official `baseline-qwen3-4b` | Largest difference |
+| --- | --- | --- | --- |
+| DCTR (149 / 97 / 135 queries) | 0.2334 / 0.2015 / 0.1330 | 0.234 / 0.201 / 0.133 | 0.0006 |
+| GPT-OSS-120B (381 queries) | 0.7896 / 0.7953 / 0.7989 | 0.791 / 0.796 / 0.800 | 0.0014 |
+
+The overview states 100 and 136 DCTR queries for snapshots 2 and 3, but the released files contain
+97 and 135.
+
+**Definitions.** The official run is `baseline-qwen3-4b`. The population is every query with a
+judgment in that label set at that snapshot, taken from the released test judgments (DCTR click
+labels and GPT-OSS-120B grades); unjudged documents count as grade 0. Our values are rounded to
+four decimals and the published ones have three; the difference is taken against the published
+three-decimal value. In the comparison below the other 21 leaderboard entries keep their published
+values, so the ranks are a counterfactual about this one entry only.
+
+**Would an approximate index have changed the official results?** The table places the baseline,
+served through each index, among the 21 other official systems. Values are means over three seeds,
+and all three seeds give the same ranks.
+
+| Index | DCTR rank (s1 / s2 / s3) | DCTR difference from exact | GPT-OSS-120B rank | GPT-OSS-120B difference from exact |
+| --- | --- | --- | --- | --- |
+| Exact (official) | 16 / 20 / 18 | — | 5 / 5 / 5 | — |
+| Epzero HNSW, ef 200 | 16 / 20 / **19** | −0.003 / −0.003 / −0.002 | 5 / 5 / 5 | −0.006 / −0.010 / −0.012 |
+| FAISS HNSW, ef 200 | 16 / 20 / 18 | −0.003 / −0.004 / 0.000 | 5 / 5 / 5 | −0.005 / −0.006 / −0.008 |
+| FAISS HNSW, calibrated | 16 / 20 / 18 | −0.003 / −0.003 / 0.000 | 5 / 5 / 5 | −0.005 / −0.005 / −0.006 |
+| IVF frozen, calibrated | 16 / 20 / **19** | −0.003 / −0.001 / −0.006 | 5 / 5 / 5 | −0.006 / −0.008 / −0.009 |
+
+The lab's robustness measure is the Relative Change, RC = (nDCG at snapshot 1 − nDCG at snapshot
+t) / nDCG at snapshot 1. On DCTR, as in the overview's Table 4:
+
+| Index | RC at snapshot 2 | RC at snapshot 3 |
+| --- | --- | --- |
+| Exact (ours; the overview reports 0.139 and 0.432) | 0.136 | 0.430 |
+| Epzero HNSW, ef 200 | 0.139 | 0.432 |
+| FAISS HNSW, ef 200 | 0.141 | 0.422 |
+| FAISS HNSW, calibrated | 0.135 | 0.422 |
+| IVF frozen, calibrated | 0.128 | 0.449 |
+
+The index changes the baseline's RC by at most 0.02. Across the official systems at snapshot 3, RC
+ranges from 0.17 to 0.56 for all but two outliers. The leaderboard rank changes in one case only:
+at snapshot 3 on DCTR, where four systems sit within 0.002 of each other, the baseline drops one
+place under two of the four indexes. At about 95% neighbour recall, the lab's published
+conclusions about this baseline would therefore not have changed.
+
+## 7. Where the loss sits: the per-query distribution
+
+These figures use the primary panel of 374 queries with GPT-OSS-120B labels, with seeds averaged
+within each query. The per-query means equal the primary gaps exactly.
+
+| Index, snapshot 3 | Mean gap | Queries with identical nDCG@10 | Queries losing more than 0.05 | Queries losing more than 0.10 | Mean of the worst 5% | Share of the total loss from the worst 5% |
+| --- | --- | --- | --- | --- | --- | --- |
+| Epzero HNSW, ef 200 | −0.0117 | 85.3% | 7.0% | 2.9% | −0.218 | 81% |
+| FAISS HNSW, ef 200 | −0.0069 | 87.4% | 6.1% | 2.1% | −0.141 | 80% |
+| FAISS HNSW, calibrated | −0.0055 | 88.5% | 4.3% | 1.3% | −0.116 | 85% |
+| IVF frozen, calibrated | −0.0080 | 82.1% | 5.1% | 2.4% | −0.123 | 71% |
+
+At snapshot 1 the share of unaffected queries is 92% for HNSW; it falls to 85–89% by snapshot 3.
+The average gap is therefore not a small loss spread over all queries. Most queries are untouched,
+and a few lose a lot: the largest single-query loss is −0.87. A mean of about 0.01 understates
+what an affected user sees.
+
+**Definitions.** Every share uses the 374 panel queries as its denominator, for every arm. A query
+counts as identical when its seed-averaged difference is zero. The worst 5% are the 18 queries
+with the lowest difference (374 ÷ 20, rounded down). The last column divides the sum of their
+differences by the sum of all negative differences, so queries that gain are not netted against
+the loss.
+
+## 8. Why a 50-query calibration missed the drift
+
+**Sampling noise is enough to explain it.** Per-query neighbour recall at ef 200 has a standard
+deviation of 0.11–0.12 on the test queries. A 50-query mean therefore has a standard error of
+about 1.6 points, which is larger than the 1-point drift it has to detect.
+
+The simulation below draws calibration sets from the test-query distribution (5,000 draws per
+seed) and applies the protocol's rule: the smallest ef in {100, 200, 400, 800} whose mean recall
+reaches 95%. It reports how often calibration stays at ef 200, although the true test recall there
+is below the target.
+
+| Calibration queries | Epzero, snapshot 3 (true recall 93.5%) | FAISS, snapshot 3 (true recall 93.6%) |
+| --- | --- | --- |
+| 25 | 32% | 32% |
+| 50 (the protocol) | 21% | 22% |
+| 100 | 11% | 12% |
+| 200 | 4% | 4% |
+| 400 | 1% | 1% |
+
+A normal approximation gives 19% and 4% for 50 and 200 queries, which agrees with the simulation.
+Detecting the drift with 95% probability needs about 200 calibration queries.
+
+**Definitions.** Queries are drawn with replacement from the 381 test queries. Each draw is
+applied to the incremental index of one seed at snapshot 3, and the outcome is averaged over the
+three seeds. "Stays at ef 200" means that the rule selects ef 200, which is too narrow because the
+true test recall there is below 95%. With 50 queries the rule selects ef 400 in 63% of draws for
+Epzero (63% for FAISS), ef 800 in 15% (14%), and no width in 1% (1%).
+
+**Testing the change instead of the level.** The same queries are searched at every snapshot, so a
+monitor can test the per-query change in recall, which removes the variation between queries.
+Recall at snapshots 1 and 3 is strongly correlated within a query (0.92 for Epzero, 0.95 for
+FAISS). The change therefore has a standard deviation of 0.050 and 0.040, against 0.12 for the
+level, and its standard error with 50 queries is 0.7 and 0.6 points instead of 1.6. That is still
+not enough. The table gives how often a one-sided paired t-test at 5% detects the fall between
+snapshots 1 and 3 (5,000 draws per seed from the test queries, averaged over seeds):
+
+| Queries | Epzero (fall of 0.98 points) | FAISS (fall of 0.83 points) |
+| --- | --- | --- |
+| 25 | 35% | 33% |
+| 50 | 51% | 51% |
+| 100 | 73% | 73% |
+| 200 | 89% | 90% |
+| 400 | 96% | 98% |
+
+Both views agree: 50 queries detect a one-point fall about half the time at best, about 200
+queries are needed for 90%, and 400 for 95%. The standard deviation of the change differs between
+seeds (Epzero: 0.043 / 0.071 / 0.036), so the figures are averages over the three indexes.
+
+**A possible second cause, not established.** The 50 development queries score 1.0–2.4 points
+higher recall than the test queries at the same ef 200, in all six backend × snapshot cells. With
+50 queries this is not statistically reliable (permutation p from 0.13 to 0.55), so the paper
+should not claim a shift between training and test queries.
+
+## 9. The judging pool, and grades carried across snapshots
+
+**The released LLM grades depend only on the query and the document.** In the released
+GPT-OSS-120B labels, 32,917 query–document pairs appear at more than one snapshot, and none has
+conflicting grades. The same holds for the GPT-OSS-20B labels. A grade can therefore be carried
+from one snapshot to another, and new judging should be deduplicated by pair, not by snapshot.
+
+**Size of the pool, on one ledger.** `heldout_pool.py` writes one ledger with a row for every
+(query, document, snapshot) that appears in a top 10, and the rankings that returned it. The pool
+is exact search plus every primary held-out run, at all seeds and snapshots. Two units are kept
+apart:
+
+- an **occurrence** is one ledger row, so a pair retrieved at three snapshots counts three times;
+- a **pair** is a distinct query and document, which is the unit a judge is asked about.
+
+| Quantity | All 381 test queries | Primary panel (374 queries) |
+| --- | --- | --- |
+| **Occurrences** (query, document, snapshot) in the pool | 12,561 | 12,317 |
+| Unjudged at the snapshot where retrieved | 876 | 845 |
+| — of those, graded by the organisers at another snapshot | 234 (2 / 95 / 137 at s1 / s2 / s3) | 222 (2 / 89 / 131) |
+| — of those, never graded | 642 (227 / 204 / 211) | 623 (222 / 203 / 198) |
+| **Distinct pairs** (query, document) in the pool | 5,511 | 5,383 |
+| Graded by the organisers at some snapshot | 5,066 | 4,957 |
+| Never graded at any snapshot | 445 | 426 |
+| Pairs with at least one unjudged occurrence | 635 | 607 |
+| — of those, fillable by carry-over | 190 | 181 |
+| — of those, never graded | 445 | 426 |
+
+Mind the units when quoting these figures: 635 and 190 are pairs, while 234 = 2 + 95 + 137 are
+occurrences. The all-lists IVF setting adds no row to the ledger, because its top 10 never leaves
+this pool.
+
+**The exploratory runs more than double the judging work.** Adding the shuffled-order runs and the
+ef sweep of section 5 grows the pool to 6,298 pairs, of which 1,138 were never graded (6,117 and
+1,070 on the panel). A judge that fills the pool has 445 new pairs to grade for the primary arms,
+and 1,138 if the exploratory arms are to be scored on the same footing.
+
+**Carried-over grades.** Each pair that the organisers judged at another snapshot takes that
+grade, and both the exact and the approximate rankings are rescored against the recomputed ideal
+DCG. The panel is the primary 374 queries, with seeds averaged within each query.
+
+| Arm (calibrated) | Gap s1 / s2 / s3, official labels | Gap s1 / s2 / s3, grades carried over |
+| --- | --- | --- |
+| Epzero HNSW | −0.0057 / −0.0102 / −0.0117 | −0.0055 / −0.0085 / −0.0089 |
+| FAISS HNSW | −0.0048 / −0.0049 / −0.0055 | −0.0047 / −0.0043 / −0.0033 |
+| IVF, frozen | −0.0065 / −0.0079 / −0.0080 | −0.0065 / −0.0055 / −0.0046 |
+
+The carry-over removes a quarter to two-fifths of the snapshot-3 gap without any new judging. It
+is lopsided, though: on the panel it adds 131 labels at snapshot 3, 89 at snapshot 2 and only 2 at
+snapshot 1 (137 / 95 / 2 over all 381 queries). The change over time under carried grades is
+therefore biased towards zero or positive values (Epzero −0.0034, FAISS +0.0015, IVF +0.0019) and
+must not be read as a result. A full fill of the 445 never-graded pairs is needed for that.
+
+**Coverage of the top 10.** Under the official labels, exact search has 99.6% / 99.5% / 99.5% of
+its top-10 documents graded at snapshots 1 / 2 / 3, and Epzero has 97.6% / 97.0% / 96.6%. With
+carried grades the figures are 99.7% / 99.8% / 99.9% and 97.7% / 98.0% / 98.2%.
+
+**Sensitivity to the carrying rule.** The table carries a grade only to the occurrences in the
+pool. Carrying it instead to every snapshot at which the document exists, whoever retrieved it,
+adds 1,508 / 5,054 / 7,017 labels on the panel and moves no gap by more than 0.00012 (Epzero
+−0.0055 / −0.0084 / −0.0090; FAISS −0.0047 / −0.0042 / −0.0033; IVF −0.0065 / −0.0055 / −0.0045).
+
+The numbers were recomputed on 21 November 2026 from the verified held-out evidence with
+`heldout_pool.py`; the official-label rows reproduce the primary analysis exactly. The output is
+`build/longeval-heldout-pool-01/report.json`. The ledger itself holds query and document
+identifiers and is not published.
+
+## 10. Insertion-order pilot: reversing the order moves the blind spot
+
+This is a mechanism pilot on a sample, run on a local machine on 20 November 2026. It is not a
+result about the full collection. The code is `insertion_pilot.py`; the outputs are in
+`build/longeval-insertion-pilot-01/` (FAISS) and `build/longeval-insertion-pilot-02-epzero/`.
+
+**Setup.** A fixed sample of 300,000 snapshot-3 documents keeps each document's arrival snapshot
+(156,741, 81,467 and 61,792 documents). Each HNSW index uses the study's settings (M 16,
+efConstruction 100, inner product, one thread) and is searched at ef 200 with the 381 test
+queries. Exact neighbours are computed inside the sample. Each index is built in three orders:
+
+- **as arrived:** snapshot-1 documents first, in lexical ID order within each arrival group, as
+  the collection grew;
+- **reversed:** snapshot-3 documents first, then snapshot 2, then snapshot 1. Only the three
+  blocks are reversed; lexical ID order is kept within each block;
+- **shuffled:** one random permutation of all documents, seeded by the build seed, so both
+  implementations insert the same sequence for a given seed.
+
+The sample is the 300,000 documents with the smallest SHA-256 of a fixed prefix and the document
+ID. The SHA-256 of the sampled ID list is recorded in the summary file below.
+
+**Miss ratio.** The table gives the rank-standardized miss ratio of snapshot-3 arrivals against
+snapshot-1 arrivals, with 95% query-bootstrap intervals (5,000 draws), for seeds 11 / 29 / 47:
+
+| Implementation | As arrived | Shuffled | Reversed |
+| --- | --- | --- | --- |
+| FAISS HNSW | 1.40 / 1.44 / 1.38 | 1.10 / 1.08 / 1.07 | 0.82 / 0.84 / 0.85 |
+| Epzero HNSW | 1.46 / 1.49 / 1.48 | 1.14 / 1.08 / 1.07 | 0.82 / 0.82 / 0.82 |
+
+The as-arrived intervals all lie above 1 (lowest bound 1.22). The reversed intervals lie below 1
+in five of the six builds; the sixth just includes 1 (FAISS, seed 47: [0.713, 1.003]). The shuffled
+intervals include or touch 1 (bounds from 0.93 to 1.27).
+
+**Counts behind the ratios.** Every build is scored on the same 38,100 exact neighbours (381
+queries × 100): 22,022, 9,200 and 6,878 from the arrival groups of snapshots 1, 2 and 3. The table
+gives the missed neighbours by arrival group, for seeds 11 / 29 / 47:
+
+| Build | Snapshot-1 arrivals | Snapshot-2 arrivals | Snapshot-3 arrivals |
+| --- | --- | --- | --- |
+| FAISS, as arrived | 1,004 / 1,018 / 1,014 | 596 / 602 / 587 | 457 / 477 / 455 |
+| FAISS, shuffled | 1,134 / 1,169 / 1,176 | 530 / 537 / 534 | 406 / 411 / 407 |
+| FAISS, reversed | 1,256 / 1,270 / 1,187 | 546 / 538 / 519 | 334 / 347 / 331 |
+| Epzero, as arrived | 991 / 998 / 1,028 | 604 / 596 / 615 | 472 / 487 / 494 |
+| Epzero, shuffled | 1,156 / 1,181 / 1,180 | 551 / 541 / 563 | 427 / 417 / 411 |
+| Epzero, reversed | 1,299 / 1,285 / 1,298 | 576 / 559 / 568 | 348 / 344 / 346 |
+
+The ratio divides the observed misses of a later group by the misses expected if that group had
+the snapshot-1 group's miss rate in each rank band (1–10, 11–50, 51–100). A band in which the
+reference group has no exact neighbour would contribute no expected misses; this did not occur.
+The counts by rank band, every ratio and the unrounded intervals of all 18 builds are in
+[`insertion-pilot-summary.json`](insertion-pilot-summary.json), which holds aggregates only.
+
+**Paired comparison of the orders.** Every build is resampled with the same query draws, so the
+difference between two orders is paired. The table gives the mean over the three seeds with 95%
+intervals:
+
+| Implementation | Later group, against snapshot-1 arrivals | As arrived | Shuffled | Reversed | As arrived − reversed |
+| --- | --- | --- | --- | --- | --- |
+| FAISS | snapshot 3 | 1.41 [1.24, 1.59] | 1.08 [0.96, 1.21] | 0.84 [0.72, 0.96] | +0.57 [+0.45, +0.71] |
+| FAISS | snapshot 2 | 1.36 [1.22, 1.51] | 1.06 [0.96, 1.17] | 0.99 [0.90, 1.09] | +0.36 [+0.24, +0.49] |
+| FAISS | snapshots 2 and 3 together | 1.38 [1.25, 1.51] | 1.07 [0.97, 1.17] | 0.93 [0.84, 1.02] | +0.45 [+0.35, +0.56] |
+| Epzero | snapshot 3 | 1.48 [1.32, 1.65] | 1.10 [0.99, 1.21] | 0.82 [0.71, 0.94] | +0.65 [+0.53, +0.80] |
+| Epzero | snapshot 2 | 1.38 [1.25, 1.53] | 1.08 [0.99, 1.18] | 1.01 [0.91, 1.12] | +0.37 [+0.25, +0.50] |
+| Epzero | snapshots 2 and 3 together | 1.42 [1.30, 1.56] | 1.09 [1.00, 1.18] | 0.93 [0.83, 1.03] | +0.49 [+0.39, +0.61] |
+
+The difference is also above zero in each of the six builds: the lowest interval bound is +0.375
+for snapshot-3 arrivals and +0.300 for snapshots 2 and 3 together. The upper bound of the reversed
+snapshot-3 ratio, unrounded, is between 0.934 and 1.003; only FAISS seed 47 exceeds 1.
+
+**The ratio of the pooled later group shrinks but does not reverse.** With "later" defined as snapshots 2 and 3
+together, the reversed ratio is 0.92–0.94 and all six intervals include 1. The snapshot-2 group is
+the middle block in both orders, so it dilutes the contrast: in the reversed builds its own ratio
+is 0.98–1.02. A full-scale experiment that uses the pooled definition should expect a clear
+reduction (+0.45 and +0.49 here) and no reversal. The reversal shows only between the two extreme
+blocks.
+
+![Miss ratio of snapshot-3 arrivals against snapshot-1 arrivals, by insertion order](paper/figures/fig-insertion-pilot.png)
+
+*Mean over three seeds with 95% query-bootstrap intervals; the short ticks are the single seeds.
+300,000-document sample, ef 200.*
+
+**Incoming links.** Base-layer incoming links fall with insertion position in every order and in
+both implementations: 28.1–29.4 for the first tenth of insertions, 11.9–14.5 for the last tenth.
+By arrival group, in the as-arrived FAISS build the means are 23.0 / 17.0 / 14.9 for snapshots 1 /
+2 / 3; in the reversed build they are 15.5 / 21.1 / 26.7. At most 0.02% of documents have no
+incoming link, so later insertions are weakly connected, not unreachable.
+
+**Recall.** Recall@100 is 0.942–0.947 in every order, so order redistributes misses without
+removing them. This matches the held-out shuffled-order result in section 5.
+
+**Reading.** The three ratios fit one account. Later documents are about 1.1 times harder to
+retrieve in themselves (the shuffled ratio), and insertion position multiplies or divides that by
+about 1.3. A practitioner report describes the opposite direction for an early small group
+followed by a much larger batch (<https://github.com/chroma-core/chroma/issues/7963>), which is
+why the reversed arm is the decisive test.
+
+**Limits.**
+
+- The sample is 18% of snapshot 3, at one search width.
+- The reversed arm has not been run at full scale. That is the confirming experiment.
+
