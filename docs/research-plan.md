@@ -2,7 +2,7 @@
 
 Draft for advisor review, 2 November 2026. Evidence base:
 [the literature review](../reports/Graph%20vector%20search%20literature%20review.md) and
-[the performance log](performance.md).
+[the performance log](https://github.com/Lazeeez/Epzero/blob/main/docs/performance.md).
 
 ## Summary
 
