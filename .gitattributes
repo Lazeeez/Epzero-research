@@ -1,0 +1,4 @@
+# Frozen research files are verified byte for byte against FINAL_PROTOCOL_V1_FREEZE.json,
+# so text files keep LF line endings on every platform. Binary files are detected and left alone.
+research/** text=auto eol=lf
+scripts/pace/** text=auto eol=lf
