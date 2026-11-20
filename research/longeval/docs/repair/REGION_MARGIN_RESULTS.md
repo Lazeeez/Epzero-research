@@ -12,10 +12,10 @@ native method benchmark and not evidence that all regional repair is ineffective
 | 1 | 30 | 17 | 3 | 0 |
 | 2 | 30 | 20 | 3 | 0 |
 
-These are58 proposal/split occurrences from overlapping subsets of the same
-previously recorded32 proposals, not58 independent edges. Each radius is the
+These are 58 proposal/split occurrences from overlapping subsets of the same
+previously recorded 32 proposals, not 58 independent edges. Each radius is the
 distance to the nearest other fitting query. Even the largest ratio of certified
-radius to that distance is only0.04558; split maxima are0.04558,0.01029 and0.04329.
+radius to that distance is only 0.04558; split maxima are 0.04558,0.01029 and 0.04329.
 The median ratio is zero in every split because most edges fail source-relative
 positive progress even at their generating query.
 
@@ -37,9 +37,9 @@ Seven mathematical/input tests pass, including attainment at the worst point of
 the ball and a counterexample to interpreting certificate failure as transfer
 failure. Input hashes match the frozen sample and witness proposal report. The
 audit accesses no tuning/development vectors in its computation and performs no
-new retrieval evaluation. All381 held-out outcomes remain untouched.
+new retrieval evaluation. All 381 held-out outcomes remain untouched.
 
 Code: `region_margin.py`; execution driver: `build/run-longeval-region-margin-01.py`.
-Evidence: `build/longeval-region-margin-01/report.json`, with all58 per-proposal
+Evidence: `build/longeval-region-margin-01/report.json`, with all 58 per-proposal
 records, the frozen protocol and source/input/plan hashes. No PACE job is needed
 for this rejected rule.
