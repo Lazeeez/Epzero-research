@@ -120,11 +120,9 @@ downloading any data. The runbooks in `scripts/pace/` give the exact commands. T
 `LONGEVAL_TEST_QUERIES.md`, `LONGEVAL_HELDOUT.md`, `LONGEVAL_HELDOUT_COST.md` and
 `LONGEVAL_HELDOUT_EXT.md`.
 
-To check that the frozen code is unchanged:
-
-```sh
-python -c "import json,hashlib,pathlib; f=json.load(open('research/longeval/FINAL_PROTOCOL_V1_FREEZE.json'))['files']; print([n for n,h in f.items() if hashlib.sha256(pathlib.Path(n).read_bytes()).hexdigest()!=h] or 'all frozen files match')"
-```
+To check that the frozen code is unchanged, run `python scripts/verify_freeze.py`. To run the tests, the
+freeze check and the synthetic pilot in one go, run `bash scripts/verify.sh`. [REPRODUCE.md](../../REPRODUCE.md)
+describes every level of reproduction, up to the full study.
 
 ## Data policy
 
