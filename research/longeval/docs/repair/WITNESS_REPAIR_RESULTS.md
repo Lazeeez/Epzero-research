@@ -12,9 +12,9 @@ it does not overwrite that evidence.
 
 ## Experiment and results
 
-The existing 8,192-row snapshot-1 graph, seed11, was reused. Fifty calibration queries
+The existing 8,192-row snapshot-1 graph, seed 11, was reused. Fifty calibration queries
 proposed 32 edges, with at most two per source; the overlay was serialized and frozen
-before evaluating 50 development queries. Search uses ef100 at two distance caps.
+before evaluating 50 development queries. Search uses ef 100 at two distance caps.
 Matched controls use the same added-edge counts at the same sources, with either
 direct calibration-answer destinations or deterministic random destinations. Wider
 search on the original graph is capped to each arm's actual distance work.
@@ -26,15 +26,15 @@ search on the original graph is capped to each arm's actual distance work.
 | Calibration / 2,000 | 94.04% | 94.08% | 94.04% | 2 / 0 |
 | Development / 2,000 | 93.40% | 93.40% | 93.42% | 0 / 1 |
 
-The +0.02 percentage-point development change at cap1,000 is one additional exact
+The +0.02 percentage-point development change at cap 1,000 is one additional exact
 neighbor across 5,000 result positions. The development minimum recall and count
-below .90 do not improve. At cap2,000 direct-answer edges achieve 93.42%, versus
+below .90 do not improve. At cap 2,000 direct-answer edges achieve 93.42%, versus
 93.40% for witness edges, with slightly different actual work. None establishes a
 useful method advantage. These are exploratory descriptive findings, not significance
 claims. The sampled graph may omit full-corpus traps.
 
-The witness overlay is read by 24/50 development queries at cap1,000 and 28/50 at
-cap2,000. Thus lack of transfer is not simply that no development query encountered
+The witness overlay is read by 24/50 development queries at cap 1,000 and 28/50 at
+cap 2,000. Thus lack of transfer is not simply that no development query encountered
 an added-edge source. Reading an edge does not imply admitting its destination.
 
 Fitting low/high searches use 249,960 distance calls. Exact references were reused;
@@ -58,8 +58,8 @@ using external document IDs and the unchanged 50/50 query split.
 | 2 | 406 / 5,000 = 8.12% | 28 / 50 |
 | 3 | 381 / 5,000 = 7.62% | 30 / 50 |
 
-At snapshot3, calibration answers contain only 3 of 209 native-ef200 development
-misses for seed29 and 3 of 206 for seed47. Seed11 is an important exception: 89 of
+At snapshot 3, calibration answers contain only 3 of 209 native-ef200 development
+misses for seed 29 and 3 of 206 for seed 47. Seed 11 is an important exception: 89 of
 400 misses occur in calibration answers, including 87 of Q1's 100 missing neighbors.
 Q2 has zero calibration-answer overlap. Do not claim uniformly low coverage for
 every failed query or every construction seed.
