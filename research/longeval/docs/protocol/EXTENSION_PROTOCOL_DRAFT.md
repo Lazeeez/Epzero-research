@@ -40,6 +40,18 @@ pinned by tests). The serving stack and model revision are those of the judge pi
 
 - **TO DECIDE:** the sampling setting (provider default or temperature 0) and the answer cap, from
   the pilot's repeat agreement.
+- **What the released grades are.** The organisers sent no sampling parameter, so each released
+  grade is one sample at their provider's default. The pilot's agreement between two repeats of
+  the same setting is therefore the ceiling for any agreement with the released grades, and the
+  validation result is read against it.
+- **One configuration per grading folder.** Before the first request, the grading run records
+  the checksums of the inputs in their order, the model revision, the prompt, the parser, the
+  request parameters, the answer cap and the server settings. A run that resumes under anything
+  else is refused (`coverage.grade`).
+- **Usable grades.** A pair has a grade only if an answer parsed. An answer that does not parse
+  is asked again with the same request, at most twice more; every attempt is kept and the first
+  parsed answer is the grade. A pair that never parses has no grade. The organisers' pipeline
+  wrote grade 0 in that case; here the pair is reported as missing.
 - **Validation.** As recorded in `JUDGE_VALIDATION_THRESHOLDS.md`, on 1,000 officially graded
   pairs that exclude the 270 pilot pairs. **TO DECIDE:** approval of the thresholds, or the
   stricter bar of its section 5.
@@ -69,6 +81,13 @@ that of exact search.
 - **Normalization.** The ideal DCG of a query at a snapshot is computed over the pool documents
   of that query at that snapshot, under the grades visible in that estimate. A query whose ideal
   DCG is zero scores 0 and is counted; the count is reported.
+- **Scoring universe.** The documents that count for a query at a snapshot are written to a file
+  when the pairs are drawn, from the contributing runs chosen above, and the analysis scores on
+  exactly that file. The contributing runs and the checksum of the universe are both reported.
+- **Completeness.** The primary estimates need a usable grade for every validation pair and
+  every pair of the scoring universe. If one is missing, the analysis stops; a partial run can
+  only produce a report marked as a diagnostic, with the missing pairs counted by snapshot and
+  by whether the release graded them.
 - **Panel.** The 374 queries of the frozen primary panel.
 
 ### E2. Insertion order at full scale
@@ -92,7 +111,12 @@ stratified draws of snapshot-1 size.
 
 200 pairs, blind to role: 100 documents dropped from an exact top 10 and 100 documents put in
 their place, drawn over the three primary arms, their seeds and the three snapshots (`audit.py`).
-Pairs that play both roles are excluded. Grades use the 0–2 scale of the organisers' prompt.
+Pairs that play both roles are excluded. Grades use the 0–2 scale of the organisers' prompt, and
+an annotator can abstain on a pair; abstentions are counted and left out of the grade statistics.
+The sample was drawn on 21 November 2026, before any local judge output existed.
+
+- **Estimand.** The mean grade over distinct pairs of each role. It is not the rank-weighted loss
+  over all substitutions: the kit records how often a pair occurs, not at which ranks.
 
 - **Outcome.** The mean human grade by role and their difference, with a query-clustered
   bootstrap interval.
@@ -139,6 +163,7 @@ python -m research.longeval.freeze_extension BUILD_PARENT    # the folder that h
 ```
 
 It writes a receipt with the time, the commit and the SHA-256 of this protocol, the thresholds
-record, the judge, audit and insertion-order code, their job scripts and runbooks, and the pinned
-model and package lists. It refuses to run while the protocol holds an open decision, and it
+record, the judge, coverage, audit, evaluation and insertion-order code, their job scripts and
+runbooks, and the pinned model and package lists. It refuses if any of those files has an
+uncommitted change. It refuses to run while the protocol holds an open decision, and it
 records which follow-up outcomes already existed at that moment.
