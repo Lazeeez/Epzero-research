@@ -76,7 +76,7 @@ work ([docs/repair/](docs/repair/)).
 | `*.py` | The experiment code (module map below) |
 | `tests/` | Unit and regression tests (pytest) |
 | `paper/` | Manuscript, figure script and rendered figures |
-| `docs/protocol/` | The approved protocol candidate and the earlier draft; for the follow-up, the judge-validation thresholds and the extension protocol draft |
+| `docs/protocol/` | The approved protocol candidate and the earlier draft; for the follow-up, the judge-validation thresholds, the extension protocol draft and the design record of the full-scale insertion-order experiment |
 | `docs/data/` | Release audit, vector ingestion, encoder and query-encoding validation |
 | `docs/development/` | Development experiments on training queries: trajectories, failures, IVF, cost |
 | `docs/repair/` | Pre-registered repair screens (RQ4), including the NGFix/RFix reproduction |
