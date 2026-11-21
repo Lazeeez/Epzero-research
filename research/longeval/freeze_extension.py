@@ -20,7 +20,8 @@ RECEIPT = HERE / 'EXTENSION_PROTOCOL_V1_FREEZE.json'
 OPEN = 'TO DECIDE'
 FROZEN = ('research/longeval/docs/protocol/EXTENSION_PROTOCOL_V1.md',
           'research/longeval/docs/protocol/JUDGE_VALIDATION_THRESHOLDS.md',
-          'research/longeval/judge.py', 'research/longeval/judge-requirements.txt', 'research/longeval/judge-model.json',
+          'research/longeval/judge.py', 'research/longeval/judge-requirements.txt', 'research/longeval/judge-kernels.txt',
+          'research/longeval/judge-model.json',
           'research/longeval/coverage.py', 'research/longeval/audit.py', 'research/longeval/insertion_pilot.py',
           'research/longeval/heldout_pool.py', 'research/longeval/evaluation.py',
           'scripts/pace/longeval-judge-pilot.sbatch', 'scripts/pace/longeval-judge-server.yaml',
