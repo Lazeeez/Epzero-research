@@ -30,15 +30,18 @@ rule. Its calibration never widened the search; at the next wider setting its ch
 the margin (exploratory). For scale, exact search's own change over the same snapshots is
 +0.0070 [−0.0000, +0.0139].
 
-**The insertion-order result** (exploratory). HNSW misses documents inserted at later snapshots
-about 1.6 times as often as earlier ones at the same exact rank; IVF shows about 1.15 times.
-The excess follows the insertion position. On the full collection, building the same documents
-in reversed arrival order brings the ratio of the latest arrivals from 1.60–1.75 to 0.97–0.98, a paired change of +0.62 [+0.46, +0.80] and +0.77 [+0.57, +0.98] for
-the two implementations. In shuffled builds, where position is independent of the document, the
-miss rate still rises steadily with insertion position, from 5% in the first tenth of insertions
-to 7.4–7.8% in the last. The effect of position replicates on two public benchmarks with randomly
-assigned arrival groups. A smaller part of the excess, a ratio of about 1.2, stays with the later
-documents in every order.
+**The insertion-order result** (exploratory). Compared with first arrivals of the same query at
+the same exact rank, HNSW misses documents inserted at later snapshots 1.25–1.33 times as often;
+IVF 1.08–1.10 times. The excess follows the insertion position. On the full collection, the
+latest arrivals are missed 1.28–1.42 times as often as the first when the index is built as they
+arrived, as often (1.00–1.03) when it is built in random order, and 0.82 times as often when they
+are inserted first. In shuffled builds the miss rate rises steadily with insertion position, from
+5% in the first tenth of insertions to 7.4–7.8% in the last. The effect of position replicates
+on two public benchmarks with randomly assigned arrival groups. Pooled over queries the ratios
+are higher, about 1.6 as arrived, because queries whose neighbours are recent documents are
+harder in every order. The contrast recorded before the full-collection run, the pooled
+as-arrived ratio minus the reversed one, is +0.62 [+0.46, +0.80] and +0.77 [+0.57, +0.98] for the
+two implementations.
 
 Further exploratory findings:
 
@@ -99,8 +102,9 @@ Our contributions are:
 - an exact equivalence result for incremental maintenance versus rebuild under append-only growth;
 - a diagnosis that ties the gap's change to neighbour-recall drift, and a measurement of how many
   calibration queries are needed to detect that drift;
-- evidence that an HNSW index built by appending under-retrieves its latest arrivals, and that
-  the insertion position causes most of the excess;
+- evidence that an HNSW index built by appending under-retrieves its latest arrivals, that
+  insertion position accounts for this within a query, and that a pooled comparison overstates it
+  because queries about recent documents are harder;
 - an account of what the released labels can support, including how much of the measured gap is
   judgment coverage;
 - pre-registered negative results for four graph-repair strategies at equal search work;
@@ -138,7 +142,7 @@ insertion order.
 
 **Insertion order.** Elliott and Clark [20] show that HNSW recall depends on the order of
 insertion. We add which documents bear the loss when a collection grows by appending: the latest
-arrivals do, and inserting them first removes their excess (§4.4).
+arrivals do, and inserting them first reverses it (§4.4).
 
 **LLM relevance labels.** The lab's overview [6] reports that its LLM assessors grade far more
 documents as relevant than click-derived labels do. We quantify this for the labels we use
@@ -386,26 +390,36 @@ This analysis was designed after the held-out results were seen, so it is explor
 how often approximate search misses an exact top-100 neighbour, within exact-rank bands (1–10,
 11–50, 51–100), because newer documents can sit at different depths of the ranking. The
 rank-standardized miss ratio compares the misses among documents inserted after snapshot 1 with
-the misses they would have at the snapshot-1 cohort's rates. Its intervals come from a query
-bootstrap with 2,000 draws.
+the misses they would have at the snapshot-1 cohort's rates. This ratio pools all queries. We
+also report a within-query ratio: the Mantel–Haenszel risk ratio stratified by query and rank
+band [23], which compares a later document only with snapshot-1 documents retrieved for the same
+query at the same depth. We added it after the full-collection results below were seen, to
+separate the documents from the queries that retrieve them. Intervals come from a query
+bootstrap.
 
-**Result.** At snapshot 3 the ratio is:
+**Result.** At snapshot 3 the two ratios are:
 
-| Arm | Ratio [95% interval] |
-| --- | --- |
-| Epzero HNSW | 1.63 [1.49, 1.80] |
-| FAISS HNSW | 1.54 [1.40, 1.69] |
-| IVF, frozen training | 1.17 [1.05, 1.29] |
-| IVF, refreshed training | 1.14 [1.03, 1.26] |
+| Arm | Pooled ratio | Within-query ratio |
+| --- | --- | --- |
+| Epzero HNSW | 1.63 [1.49, 1.80] | 1.33 [1.21, 1.47] |
+| FAISS HNSW | 1.54 [1.40, 1.69] | 1.25 [1.14, 1.38] |
+| IVF, frozen training | 1.17 [1.05, 1.29] | 1.10 [1.01, 1.20] |
+| IVF, refreshed training | 1.14 [1.03, 1.26] | 1.08 [0.99, 1.19] |
 
 The raw rates show the same thing. In the top-10 band at ef 200, Epzero misses 2.7% of neighbours
 inserted at snapshot 1, against 5.7% and 6.9% of those inserted at snapshots 2 and 3.
 
-**Insertion order or the documents themselves?** IVF has no insertion-order structure, so its
-ratio of about 1.15 estimates how much harder the newer documents themselves are to retrieve.
-The development runs include rebuilds in a random insertion order. On the 50 development
-queries, shuffling lowered the ratio in all four backend × snapshot comparisons: from 1.21–1.66
-to 1.05–1.11 (Figure 2b).
+**Queries about recent documents are harder.** The pooled ratio is higher than the within-query
+one because the queries differ. Split by the share of their exact top 100 that arrived after
+snapshot 1, the third of queries with the fewest later neighbours misses 2.6–2.7% of its
+snapshot-1 neighbours in a shuffled build, and the other two thirds miss 7.4–8.8%. Later
+documents are concentrated in the harder queries, and the pooled ratio counts that difficulty as
+an excess of the documents. On the public benchmarks below, where arrival groups are random, the
+two ratios agree to within 0.04.
+
+**Insertion order or the documents themselves?** The development runs include rebuilds in a
+random insertion order. On the 50 development queries, shuffling lowered the pooled ratio in all
+four backend × snapshot comparisons: from 1.21–1.66 to 1.05–1.11 (Figure 2b).
 
 A follow-up job confirmed this on the held-out queries. It rebuilt each held-out HNSW index at
 every snapshot in a random insertion order (three seeds; the incremental arm reproduced the
@@ -414,35 +428,37 @@ analysed runs exactly). Shuffling lowered the snapshot-3 ratio:
 - Epzero, from 1.63 to 1.25 [1.15, 1.35];
 - FAISS, from 1.54 to 1.21 [1.11, 1.31].
 
-Both are close to IVF's level. Most of the HNSW excess is therefore an insertion-order effect: in
-a graph built by appending, later insertions are less reachable.
+Most of the pooled HNSW excess is therefore an insertion-order effect: in a graph built by
+appending, later insertions are less reachable. What remains after shuffling is the query
+difficulty described above.
 
-**Inserting the latest arrivals first removes their excess.** Shuffling shows that the order
+**Inserting the latest arrivals first reverses their excess.** Shuffling shows that the order
 matters. It does not show which position is the bad one. We therefore built both HNSW
 implementations on all 1,661,900 snapshot-3 documents (study settings, three seeds) in three
 orders: as the documents arrived, shuffled, and with the three arrival blocks reversed. The
-design was recorded before the output was seen. The as-arrived builds reproduce the held-out runs
-query for query. The table gives the miss ratio of snapshot-3 arrivals against snapshot-1 arrivals
-at ef 200, as the mean over seeds with 95% intervals (Figure 4):
+design and its pooled contrast were recorded before the output was seen. The as-arrived builds
+reproduce the held-out runs query for query. The table gives both ratios of snapshot-3 arrivals
+against snapshot-1 arrivals at ef 200, as the mean over seeds with 95% intervals (Figure 4):
 
-| Implementation | As arrived | Shuffled | Reversed | As arrived − reversed, paired |
-| --- | --- | --- | --- | --- |
-| FAISS HNSW | 1.60 [1.40, 1.81] | 1.23 [1.08, 1.39] | 0.97 [0.84, 1.11] | +0.62 [+0.46, +0.80] |
-| Epzero HNSW | 1.75 [1.54, 1.98] | 1.20 [1.05, 1.35] | 0.98 [0.85, 1.12] | +0.77 [+0.57, +0.98] |
+| Implementation | Ratio | As arrived | Shuffled | Reversed | As arrived − reversed, paired |
+| --- | --- | --- | --- | --- | --- |
+| FAISS HNSW | pooled | 1.60 [1.40, 1.81] | 1.23 [1.08, 1.39] | 0.97 [0.84, 1.11] | +0.62 [+0.46, +0.80] |
+| FAISS HNSW | within query | 1.28 [1.12, 1.47] | 1.03 [0.93, 1.14] | 0.82 [0.72, 0.92] | +0.46 [+0.33, +0.62] |
+| Epzero HNSW | pooled | 1.75 [1.54, 1.98] | 1.20 [1.05, 1.35] | 0.98 [0.85, 1.12] | +0.77 [+0.57, +0.98] |
+| Epzero HNSW | within query | 1.42 [1.25, 1.63] | 1.00 [0.90, 1.10] | 0.82 [0.72, 0.92] | +0.60 [+0.44, +0.79] |
 
-The same documents are missed 1.6–1.75 times as often as the first arrivals when they are
-inserted last, and as often as the first arrivals when they are inserted first. The paired
-difference is above zero in all 24 comparisons of implementation, seed and search width from 100
-to 800 (lowest interval bound +0.38). The reversed ratio is 0.84–0.98 across the four widths
-and its interval always includes 1: reversal removes the excess and does not create a deficit.
+The recorded contrast is the pooled paired difference. It is above zero in all 24 comparisons of
+implementation, seed and search width from 100 to 800 (lowest interval bound +0.38). The pooled
+reversed ratio is about 1, not below it, because the pooled level includes the query difficulty:
+it is 1.2 even in a shuffled build.
 
-Two components account for the three ratios. The shuffled ratio of about 1.2 is the part that
-stays with the documents; it matches IVF and the shuffled rebuild above. Insertion position
-multiplies it by 1.3–1.5 when the documents come last and divides it by 1.2–1.3 when they come
-first. Position is the larger part: shuffling removes 0.36 of FAISS's excess of 0.60 and 0.55 of
-Epzero's 0.75. We have not identified what makes the later documents harder in themselves. It is
-not a lack of incoming links, of which they have slightly more than the first arrivals in a
-shuffled build.
+Within a query the three orders are symmetric. A later document is missed as often as a first
+arrival when its position is random, 1.28–1.42 times as often when it is inserted last, and 0.82
+times as often when it is inserted first. The reversed interval lies below 1 at all four search
+widths (ratios of 0.66–0.82). Collection size does not change this. Three stratified draws of
+869,902 documents and a 300,000-document sample give within-query ratios of 1.23–1.42 as arrived,
+0.96–1.07 shuffled and 0.76–0.83 reversed, and the full collection differs from the mean of the
+draws by at most 0.04 in any order.
 
 The graph shows why position matters. Base-layer incoming links fall with insertion position in
 every order and in both implementations, from 28.0–29.6 for the first tenth of insertions to
@@ -454,13 +470,10 @@ who bears the misses far more than how many there are.
 300,000 snapshot-3 documents, at the same four widths and also with a denser graph (M 32,
 efConstruction 200). In all 16 combinations of implementation, graph and width the as-arrived
 ratio lies above 1 and the paired difference above zero. A denser graph removes misses but
-concentrates the rest: the as-arrived ratio is 1.30–1.58 at M 16 and 1.55–2.22 at M 32. On the
-sample the documents' own share was smaller (a shuffled ratio of 1.08–1.10 at the study's
-settings), so the reversed ratio fell below 1, to 0.82–0.84. The full collection did not
-reproduce that deficit.
+concentrates the rest: the pooled as-arrived ratio is 1.30–1.58 at M 16 and 1.55–2.22 at M 32.
 
 **Position alone is enough.** In a shuffled build the position of a document in the insertion
-sequence is independent of the document. The miss rate still rises steadily with position: on the
+sequence is independent of the document and of the query. The miss rate still rises steadily with position: on the
 full collection at ef 200 it goes from 4.9–5.0% in the first tenth of insertions to 7.4–7.8% in
 the last, a rank-standardized ratio of 1.49 [1.33, 1.72] for FAISS and 1.60 [1.42, 1.85] for
 Epzero (Figure 5a). The interval lies above 1 for every later decile.
@@ -484,7 +497,8 @@ top 10 that is new content (inserted after snapshot 1).
 - IVF loses 0.010 and 0.008.
 
 The average gap of about 0.01 therefore hides a loss about three times larger on exactly the
-queries about new content.
+queries about new content. Insertion position is only part of the reason: these are the queries
+that are harder in every insertion order, which is why reordering does not help them (below).
 
 This is an aging mechanism that maintenance cannot remove. An identical-history rebuild
 reproduces it exactly (§4.1); only a rebuild in a different order changes it.
@@ -511,8 +525,9 @@ decile against the first, in shuffled builds at ef 200, for (a) all of LongEval 
 (b) GloVe and (c) SIFT. Means over three seeds with 95% query-bootstrap intervals.
 
 **Figure 4** (`figures/fig-insertion-order.pdf`). Miss ratio of snapshot-3 arrivals against
-snapshot-1 arrivals by insertion order, on all 1,661,900 snapshot-3 documents at ef 200. Markers
-are means over three seeds with 95% query-bootstrap intervals; short ticks are the single seeds.
+snapshot-1 arrivals by insertion order, on all 1,661,900 snapshot-3 documents at ef 200:
+(a) pooled over queries, (b) within the same query and rank band. Markers are means over three
+seeds with 95% query-bootstrap intervals.
 
 ### 4.5 How wide a search, and at what cost (exploratory)
 
@@ -665,8 +680,9 @@ is the search width.
 - **Exploratory analyses.** The test queries were used once for the frozen analysis. Every
   analysis marked exploratory reuses them and was designed after those results were seen.
 - **Insertion order.** The full-collection experiment used one graph setting; the denser graph
-  was run on a 300,000-document sample only. The part of the excess that stays with the later
-  documents, a ratio of about 1.2, is measured and not explained.
+  was run on a 300,000-document sample only. The within-query ratio was added after the pooled
+  full-collection result was seen. It assumes one ratio common to all queries, and we did not
+  examine why queries about recent documents are harder.
 - **Calibration design.** Calibration uses 50 queries and a coarse grid. This is a design choice,
   and it is what separates the two HNSW arms.
 - **Repair screens.** These are development screens, some on an 8,192-vector sample. They are
@@ -678,8 +694,8 @@ At about 95% neighbour recall, approximate search lost 0.005–0.012 nDCG@10 und
 labels, and the change in that loss as the collection nearly doubled stayed within ±0.01 for two
 of three calibrated arms; the third was inconclusive. Incremental maintenance was equivalent to
 rebuilding. At a fixed search width, recall fell by about a point, and an index built by
-appending missed its newest documents most; inserting the same documents first removed that
-excess. How much of the measured loss is real depends on documents that the release never
+appending missed its newest documents most; within a query, inserting the same documents first
+reversed that. How much of the measured loss is real depends on documents that the release never
 graded, and that is what the follow-up measures.
 
 ## Reproducibility
@@ -718,3 +734,4 @@ LongEval-derived data are not redistributed. The scripts rebuild them from the o
 20. Elliott and Clark. The Impacts of Data, Ordering, and Intrinsic Dimensionality on Recall in Hierarchical Navigable Small Worlds. ICTIR 2024, pp. 25–33, 2024. https://doi.org/10.1145/3664190.3672512
 21. Zerhoudi et al. As We May Search. ICTIR 2026, pp. 425–435, 2026. https://doi.org/10.1145/3805713.3820402
 22. Upadhyay et al. UMBRELA: UMbrela is the (Open-Source Reproduction of the) Bing RELevance Assessor. arXiv:2406.06519, 2024.
+23. Greenland and Robins. Estimation of a Common Effect Parameter from Sparse Follow-Up Data. Biometrics 41(1), pp. 55–68, 1985. https://doi.org/10.2307/2530643
