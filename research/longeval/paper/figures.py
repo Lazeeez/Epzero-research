@@ -3,9 +3,9 @@
 Usage: python figures.py BUILD_DIR OUTPUT_DIR
 Inputs: longeval-heldout-analysis-01/report.json, longeval-heldout-exploratory-01/cohort-ratios.json,
 longeval-development-order-01/report.json, longeval-heldout-extension-analysis-01/report.json and the committed
-insertion-pilot-*.json and insertion-order-full*.json files. Writes fig-gap-recall, fig-cohort, fig-recall-gap,
-fig-insertion-order and fig-position-full (the full collection), and fig-insertion-pilot and fig-position (the
-300,000-document sample), as pdf and png.
+insertion-pilot-*.json, insertion-order-full.json and insertion-strata.json files. Writes fig-gap-recall, fig-cohort,
+fig-recall-gap, fig-insertion-order and fig-position-full (the full collection), and fig-insertion-pilot and
+fig-position (the 300,000-document sample), as pdf and png.
 """
 import json
 import sys
@@ -196,6 +196,38 @@ def insertion_pilot(summary, out, name='fig-insertion-pilot', limits=(.6, 2.0)):
     plt.close(fig)
 
 
+def insertion_order(strata, out):
+    """Full collection: miss ratio of the last arrival group against the first by insertion order, pooled and within a query."""
+    r = json.loads(Path(strata).read_text())['collections']['full']['implementations']
+    orders = (('appended', 'As arrived'), ('shuffled', 'Shuffled'), ('reversed', 'Reversed'))
+    panels = (('pooled_ratio', '(a) Pooled over queries'), ('within_query_ratio', '(b) Within a query'))
+    fig, axes = plt.subplots(1, 2, figsize=(5.2, 1.9), constrained_layout=True, sharex=True, sharey=True)
+    for ax, (key, title) in zip(axes, panels):
+        for i, (order, _) in enumerate(orders):
+            for backend, dy in (('epzero', -.17), ('faiss_hnsw', .17)):
+                mean = r[backend]['ratios']['cohort3_vs_cohort1'][key][order]
+                lo, hi = mean['interval_95']
+                ax.errorbar(mean['value'], i + dy, xerr=[[mean['value'] - lo], [hi - mean['value']]], color=COLOR[backend],
+                            marker=MARKER[backend], markersize=4, elinewidth=.9, capsize=0)
+        ax.axvline(1, color=MUTED, linewidth=.6)
+        ax.set_title(title, fontsize=8, color=INK, loc='left')
+        style(ax)
+        ax.grid(axis='y', visible=False)
+        ax.grid(axis='x', color=GRID, linewidth=.6)
+    for backend, level in (('epzero', .24), ('faiss_hnsw', .11)):
+        # A key in the empty lower-right corner of the second panel.
+        axes[1].plot([.66], [level], transform=axes[1].transAxes, color=COLOR[backend], marker=MARKER[backend], markersize=4,
+                     clip_on=False)
+        axes[1].text(.71, level, NAME[backend], transform=axes[1].transAxes, va='center', fontsize=6.5, color=INK)
+    axes[0].set_yticks(range(len(orders)), [text for _, text in orders])
+    axes[0].set_ylim(len(orders) - .5, -.5)
+    axes[0].set_xlim(.6, 2.1)
+    fig.supxlabel('Miss ratio, snapshot-3 arrivals vs snapshot-1 arrivals', fontsize=8, color=INK)
+    for ext in ('pdf', 'png'):
+        fig.savefig(out / f'fig-insertion-order.{ext}', dpi=300)
+    plt.close(fig)
+
+
 def position(folder, out, stem='fig-position', first=('insertion-pilot-position.json', '(a) LongEval sample')):
     """Miss ratio by insertion decile in shuffled builds: LongEval (sample or full collection) and two public benchmarks."""
     panels = (first, ('insertion-pilot-public-glove.json', '(b) GloVe'), ('insertion-pilot-public-sift.json', '(c) SIFT'))
@@ -237,6 +269,6 @@ if __name__ == '__main__':
     aggregates = Path(__file__).resolve().parents[1]
     insertion_pilot(aggregates / 'insertion-pilot-summary.json', out)
     position(aggregates, out)
-    insertion_pilot(aggregates / 'insertion-order-full-builds.json', out, name='fig-insertion-order', limits=(.6, 2.4))
+    insertion_order(aggregates / 'insertion-strata.json', out)
     position(aggregates, out, stem='fig-position-full', first=('insertion-order-full.json', '(a) LongEval'))
     print('written', sorted(p.name for p in out.iterdir()))
