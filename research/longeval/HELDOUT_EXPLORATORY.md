@@ -53,7 +53,8 @@ pooling every document inserted after snapshot 1, as in the held-out table:
 Shuffling lowers the ratio in all four comparisons, to 1.05–1.11, which is about the IVF level.
 Most of the HNSW excess is therefore consistent with an **insertion-order effect**: in a graph
 built by appending, documents inserted later are less reachable. The remainder, about 1.1, is a
-property of the documents.
+property of the documents. (Section 14 later shows that this remainder is mostly the difficulty
+of the queries that retrieve those documents, not of the documents.)
 
 On the 50 development queries the appended-order excess at snapshot 3 (1.21) is smaller than on
 the held-out queries (1.54–1.63). The development comparison is small, so a held-out
@@ -787,14 +788,15 @@ bound +0.40), and for the pooled later group (lowest bound +0.37).
 *Mean over three seeds with 95% query-bootstrap intervals; the short ticks are the single seeds.
 All of snapshot 3, ef 200.*
 
-**Reversal removes the excess; it does not turn it into a deficit.** This is where the full
-collection differs from the pilot. On the sample the reversed ratio was 0.82–0.84 and its interval
+**In the pooled ratio, reversal removes the excess and does not turn it into a deficit.** This is
+where the full collection differs from the pilot. Section 14 shows that within the same query it
+does become a deficit. On the sample the reversed ratio was 0.82–0.84 and its interval
 lay below 1. Here it is 0.97 and 0.98, and every interval includes 1: by seed the ratios are 0.98 /
 1.02 / 0.93 for FAISS and 0.97 / 0.97 / 1.00 for Epzero. The statement that reversing the order
 moves the blind spot to the first arrivals does not hold at full scale. What holds is that the
 latest arrivals lose their excess when they are inserted first.
 
-**Why: the documents' own share is larger here.** The shuffled ratio is 1.20–1.23, against
+**Why: the level that survives shuffling is higher here.** The shuffled ratio is 1.20–1.23, against
 1.08–1.10 on the sample, and its interval lies above 1. It agrees with the two earlier full-scale
 estimates of the part that stays with the documents: the held-out shuffled rebuild of section 5
 (1.21 and 1.25) and IVF (1.14–1.17). Around that level, the order moves the ratio by about as much
@@ -808,10 +810,10 @@ as on the sample:
 | Epzero, full collection | 1.46 | 1.22 |
 
 So the effect of position is about the same size at both scales, and what differs is the level it
-acts on. Why the later documents are harder in themselves, and why more so in the full collection
-than in an 18% sample, is not known. It is not a lack of incoming links: in shuffled builds the
-snapshot-3 arrivals have slightly more of them than the snapshot-1 arrivals (18.9 against 18.0 for
-Epzero, 19.4 against 18.4 for FAISS).
+acts on. That level is not a lack of incoming links: in shuffled builds the snapshot-3 arrivals
+have slightly more of them than the snapshot-1 arrivals (18.9 against 18.0 for Epzero, 19.4
+against 18.4 for FAISS). Section 14 traces it to the queries: those whose neighbours are mostly
+later documents are harder in every order.
 
 **Counts behind the ratios.** Every build is scored on the same 38,100 exact neighbours: 24,365,
 7,837 and 5,898 from the arrival groups of snapshots 1, 2 and 3. The table gives the missed
@@ -872,22 +874,173 @@ arrival group (snapshots 1 / 2 / 3) the means are 22.3 / 16.1 / 14.0 in the as-a
 builds and 14.7 / 20.3 / 26.2 in the reversed ones; for Epzero they are 22.1 / 15.4 / 13.1 and
 14.0 / 19.9 / 26.2. At most 0.06% of documents have no incoming link.
 
-**Reading.** Two things make the latest arrivals harder to retrieve in an index built by
+**Reading.** Two things raise the pooled ratio of the latest arrivals in an index built by
 appending. One is their position: late insertions are missed about 1.3–1.5 times as often as the
 same documents at an average position, and the decile curve shows this with the documents held
-equal. The other stays with the documents in every order, a ratio of about 1.2. Position is the
-larger part: at ef 200, shuffling removes 0.36 of FAISS's excess of 0.60 and 0.55 of Epzero's
-0.75.
+equal. The other is present in every order, a ratio of about 1.2. Position is the larger part:
+at ef 200, shuffling removes 0.36 of FAISS's excess of 0.60 and 0.55 of Epzero's 0.75. Section 14
+shows that the second part belongs to the queries, not to the documents.
 
 **Limits.**
 
 - One graph setting (M 16, efConstruction 100). The denser graph was run on the sample only.
-- The documents' own share is measured, not explained.
-- The three draws of snapshot-1 size (18 jobs) have not been run. They would show whether that
-  share grows with the size of the collection.
+- The level that survives shuffling is explained in section 14, with the three draws of
+  snapshot-1 size.
 
 The aggregates are in [`insertion-order-full.json`](insertion-order-full.json) (widths, contrasts,
 decile curves) and [`insertion-order-full-builds.json`](insertion-order-full-builds.json) (counts
 by rank band and incoming links of each build). Both were written by the pilot's commands, so
 their `kind` field still says "pilot"; the `sample` field records the full collection. Neither
 holds identifiers.
+
+## 14. The three draws, and the ratio within a query (jobs 7216195–7216212)
+
+Section 13 left two things open: why the reversed ratio is about 1 on the full collection when it
+was below 1 on the sample, and what the share of about 1.2 that survives shuffling is. This
+section answers both. The draws were part of the recorded design. The within-query ratio was not:
+it was chosen on 21 November 2026 after the results of section 13 were seen, so it is a post hoc
+analysis. The code is `insertion_strata.py`.
+
+### The three draws
+
+**Setup.** Three stratified draws of 869,902 snapshot-3 documents each, which is the size of
+snapshot 1, with the arrival groups in proportion (455,340 / 237,022 / 177,540). Exact neighbours
+are computed inside each draw. Design and settings are those of section 13: 18 builds per draw, 54
+in all, about 23 minutes each. All 18 jobs ended with exit code 0, every returned file matches its
+checksum list, and all ran the package of section 13 on Gold 6226 nodes.
+
+The table gives the pooled miss ratio of snapshot-3 arrivals against snapshot-1 arrivals at
+ef 200, as the mean over three seeds:
+
+| Collection | Implementation | As arrived | Shuffled | Reversed | As arrived − reversed |
+| --- | --- | --- | --- | --- | --- |
+| Draw 1 | FAISS | 1.46 [1.29, 1.65] | 1.12 [1.00, 1.24] | 0.88 [0.76, 1.00] | +0.58 [+0.44, +0.74] |
+| Draw 2 | FAISS | 1.46 [1.27, 1.67] | 1.10 [0.97, 1.24] | 0.84 [0.70, 0.99] | +0.62 [+0.47, +0.79] |
+| Draw 3 | FAISS | 1.36 [1.20, 1.53] | 1.06 [0.93, 1.20] | 0.86 [0.73, 0.99] | +0.50 [+0.38, +0.64] |
+| Mean of the draws | FAISS | 1.43 [1.29, 1.58] | 1.10 [0.98, 1.21] | 0.86 [0.74, 0.98] | |
+| Full collection | FAISS | 1.60 [1.40, 1.81] | 1.23 [1.08, 1.39] | 0.97 [0.84, 1.11] | +0.62 [+0.46, +0.80] |
+| Draw 1 | Epzero | 1.54 [1.36, 1.75] | 1.13 [1.01, 1.25] | 0.86 [0.73, 0.99] | +0.68 [+0.53, +0.86] |
+| Draw 2 | Epzero | 1.57 [1.37, 1.78] | 1.16 [1.02, 1.30] | 0.87 [0.73, 1.00] | +0.70 [+0.54, +0.89] |
+| Draw 3 | Epzero | 1.47 [1.29, 1.66] | 1.11 [0.97, 1.25] | 0.85 [0.74, 0.97] | +0.61 [+0.48, +0.77] |
+| Mean of the draws | Epzero | 1.52 [1.38, 1.69] | 1.13 [1.02, 1.25] | 0.86 [0.75, 0.96] | |
+| Full collection | Epzero | 1.75 [1.54, 1.98] | 1.20 [1.05, 1.35] | 0.98 [0.85, 1.12] | +0.77 [+0.57, +0.98] |
+
+- **The paired contrast holds in every draw.** It is above zero in all 18 comparisons of draw,
+  implementation and seed (lowest interval bound +0.35).
+- **The draws look like the sample, not like the full collection.** At half the collection the
+  reversed ratio is 0.84–0.88, as on the 300,000-document sample (0.82–0.84). The pooled ratios
+  do not rise steadily with size: they are the same at 300,000 and 869,902 documents and higher
+  only on the full collection.
+- **The full collection is higher in every order.** Paired by query, the full collection exceeds
+  the mean of the draws by +0.17 [−0.01, +0.35] and +0.22 [+0.04, +0.42] as arrived (FAISS,
+  Epzero), +0.14 [+0.04, +0.24] and +0.06 [−0.04, +0.16] shuffled, and +0.11 [+0.00, +0.22] and
+  +0.12 [+0.01, +0.23] reversed.
+- **The decile curve is the same.** In the shuffled builds the last decile's ratio to the first is
+  1.35–1.55 for FAISS and 1.58–1.66 for Epzero.
+
+### Queries with recent neighbours are harder in every order
+
+The pooled ratio compares the arrival groups over all queries at once. It is a fair comparison
+only if the queries that retrieve later documents are as hard as the others. They are not. The
+table splits the 381 queries into thirds by the share of their exact top 100 that arrived after
+snapshot 1, and gives the miss rate of each arrival group in the shuffled builds of the full
+collection, where position is independent of the document:
+
+| Queries | Mean share of later neighbours | FAISS: snapshot 1 / 2 / 3 arrivals | Epzero: snapshot 1 / 2 / 3 arrivals |
+| --- | --- | --- | --- |
+| Lowest third | 0.22 | 2.7% / 3.6% / 3.5% | 2.6% / 3.4% / 3.6% |
+| Middle third | 0.38 | 7.4% / 8.1% / 8.9% | 8.3% / 8.4% / 9.0% |
+| Highest third | 0.49 | 8.7% / 9.0% / 8.3% | 8.8% / 8.8% / 8.3% |
+
+The queries with the fewest later neighbours miss about 2.7% of their snapshot-1 neighbours; the
+other two thirds miss 7.4–8.8%. Later documents are concentrated in the harder queries, so the
+pooled ratio counts the difficulty of those queries as an excess of the later documents. The
+correlation between a query's share of later neighbours and its snapshot-1 miss rate is 0.21–0.22
+on the full collection and 0.14–0.16 on the draws and the sample. On GloVe and SIFT, where the
+arrival groups are random, it is −0.00 and 0.05–0.06.
+
+### The ratio within a query
+
+The Mantel–Haenszel risk ratio compares a later document only with snapshot-1 documents that are
+neighbours of the same query in the same exact-rank band (strata: query × band). It stays
+consistent when the strata are many and small (Greenland and Robins, 1985). The table gives it for
+snapshot-3 arrivals against snapshot-1 arrivals at ef 200, as the mean over three seeds with 95%
+paired query-bootstrap intervals (5,000 draws):
+
+| Collection | Implementation | As arrived | Shuffled | Reversed | As arrived − reversed |
+| --- | --- | --- | --- | --- | --- |
+| Sample, 300,000 | FAISS | 1.27 [1.14, 1.43] | 0.98 [0.89, 1.09] | 0.76 [0.67, 0.86] | +0.51 [+0.40, +0.65] |
+| Draw 1, 869,902 | FAISS | 1.32 [1.18, 1.49] | 1.02 [0.93, 1.12] | 0.83 [0.73, 0.93] | +0.49 [+0.36, +0.65] |
+| Draw 2, 869,902 | FAISS | 1.34 [1.18, 1.53] | 1.02 [0.92, 1.13] | 0.80 [0.69, 0.91] | +0.55 [+0.40, +0.73] |
+| Draw 3, 869,902 | FAISS | 1.23 [1.09, 1.37] | 0.96 [0.86, 1.06] | 0.79 [0.69, 0.88] | +0.44 [+0.33, +0.57] |
+| Full, 1,661,900 | FAISS | 1.28 [1.12, 1.47] | 1.03 [0.93, 1.14] | 0.82 [0.72, 0.92] | +0.46 [+0.33, +0.62] |
+| Sample, 300,000 | Epzero | 1.32 [1.18, 1.49] | 1.00 [0.90, 1.10] | 0.76 [0.66, 0.85] | +0.57 [+0.44, +0.71] |
+| Draw 1, 869,902 | Epzero | 1.41 [1.25, 1.59] | 1.04 [0.94, 1.14] | 0.81 [0.71, 0.91] | +0.60 [+0.45, +0.76] |
+| Draw 2, 869,902 | Epzero | 1.42 [1.25, 1.62] | 1.07 [0.95, 1.18] | 0.82 [0.71, 0.93] | +0.60 [+0.44, +0.79] |
+| Draw 3, 869,902 | Epzero | 1.31 [1.17, 1.47] | 1.00 [0.90, 1.10] | 0.78 [0.69, 0.87] | +0.53 [+0.42, +0.68] |
+| Full, 1,661,900 | Epzero | 1.42 [1.25, 1.63] | 1.00 [0.90, 1.10] | 0.82 [0.72, 0.92] | +0.60 [+0.44, +0.79] |
+
+- **Shuffled: no excess.** The ratio is 0.96–1.07 and its interval includes 1 in all ten rows.
+  Within a query, a later document is as easy to retrieve as an earlier one when its position is
+  random.
+- **As arrived: 1.23–1.42.** The interval lies above 1 in all ten rows.
+- **Reversed: 0.76–0.83.** The interval lies below 1 in all ten rows, including the full
+  collection. Within a query, inserting the latest arrivals first does turn their excess into a
+  deficit.
+- **Collection size does not matter.** The full collection differs from the mean of the draws by
+  −0.04 to +0.04 in every order, and each interval includes 0.
+
+**Other search widths, full collection.** The reversed ratio is 0.81–0.82 at ef 100, 0.78–0.79 at
+ef 400 and 0.66–0.71 at ef 800, and its interval lies below 1 in all eight rows of implementation
+and width. The as-arrived ratio is 1.24–1.42 with every interval above 1 (lowest bound 1.01). The
+shuffled ratio is 0.87–1.06; its interval includes 1 in seven rows, and in the eighth (Epzero,
+ef 800) it is 0.87 [0.72, 0.995].
+
+**A second estimator.** The Mantel–Haenszel difference of miss rates over the same strata agrees
+in sign and in what its intervals exclude. On the full collection at ef 200 the later documents'
+miss rate differs from that of snapshot-1 documents of the same query by +1.9 and +2.8 points as
+arrived (FAISS, Epzero), +0.2 and −0.0 points shuffled, and −1.5 and −1.5 points reversed. The
+shuffled intervals include 0 and the other four exclude it.
+
+**Controls.** On GloVe and SIFT the arrival groups are random, so the two ratios should agree, and
+they do: the largest difference between a pooled and a within-query ratio is 0.04.
+
+**The held-out arms.** For the held-out runs at snapshot 3, with documents that arrived after
+snapshot 1 against snapshot-1 arrivals:
+
+| Arm | Pooled ratio | Within-query ratio |
+| --- | --- | --- |
+| Epzero HNSW, ef 200 | 1.63 [1.49, 1.80] | 1.33 [1.21, 1.47] |
+| FAISS HNSW, ef 200 | 1.54 [1.40, 1.69] | 1.25 [1.14, 1.38] |
+| IVF, frozen training | 1.17 [1.06, 1.29] | 1.10 [1.01, 1.20] |
+| IVF, refreshed training | 1.14 [1.03, 1.26] | 1.08 [0.99, 1.19] |
+
+**Reading.**
+
+- Within a query, insertion position accounts for the whole HNSW excess: 1.0 at a random
+  position, 1.3–1.4 when the documents come last, and 0.8 when they come first, at every
+  collection size.
+- The share of about 1.1–1.2 that sections 1, 5, 10 and 13 attributed to the documents themselves
+  is mostly the difficulty of the queries that retrieve them. For HNSW none of it remains within
+  a query. For IVF a ratio of 1.08–1.10 remains.
+- The pooled ratio of an index built by appending (1.5–1.6 in section 1) therefore overstates
+  what a user of one query sees. Within a query it is 1.25–1.33.
+- The pooled reversed ratio of section 13 is about 1 because two things cancel: the position
+  advantage (0.82) and the query difficulty (about 1.2).
+
+**Limits.**
+
+- The within-query ratio was chosen after the pooled result was seen. The contrast recorded
+  beforehand is the pooled one of section 13, and it is confirmed either way.
+- The estimator assumes one ratio common to all queries. If the ratio varies, it is a weighted
+  average.
+- Why queries with recent neighbours are harder was not examined.
+- One graph setting (M 16, efConstruction 100) on the full collection and the draws.
+
+The aggregates hold no identifiers: [`insertion-order-draw1.json`](insertion-order-draw1.json),
+[`-draw2`](insertion-order-draw2.json) and [`-draw3`](insertion-order-draw3.json) for the draws;
+[`insertion-strata.json`](insertion-strata.json) for the five collections at ef 200;
+[`insertion-strata-full-ef100.json`](insertion-strata-full-ef100.json),
+[`-ef400`](insertion-strata-full-ef400.json) and [`-ef800`](insertion-strata-full-ef800.json) for
+the other widths; [`insertion-strata-public.json`](insertion-strata-public.json) for GloVe and
+SIFT; and [`insertion-strata-heldout.json`](insertion-strata-heldout.json) for the held-out arms.
