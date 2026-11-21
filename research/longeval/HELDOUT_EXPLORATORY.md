@@ -336,6 +336,36 @@ higher recall than the test queries at the same ef 200, in all six backend × sn
 50 queries this is not statistically reliable (permutation p from 0.13 to 0.55), so the paper
 should not claim a shift between training and test queries.
 
+**A safety margin instead of more queries.** The rule can also ask for more than the target:
+choose the smallest ef whose calibration recall reaches 95% plus a margin. The table gives, for
+calibration sets drawn from the test queries at snapshot 3, how often the chosen ef still falls
+short of 95% on all test queries, with the mean chosen ef in brackets as the cost. The last column
+is how often no ef up to 800 qualifies (Epzero; FAISS is within three points of it).
+
+| Calibration queries | Margin (points) | Epzero: falls short (mean ef) | FAISS: falls short (mean ef) | No ef up to 800 qualifies |
+| --- | --- | --- | --- | --- |
+| 50 | 0.0 | 21% (416) | 22% (410) | 1.0% |
+| 50 | 0.5 | 12% (469) | 13% (459) | 2.1% |
+| 50 | 1.0 | 5.5% (522) | 6.0% (517) | 4.8% |
+| 50 | 1.5 | 2.1% (575) | 1.9% (577) | 9.9% |
+| 50 | 2.0 | 0.4% (636) | 0.5% (638) | 18% |
+| 100 | 0.0 | 11% (413) | 12% (408) | 0.1% |
+| 100 | 0.5 | 4.0% (466) | 4.3% (461) | 0.3% |
+| 100 | 1.0 | 1.1% (532) | 1.1% (528) | 1.1% |
+| 100 | 1.5 | 0.2% (616) | 0.2% (614) | 4.0% |
+| 100 | 2.0 | 0.0% (696) | 0.0% (696) | 12% |
+| 200 | 0.0 | 3.9% (405) | 4.1% (403) | 0.0% |
+| 200 | 0.5 | 0.6% (446) | 0.8% (443) | 0.0% |
+| 200 | 1.0 | 0.1% (523) | 0.1% (519) | 0.1% |
+| 200 | 1.5 | 0.0% (640) | 0.0% (641) | 0.8% |
+| 200 | 2.0 | 0.0% (743) | 0.0% (747) | 5.5% |
+
+With the protocol's 50 queries, a one-point margin cuts the risk from 21% to 5.5% and raises the
+mean width from 416 to 522. With 200 queries a half-point margin brings it to 0.6% at a mean width
+of 446. Large margins on few queries are wasteful: at two points and 50 queries, 18% of
+calibration sets find no width up to 800 good enough. The code is
+`heldout_robustness.calibration_margin`.
+
 ## 9. The judging pool, and grades carried across snapshots
 
 **The released LLM grades depend only on the query and the document.** In the released
@@ -559,3 +589,40 @@ at one snapshot. It is not a clean test of the model.
   coverage, which is what the judgment-coverage experiment tests.
 - The paper should call the primary measure "effectiveness under the organisers' LLM labels", state
   that those labels are lenient, and not present it as ground truth.
+
+## 12. The change in the gap at each search width
+
+The primary analysis compares arms at their calibrated widths: ef 200 at every snapshot for
+Epzero, and ef 200 or 400 for FAISS. That mixes the implementation with the width its calibration
+happened to keep. This section holds the width fixed instead. It uses the held-out sweep of
+section 5: every incrementally maintained index searched at each ef, on the 374 panel queries,
+with seeds averaged within each query and the bootstrap and sign-randomization settings of the
+primary analysis. The code is `heldout_robustness.change_by_width`; the output is
+`build/longeval-heldout-robustness-03/report.json`.
+
+| ef | Epzero: gap at s1 → s3 | Epzero: change [95%] | FAISS: gap at s1 → s3 | FAISS: change [95%] | Epzero change − FAISS change [95%] |
+| --- | --- | --- | --- | --- | --- |
+| 100 | −0.0101 → −0.0226 | −0.0125 [−0.0193, −0.0064] | −0.0109 → −0.0151 | −0.0042 [−0.0114, +0.0038] | −0.0083 [−0.0179, −0.0007], p 0.046 |
+| 200 | −0.0057 → −0.0117 | −0.0059 [−0.0129, −0.0006] | −0.0048 → −0.0069 | −0.0022 [−0.0053, +0.0013] | −0.0038 [−0.0101, +0.0010], p 0.20 |
+| 400 | −0.0027 → −0.0053 | −0.0026 [−0.0059, +0.0002] | −0.0028 → −0.0050 | −0.0022 [−0.0053, +0.0005] | −0.0005 [−0.0031, +0.0024], p 0.73 |
+| 800 | −0.0019 → −0.0025 | −0.0006 [−0.0026, +0.0014] | −0.0020 → −0.0030 | −0.0010 [−0.0030, +0.0009] | +0.0004 [−0.0007, +0.0017], p 0.54 |
+| 1,600 | −0.0009 → −0.0011 | −0.0002 [−0.0022, +0.0017] | −0.0007 → −0.0013 | −0.0006 [−0.0026, +0.0013] | +0.0003 [−0.0012, +0.0020], p 0.68 |
+| 3,200 | −0.0003 → −0.0002 | +0.0001 [−0.0014, +0.0017] | +0.0000 → −0.0003 | −0.0003 [−0.0014, +0.0007] | +0.0004 [−0.0004, +0.0014], p 0.38 |
+
+The ef 200 rows reproduce the frozen analysis exactly: Epzero's primary contrast and FAISS's
+secondary fixed-width contrast.
+
+**The change shrinks as the search widens.** At ef 100 the gap more than doubles for Epzero
+(−0.0101 to −0.0226). From ef 400 on, the whole interval of the change lies within ±0.01 for both
+implementations, and from ef 1,600 on the change is within 0.001 of zero.
+
+**Epzero's inconclusive result follows from its width.** At ef 400, the width that FAISS's
+calibration moved to, Epzero's change is −0.0026 [−0.0059, +0.0002], inside the margin. At the
+same width the two implementations do not differ reliably: at ef 200 the difference of the changes
+is −0.0038 [−0.0101, +0.0010] (p 0.20), and from ef 400 on it is at most 0.0005 in absolute value.
+At ef 100 Epzero's change is larger (−0.0083 [−0.0179, −0.0007], p 0.046). That is one nominal
+result among six widths and does not survive adjustment, so it is a pointer for a narrower search,
+not a finding.
+
+These are fixed-width diagnostics on the test queries, designed after the held-out results were
+seen. They do not replace the frozen decision for the calibrated arms.
