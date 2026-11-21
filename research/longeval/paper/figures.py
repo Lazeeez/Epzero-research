@@ -3,7 +3,8 @@
 Usage: python figures.py BUILD_DIR OUTPUT_DIR
 Inputs: longeval-heldout-analysis-01/report.json, longeval-heldout-exploratory-01/cohort-ratios.json,
 longeval-development-order-01/report.json, longeval-heldout-extension-analysis-01/report.json and the committed
-insertion-pilot-summary.json. Writes fig-gap-recall, fig-cohort, fig-recall-gap and fig-insertion-pilot (pdf and png).
+insertion-pilot-*.json files. Writes fig-gap-recall, fig-cohort, fig-recall-gap, fig-insertion-pilot and fig-position
+(pdf and png).
 """
 import json
 import sys
@@ -194,6 +195,39 @@ def insertion_pilot(summary, out):
     plt.close(fig)
 
 
+def position(folder, out):
+    """Miss ratio by insertion decile in shuffled builds: the LongEval sample and two public benchmarks."""
+    panels = (('insertion-pilot-position.json', '(a) LongEval sample'), ('insertion-pilot-public-glove.json', '(b) GloVe'),
+              ('insertion-pilot-public-sift.json', '(c) SIFT'))
+    fig, axes = plt.subplots(1, 3, figsize=(5.2, 1.9), constrained_layout=True)
+    for ax, (name, title) in zip(axes, panels):
+        (block,) = json.loads((Path(folder) / name).read_text())['settings'].values()
+        for backend, dx in (('epzero', -.12), ('faiss_hnsw', .12)):
+            curve = block['backends'][backend]['widths']['200']['position_curve_shuffled']['ratio_to_first_decile']
+            x = [1 + dx] + [item['decile'] + dx for item in curve]
+            y = [1.0] + [item['value'] for item in curve]
+            err = [[0.0] + [item['value'] - item['interval_95'][0] for item in curve],
+                   [0.0] + [item['interval_95'][1] - item['value'] for item in curve]]
+            ax.errorbar(x, y, yerr=err, color=COLOR[backend], marker=MARKER[backend], markersize=3, linewidth=1.1,
+                        elinewidth=.7, capsize=0)
+            if ax is axes[0]:
+                # A key in the empty upper-left corner: the two curves overlap too closely to label at their ends.
+                level = .93 if backend == 'epzero' else .82
+                ax.plot([.07], [level], transform=ax.transAxes, color=COLOR[backend], marker=MARKER[backend], markersize=3,
+                        clip_on=False)
+                ax.text(.13, level, NAME[backend], transform=ax.transAxes, va='center', fontsize=6.5, color=INK)
+        ax.axhline(1, color=MUTED, linewidth=.6)
+        ax.set_xticks([1, 4, 7, 10])
+        ax.set_xlim(.4, 10.6)
+        ax.set_title(title, fontsize=8, color=INK, loc='left')
+        ax.set_xlabel('Insertion decile')
+        style(ax)
+    axes[0].set_ylabel('Miss ratio vs first decile')
+    for ext in ('pdf', 'png'):
+        fig.savefig(out / f'fig-position.{ext}', dpi=300)
+    plt.close(fig)
+
+
 if __name__ == '__main__':
     build, out = Path(sys.argv[1]), Path(sys.argv[2])
     out.mkdir(parents=True, exist_ok=True)
@@ -201,4 +235,5 @@ if __name__ == '__main__':
     cohort(build, out)
     recall_gap(build, out)
     insertion_pilot(Path(__file__).resolve().parents[1] / 'insertion-pilot-summary.json', out)
+    position(Path(__file__).resolve().parents[1], out)
     print('written', sorted(p.name for p in out.iterdir()))
