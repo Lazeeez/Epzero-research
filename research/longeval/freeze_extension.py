@@ -21,7 +21,8 @@ OPEN = 'TO DECIDE'
 FROZEN = ('research/longeval/docs/protocol/EXTENSION_PROTOCOL_V1.md',
           'research/longeval/docs/protocol/JUDGE_VALIDATION_THRESHOLDS.md',
           'research/longeval/judge.py', 'research/longeval/judge-requirements.txt', 'research/longeval/judge-model.json',
-          'research/longeval/audit.py', 'research/longeval/insertion_pilot.py', 'research/longeval/heldout_pool.py',
+          'research/longeval/coverage.py', 'research/longeval/audit.py', 'research/longeval/insertion_pilot.py',
+          'research/longeval/heldout_pool.py', 'research/longeval/evaluation.py',
           'scripts/pace/longeval-judge-pilot.sbatch', 'scripts/pace/longeval-judge-server.yaml',
           'scripts/pace/LONGEVAL_JUDGE_PILOT.md', 'scripts/pace/longeval-insertion-order.sbatch',
           'scripts/pace/LONGEVAL_INSERTION_ORDER.md')
