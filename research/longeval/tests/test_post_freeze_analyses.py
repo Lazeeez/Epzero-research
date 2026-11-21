@@ -174,6 +174,10 @@ def test_pilot_width_sweep_and_robustness_summary(tmp_path):
         primary = np.load(folder / 'per-query.npy')
         assert (primary == np.load(folder / 'per-query-ef40.npy')).all()
         assert primary[..., 0].sum() == 12 * 100
+        # The same neighbours and misses, tabulated by insertion decile instead of arrival group.
+        place = np.load(folder / 'per-query-position.npy')
+        assert place.shape == (12, 10, 3, 2) and (place == np.load(folder / 'per-query-position-ef40.npy')).all()
+        assert (place.sum(axis=1) == primary.sum(axis=1)).all()
         recalls = [report['widths'][w]['recall_at_100'] for w in ('10', '40', '600')]
         assert recalls[0] <= recalls[1] <= recalls[2] and recalls[2] > .95      # ef 600 visits every reachable document
         assert report['widths']['40']['recall_at_100'] == report['recall_at_100']
@@ -189,3 +193,43 @@ def test_pilot_width_sweep_and_robustness_summary(tmp_path):
     assert set(widths['10']['contrasts']) == {'cohort3_vs_cohort1', 'cohort2_vs_cohort1', 'later_vs_cohort1'}
     assert set(widths['10']['missed_by_cohort']) == {'appended-11', 'reversed-11', 'shuffled-11'}
     assert json.loads((tmp_path / 'robustness.json').read_text())['settings']['m8']['backends']['faiss_hnsw']['builds'] == 3
+    curve = widths['40']['position_curve_shuffled']
+    assert curve['builds'] == 1 and len(curve['miss_rate_by_insertion_decile']) == 10
+    assert [item['decile'] for item in curve['ratio_to_first_decile']] == list(range(2, 11))
+    assert block['metric'] == 'ip'
+
+
+def write_fvecs(path, array):
+    rows = np.empty((len(array), array.shape[1] + 1), dtype=np.float32)
+    rows[:, 0] = np.array([array.shape[1]], dtype=np.int32).view(np.float32)[0]
+    rows[:, 1:] = array
+    rows.tofile(path)
+
+
+@pytest.mark.parametrize('metric', ['cosine', 'l2'])
+def test_public_benchmark_with_random_arrival_groups(tmp_path, metric):
+    pytest.importorskip('faiss')
+    rng = np.random.default_rng(3)
+    base, queries = rng.standard_normal((900, 12)).astype(np.float32), rng.standard_normal((20, 12)).astype(np.float32)
+    write_fvecs(tmp_path / 'base.fvecs', base)
+    write_fvecs(tmp_path / 'query.fvecs', queries)
+    assert (insertion_pilot.read_fvecs(tmp_path / 'base.fvecs') == base).all()
+    summary = insertion_pilot.prepare_public(tmp_path / 'base.fvecs', tmp_path / 'query.fvecs', tmp_path / 'sample', metric=metric,
+                                             count=600, query_count=10, cohort_sizes=(300, 200, 100))
+    assert summary['cohort_sizes'] == {'1': 300, '2': 200, '3': 100} and summary['queries'] == 10
+    assert summary['metric'] == ('ip' if metric == 'cosine' else 'l2')
+    vectors, q = np.load(tmp_path / 'sample/vectors.npy'), np.load(tmp_path / 'sample/queries.npy')
+    top = np.load(tmp_path / 'sample/exact-top100.npy')
+    # The stored neighbours are the true nearest ones under the stated metric.
+    if metric == 'cosine':
+        assert np.allclose(np.linalg.norm(vectors, axis=1), 1, atol=1e-5)
+        best = np.argmax(q.astype(np.float64) @ vectors.astype(np.float64).T, axis=1)
+    else:
+        best = np.argmin(((q[:, None, :].astype(np.float64) - vectors[None].astype(np.float64)) ** 2).sum(axis=2), axis=1)
+    assert (top[:, 0] == best).all()
+    report = insertion_pilot.run(tmp_path / 'sample', tmp_path / 'build', order='appended', seed=11, ef=600, M=8,
+                                 ef_construction=40)
+    assert report['metric'] == summary['metric'] and report['recall_at_100'] > .95
+    with pytest.raises(ValueError, match='do not fit together'):
+        insertion_pilot.prepare_public(tmp_path / 'base.fvecs', tmp_path / 'query.fvecs', tmp_path / 'bad', metric=metric,
+                                       count=600, cohort_sizes=(300, 200, 50))
