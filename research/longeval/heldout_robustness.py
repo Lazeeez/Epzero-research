@@ -7,8 +7,11 @@
    through each approximate index instead of exact search?
 3. Tail: the per-query distribution of the ANN-minus-exact nDCG@10 difference behind the mean.
 4. Calibration: are the training (calibration/development) queries easier for the index than the
-   test queries, how large must a calibration set be to detect the recall drift, and how much
-   smaller is the uncertainty of the paired change between snapshots?
+   test queries, how large must a calibration set be to detect the recall drift, how much
+   smaller is the uncertainty of the paired change between snapshots, and what safety margin on
+   the recall target would a small calibration set need?
+5. Search width: at each fixed ef of the held-out sweep, does the effectiveness gap still change
+   between snapshots 1 and 3? This separates the implementation from its calibration outcome.
 
 Everything here describes existing, verified evidence. No new retrieval is run.
 """
@@ -240,6 +243,77 @@ def calibration_power(sweep_paths, *, target=.95, sizes=(25, 50, 100, 200, 400, 
     return out
 
 
+def calibration_margin(sweep_paths, *, target=.95, sizes=(50, 100, 200), margins=(0, .005, .01, .015, .02, .03),
+                       grid=(100, 200, 400, 800), draws=5_000, seed=20261120):
+    """Calibration with a safety margin: choose the smallest ef whose calibration recall reaches
+    target + margin. For calibration sets drawn from the test queries, report how often the chosen
+    ef truly falls short of the target on all test queries, and the mean chosen ef (the cost)."""
+    recalls = {}
+    for path in map(Path, sweep_paths):
+        report = json.loads(path.read_text())
+        if json.loads((path.parents[2] / 'inputs.json').read_text())['mode'] != 'incremental':
+            continue
+        for ef, item in report['runs'].items():
+            if int(ef) in grid:
+                recalls[(report['backend'], report['seed'], report['snapshot'], int(ef))] = item['ann_recall_per_query']
+    rng = np.random.default_rng(seed)
+    out = []
+    for backend in ('epzero', 'faiss_hnsw'):
+        for s in SNAPSHOTS:
+            queries = sorted(recalls[(backend, SEEDS[0], s, grid[0])])
+            for n in sizes:
+                for margin in margins:
+                    short = none = 0
+                    chosen = []
+                    for k in SEEDS:
+                        matrix = np.array([[recalls[(backend, k, s, ef)][q] for q in queries] for ef in grid])
+                        truth = matrix.mean(axis=1)                                   # (ef,) on all test queries
+                        means = matrix[:, rng.integers(0, len(queries), (draws, n))].mean(axis=2)   # (ef, draw)
+                        reached = means >= target + margin
+                        first = np.where(reached.any(axis=0), reached.argmax(axis=0), -1)
+                        none += int(np.sum(first == -1))
+                        picked = first[first >= 0]
+                        short += int(np.sum(truth[picked] < target))
+                        chosen.extend(np.array(grid)[picked].tolist())
+                    total = draws * len(SEEDS)
+                    out.append({'backend': backend, 'snapshot': s, 'calibration_queries': n, 'margin': margin,
+                                'chosen_ef_falls_short_of_target': short / total, 'no_ef_in_grid_qualifies': none / total,
+                                'mean_chosen_ef': float(np.mean(chosen)) if chosen else None,
+                                'chosen_ef_share': {str(ef): chosen.count(ef) / total for ef in grid}})
+    return out
+
+
+def change_by_width(sweep, exact, judged, population):
+    """ANN-minus-exact nDCG@10 at each fixed ef, and its change from snapshot 1 to 3 (seeds averaged within query).
+
+    `sweep` maps (backend, mode, seed, snapshot, ef) to a run; only incrementally maintained indexes are used.
+    """
+    from .heldout_analysis import _estimate, _summary, score
+    base = {s: score(exact[s], judged[s], population) for s in SNAPSHOTS}
+    out, changes = [], {}
+    for backend in ('epzero', 'faiss_hnsw'):
+        for ef in sorted({key[4] for key in sweep if key[0] == backend and key[1] == 'incremental'}):
+            gaps = {}
+            for s in (1, 3):
+                cols = [score(sweep[(backend, 'incremental', seed, s, ef)], judged[s], population) for seed in SEEDS]
+                gaps[s] = np.array([[c[q]['nDCG@10'] - base[s][q]['nDCG@10'] for c in cols] for q in population])
+            changes[(backend, ef)] = gaps[3] - gaps[1]
+            change = _summary(_estimate(population, list(SEEDS), changes[(backend, ef)]))
+            out.append({'backend': backend, 'ef': ef, 'gap_snapshot_1': float(gaps[1].mean()),
+                        'gap_snapshot_3': float(gaps[3].mean()), 'change': change['mean_difference'],
+                        'change_interval_95': change['percentile_interval'],
+                        'change_within_margin_0.01': bool(-.01 < change['percentile_interval'][0]
+                                                          and change['percentile_interval'][1] < .01)})
+    # The two implementations at the same width, on the same queries: is one change larger than the other?
+    between = []
+    for ef in sorted({ef for _, ef in changes}):
+        contrast = _summary(_estimate(population, list(SEEDS), changes[('epzero', ef)] - changes[('faiss_hnsw', ef)]))
+        between.append({'ef': ef, 'epzero_minus_faiss_change': contrast['mean_difference'],
+                        'interval_95': contrast['percentile_interval'],
+                        'two_sided_randomization_p': contrast['two_sided_randomization_p']})
+    return {'by_backend': out, 'epzero_against_faiss': between}
+
+
 def analyze(inputs, release, evidence, extension_evidence, development_root, output):
     inputs, evidence, extension_evidence, development_root, output = map(
         Path, (inputs, evidence, extension_evidence, development_root, output))
@@ -249,7 +323,11 @@ def analyze(inputs, release, evidence, extension_evidence, development_root, out
     _, runs, _ = collect(sorted(evidence.rglob('report.json')), ROLE, ids, exact)
     qrels, identity = load_test_qrels(release)
     from .heldout_analysis import panel
+    from .heldout_pool import load
     population = panel(qrels['gpt-oss-120b'], ids)
+    # The verified sweep runs: (kind, backend, mode, seed, snapshot, 'ef<N>') -> run.
+    sweep = {(key[1], key[2], key[3], key[4], int(key[5][2:])): run
+             for key, run in load(inputs, evidence, extension_evidence)[3].items() if key[0] == 'sweep'}
     output.mkdir(parents=True, exist_ok=False)
     report = {'status': 'completed', 'kind': 'EXPLORATORY post-freeze robustness analyses',
               'source_sha256': checksum(__file__), 'inputs': loaded, 'judgment_sha256': identity,
@@ -259,6 +337,8 @@ def analyze(inputs, release, evidence, extension_evidence, development_root, out
               'query_shift': query_shift(sorted(development_root.glob('longeval-pace-trajectory-evidence-*/*/trajectory/report.json')),
                                          sorted(evidence.rglob('trajectory/report.json'))),
               'recall_change': recall_change(sorted(evidence.rglob('trajectory/report.json'))),
+              'calibration_margin': calibration_margin(sorted(extension_evidence.rglob('sweep/snapshot-*/report.json'))),
+              'change_by_width': change_by_width(sweep, exact, qrels['gpt-oss-120b'], population),
               'calibration_power': calibration_power(sorted(extension_evidence.rglob('sweep/snapshot-*/report.json')))}
     atomic_json(output / 'report.json', report)
     return report
