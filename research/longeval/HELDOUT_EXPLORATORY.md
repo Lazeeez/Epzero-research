@@ -523,6 +523,44 @@ incoming link, so later insertions are weakly connected, not unreachable.
 **Recall.** Recall@100 is 0.942–0.947 in every order, so order redistributes misses without
 removing them. This matches the held-out shuffled-order result in section 5.
 
+**Other search widths and a denser graph.** All 18 builds were repeated and searched at ef 100,
+200, 400 and 800, and then built again with a denser graph (M 32, efConstruction 200): 36 builds.
+The rebuilt M 16 indexes reproduce the per-query misses of the first run exactly at ef 200, in all
+18 builds. The table gives the miss ratio of snapshot-3 arrivals against snapshot-1 arrivals, as
+the mean over three seeds with 95% intervals:
+
+| Graph | Implementation | ef | Recall@100 | As arrived | Shuffled | Reversed | As arrived − reversed |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| M 16, efConstruction 100 | FAISS | 100 | 0.890–0.898 | 1.30 [1.19, 1.42] | 1.03 [0.95, 1.12] | 0.84 [0.75, 0.93] | +0.47 [+0.38, +0.56] |
+| M 16, efConstruction 100 | FAISS | 200 | 0.943–0.947 | 1.41 [1.24, 1.59] | 1.08 [0.96, 1.21] | 0.84 [0.72, 0.96] | +0.57 [+0.45, +0.71] |
+| M 16, efConstruction 100 | FAISS | 400 | 0.968–0.971 | 1.39 [1.21, 1.59] | 1.12 [0.98, 1.27] | 0.86 [0.72, 1.01] | +0.52 [+0.36, +0.72] |
+| M 16, efConstruction 100 | FAISS | 800 | 0.983–0.985 | 1.49 [1.25, 1.79] | 1.08 [0.89, 1.27] | 0.69 [0.53, 0.85] | +0.80 [+0.55, +1.11] |
+| M 16, efConstruction 100 | Epzero | 100 | 0.890–0.895 | 1.38 [1.28, 1.50] | 1.03 [0.96, 1.11] | 0.81 [0.73, 0.90] | +0.57 [+0.48, +0.67] |
+| M 16, efConstruction 100 | Epzero | 200 | 0.942–0.946 | 1.48 [1.32, 1.65] | 1.10 [0.99, 1.21] | 0.82 [0.71, 0.94] | +0.65 [+0.53, +0.80] |
+| M 16, efConstruction 100 | Epzero | 400 | 0.968–0.971 | 1.45 [1.26, 1.68] | 1.12 [0.98, 1.27] | 0.81 [0.68, 0.94] | +0.64 [+0.48, +0.84] |
+| M 16, efConstruction 100 | Epzero | 800 | 0.983–0.985 | 1.58 [1.33, 1.88] | 1.08 [0.89, 1.28] | 0.73 [0.57, 0.90] | +0.85 [+0.61, +1.14] |
+| M 32, efConstruction 200 | FAISS | 100 | 0.938–0.942 | 1.55 [1.39, 1.74] | 1.03 [0.93, 1.14] | 0.80 [0.70, 0.91] | +0.75 [+0.61, +0.92] |
+| M 32, efConstruction 200 | FAISS | 200 | 0.972–0.973 | 1.69 [1.45, 1.97] | 1.13 [0.96, 1.31] | 0.71 [0.58, 0.85] | +0.98 [+0.79, +1.22] |
+| M 32, efConstruction 200 | FAISS | 400 | 0.986–0.987 | 1.98 [1.61, 2.48] | 1.24 [1.00, 1.50] | 0.71 [0.51, 0.92] | +1.27 [+0.89, +1.76] |
+| M 32, efConstruction 200 | FAISS | 800 | 0.993–0.994 | 2.14 [1.58, 2.91] | 1.14 [0.88, 1.42] | 0.60 [0.38, 0.85] | +1.54 [+1.01, +2.32] |
+| M 32, efConstruction 200 | Epzero | 100 | 0.937–0.940 | 1.63 [1.46, 1.82] | 1.06 [0.94, 1.17] | 0.80 [0.70, 0.91] | +0.82 [+0.68, +0.99] |
+| M 32, efConstruction 200 | Epzero | 200 | 0.971–0.973 | 1.75 [1.49, 2.05] | 1.13 [0.96, 1.30] | 0.72 [0.58, 0.86] | +1.03 [+0.82, +1.30] |
+| M 32, efConstruction 200 | Epzero | 400 | 0.986–0.987 | 2.08 [1.68, 2.60] | 1.22 [0.99, 1.46] | 0.73 [0.53, 0.95] | +1.35 [+0.96, +1.86] |
+| M 32, efConstruction 200 | Epzero | 800 | 0.993–0.994 | 2.22 [1.64, 3.02] | 1.08 [0.80, 1.37] | 0.59 [0.36, 0.85] | +1.63 [+1.11, +2.43] |
+
+The pattern holds in all 16 rows. The as-arrived interval lies above 1 in every row, the reversed
+ratio is below 1 in every row and its interval lies below 1 in 15 of 16, and the paired difference
+is above zero in every row (lowest interval bound +0.36). The shuffled ratio stays between 1.03
+and 1.24.
+
+**A wider search or a denser graph removes misses but concentrates the rest.** The as-arrived
+ratio is higher at ef 800 than at ef 200 for both implementations and both graphs, and higher with
+the denser graph at every width: 1.30–1.58 at M 16 against 1.55–2.22 at M 32, with reversed ratios
+of 0.69–0.86 and 0.59–0.80. In the denser graph the first tenth of insertions has 48–50 incoming
+base-layer links and the last tenth 18–20. At high recall few misses remain, so the intervals
+widen: at M 32 and ef 800 recall is above 0.99. The aggregates are in
+[`insertion-pilot-robustness.json`](insertion-pilot-robustness.json).
+
 **Reading.** The three ratios fit one account. Later documents are about 1.1 times harder to
 retrieve in themselves (the shuffled ratio), and insertion position multiplies or divides that by
 about 1.3. A practitioner report describes the opposite direction for an early small group
@@ -531,7 +569,7 @@ why the reversed arm is the decisive test.
 
 **Limits.**
 
-- The sample is 18% of snapshot 3, at one search width.
+- The sample is 18% of snapshot 3.
 - The reversed arm has not been run at full scale. That is the confirming experiment.
 
 ## 11. The LLM grades against the released human grades
