@@ -15,7 +15,7 @@
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:?submit from the isolated Epzero checkout}"
 ROOT="$PWD"
-PACKAGE="$ROOT/longeval-judge-pilot-01"
+PACKAGE="$ROOT/longeval-judge-pilot-02"
 CPU_PYTHON="$ROOT/build/pace-longeval/venv/bin/python"
 UV="$ROOT/build/pace-longeval/tools/bin/uv"
 OUTPUT="$ROOT/build/pace-longeval-judge-pilot/jobs/${SLURM_JOB_ID:?requires Slurm}"
@@ -95,8 +95,53 @@ echo "phase=$PHASE"
 GPU_PYTHON="$STAGE/venv/bin/python"
 "$GPU_PYTHON" -m pip install --only-binary=:all: --report "$STAGE/judge-install.json" \
     -r "$PACKAGE/research/longeval/judge-requirements.txt"
+# Prebuilt GPU kernels for the pinned FlashInfer. Without them the server compiles kernels while it
+# loads the model, which stopped job 7205655 (no build tool on its search path).
+"$GPU_PYTHON" -m pip install --only-binary=:all: --no-deps --require-hashes --timeout 120 --retries 10 \
+    -r "$PACKAGE/research/longeval/judge-kernels.txt"
 "$GPU_PYTHON" -m pip freeze > "$STAGE/packages.txt"
 "$GPU_PYTHON" -m pip check || echo 'warning: pip check reported inconsistencies (recorded in the log)'
+# A fallback for any kernel the prebuilt set does not cover: the environment's own build tools
+# (ninja and the pinned CUDA compiler) on the search path of the server.
+export PATH="$STAGE/venv/bin:$PATH"
+# FlashInfer keeps its build workspace under the home directory unless told otherwise; keep it on the node.
+export FLASHINFER_WORKSPACE_BASE="$STAGE"
+GPU_SITE="$("$GPU_PYTHON" -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')"
+if [ -x "$GPU_SITE/nvidia/cu13/bin/nvcc" ]; then export CUDA_HOME="$GPU_SITE/nvidia/cu13"; fi
+# Fail here, before the 65 GB model download, if the kernels are missing or belong to another version.
+"$GPU_PYTHON" - <<'PY' | tee "$OUTPUT/kernel-toolchain.json"
+import importlib.metadata as metadata
+import importlib.util
+import json
+import os
+import shutil
+
+
+def version(name):
+    try:
+        return metadata.version(name)
+    except metadata.PackageNotFoundError:
+        return None
+
+
+wanted = version('flashinfer-python')
+kernels = {name: version(name) for name in ('flashinfer-cubin', 'flashinfer-jit-cache', 'flashinfer-jit-cache-sm90a')}
+report = {'flashinfer_python': wanted, 'kernels': kernels,
+          'cubin_module_found': importlib.util.find_spec('flashinfer_cubin') is not None,
+          'cuda_home': os.environ.get('CUDA_HOME'),
+          'tools': {name: shutil.which(name) for name in ('ninja', 'c++', 'g++', 'gcc')}}
+home = report['cuda_home']
+report['tools']['nvcc'] = shutil.which(os.path.join(home, 'bin', 'nvcc')) if home else shutil.which('nvcc')
+print(json.dumps(report, indent=2))
+problems = [f'{name} is {found}, expected {wanted}' for name, found in kernels.items()
+            if found is None or found.split('+')[0] != wanted]
+if not report['cubin_module_found']:
+    problems.append('the flashinfer_cubin module cannot be found')
+if report['tools']['ninja'] is None:
+    problems.append('ninja is not on the search path')
+if problems:
+    raise SystemExit('prebuilt kernels are not usable: ' + '; '.join(problems))
+PY
 
 PHASE=model
 echo "phase=$PHASE"
@@ -115,7 +160,7 @@ PORT="$(/usr/bin/python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.
 BASE_URL="http://127.0.0.1:${PORT}/v1"
 cp "$PACKAGE/scripts/pace/longeval-judge-server.yaml" "$OUTPUT/server-config.yaml"
 # The server runs as a job step in the background; the exit trap stops it.
-srun --chdir="$STAGE" "$STAGE/venv/bin/vllm" serve "$STAGE/model" \
+srun "$STAGE/venv/bin/vllm" serve "$STAGE/model" \
     --config "$PACKAGE/scripts/pace/longeval-judge-server.yaml" \
     --served-model-name openai/gpt-oss-120b --host 127.0.0.1 --port "$PORT" > "$STAGE/server.log" 2>&1 &
 SERVER_PID=$!
