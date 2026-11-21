@@ -13,7 +13,12 @@ sample, misses by cohort within exact-rank bands, and base-layer in-degree by co
 follow insertion position, the reversed build must move the excess onto cohort 1.
 
 A build can also be searched at further widths (`--efs`) and built with other graph settings
-(`--M`, `--ef-construction`), to check that the result does not rest on one setting.
+(`--M`, `--ef-construction`), to check that the result does not rest on one setting. Every build
+also records its misses by insertion decile. In a shuffled build the decile is independent of the
+document, so that table isolates the effect of position.
+
+`prepare-public` puts a public benchmark into the same format with arrival groups assigned at
+random. Position is then the only thing that differs between the groups.
 
 This is a mechanism pilot on a sample, not a result about the full collection.
 """
@@ -68,6 +73,64 @@ def prepare(dense, inputs, output, *, count=300_000):
     return summary
 
 
+def read_fvecs(path):
+    """Vectors of an .fvecs file (each row: int32 dimension, then float32 values), memory-mapped."""
+    dim = int(np.fromfile(path, dtype=np.int32, count=1)[0])
+    data = np.memmap(path, dtype=np.float32, mode='r')
+    if dim <= 0 or data.size % (dim + 1):
+        raise ValueError('not an fvecs file')
+    return data.reshape(-1, dim + 1)[:, 1:]
+
+
+def prepare_public(base, queries, output, *, metric, count=300_000, query_count=1_000, seed=20261121,
+                   cohort_sizes=(156_741, 81_467, 61_792)):
+    """A public benchmark in the pilot's format, with arrival groups assigned at random.
+
+    The groups have the pilot's sizes but no relation to the vectors, so any difference between them
+    in a build comes from where they are inserted. `metric` is 'cosine' (vectors are normalized and
+    searched by inner product) or 'l2'.
+    """
+    if metric not in ('cosine', 'l2'):
+        raise ValueError('metric must be cosine or l2')
+    data, q = read_fvecs(base), read_fvecs(queries)
+    if sum(cohort_sizes) != count or count > len(data) or query_count > len(q) or data.shape[1] != q.shape[1]:
+        raise ValueError('sample size, group sizes and files do not fit together')
+    output = Path(output)
+    output.mkdir(parents=True, exist_ok=False)
+    rng = np.random.default_rng(seed)
+    rows = np.sort(rng.permutation(len(data))[:count])
+    vectors = np.ascontiguousarray(data[rows], dtype=np.float32)
+    q = np.ascontiguousarray(q[:query_count], dtype=np.float32)
+    if metric == 'cosine':
+        norms, query_norms = np.linalg.norm(vectors, axis=1, keepdims=True), np.linalg.norm(q, axis=1, keepdims=True)
+        if not norms.all() or not query_norms.all():
+            raise ValueError('a zero vector cannot be normalized')
+        vectors /= norms
+        q /= query_norms
+    cohort = np.empty(count, dtype=np.int8)
+    cohort[rng.permutation(count)] = np.repeat(np.array([1, 2, 3], dtype=np.int8), cohort_sizes)
+    v64 = vectors.astype(np.float64)
+    squared = (v64 ** 2).sum(axis=1)
+    top = np.empty((len(q), 100), dtype=np.int32)
+    for start in range(0, len(q), 100):
+        scores = q[start:start + 100].astype(np.float64) @ v64.T
+        if metric == 'l2':
+            scores = 2 * scores - squared                    # larger is nearer; the query norm is constant per row
+        top[start:start + 100] = np.argsort(-scores, axis=1, kind='stable')[:, :100]
+    np.save(output / 'vectors.npy', vectors)
+    np.save(output / 'cohort.npy', cohort)
+    np.save(output / 'lexical-rank.npy', np.arange(count, dtype=np.int64))
+    np.save(output / 'queries.npy', q)
+    np.save(output / 'exact-top100.npy', top)
+    summary = {'count': count, 'cohort_sizes': {str(c): int((cohort == c).sum()) for c in (1, 2, 3)},
+               'queries': len(q), 'metric': 'ip' if metric == 'cosine' else 'l2', 'dimension': int(vectors.shape[1]),
+               'source': {'base': Path(base).name, 'queries': Path(queries).name, 'vectors_in_file': int(len(data)),
+                          'similarity': metric}, 'arrival_groups': 'assigned at random', 'seed': seed,
+               'rows_sha256': hashlib.sha256(rows.astype(np.int64).tobytes()).hexdigest()}
+    (output / 'sample.json').write_text(json.dumps(summary, indent=2) + '\n')
+    return summary
+
+
 def insertion_order(ids_sorted_rank, cohort, order, seed):
     """Insertion sequence (sample positions) for an order; cohorts are filled in lexical ID order."""
     base = np.lexsort((ids_sorted_rank, cohort))               # cohort, then lexical
@@ -92,12 +155,15 @@ def run(sample, output, *, order, seed, backend='faiss_hnsw', ef=200, M=16, ef_c
     queries = np.load(sample / 'queries.npy')
     exact = np.load(sample / 'exact-top100.npy')
     n, dim = vectors.shape
+    metric = json.loads((sample / 'sample.json').read_text()).get('metric', 'ip')
+    if metric not in ('ip', 'l2'):
+        raise ValueError('unknown metric')
     sequence = insertion_order(np.load(sample / 'lexical-rank.npy'), cohort, order, seed)
     position = np.empty(n, dtype=np.int64)
     position[sequence] = np.arange(n)                       # insertion position of each sample document
     started = time.perf_counter()
     if backend == 'faiss_hnsw':
-        index = faiss.IndexHNSWFlat(dim, M, faiss.METRIC_INNER_PRODUCT)
+        index = faiss.IndexHNSWFlat(dim, M, faiss.METRIC_L2 if metric == 'l2' else faiss.METRIC_INNER_PRODUCT)
         index.hnsw.efConstruction = ef_construction
         index.hnsw.rng = faiss.RandomGenerator(seed)
         for start in range(0, n, 1024):
@@ -122,7 +188,7 @@ def run(sample, output, *, order, seed, backend='faiss_hnsw', ef=200, M=16, ef_c
     else:
         # Same explicit, uncompressed configuration as the study's Epzero adapter (backends.py).
         import epzero
-        index = epzero.Index(dim=dim, metric='ip', max_elements=n, M=M, ef_construction=ef_construction, seed=seed,
+        index = epzero.Index(dim=dim, metric=metric, max_elements=n, M=M, ef_construction=ef_construction, seed=seed,
                              quantization='none', keep_vectors=True, nav_dim=0, fill_links=False,
                              fast_build=False, half_vectors=False)
         for start in range(0, n, 1024):
@@ -143,26 +209,34 @@ def run(sample, output, *, order, seed, backend='faiss_hnsw', ef=200, M=16, ef_c
     def score(found):
         # Misses by cohort and exact-rank band, per query (for a query bootstrap).
         table = np.zeros((len(queries), 3, len(BANDS), 2), dtype=np.int64)   # [query, cohort, band, (n, missed)]
+        place = np.zeros((len(queries), 10, len(BANDS), 2), dtype=np.int64)  # [query, insertion decile, band, (n, missed)]
         for qi in range(len(queries)):
             returned = set(found[qi].tolist())
             for rank, doc in enumerate(exact[qi], 1):
                 band = next(i for i, b in enumerate(BANDS) if b[0] <= rank <= b[1])
+                missed = doc not in returned
                 table[qi, cohort[doc] - 1, band, 0] += 1
-                table[qi, cohort[doc] - 1, band, 1] += doc not in returned
+                table[qi, cohort[doc] - 1, band, 1] += missed
+                place[qi, decile[doc], band, 0] += 1
+                place[qi, decile[doc], band, 1] += missed
         hits = float(np.mean([len(set(found[qi].tolist()) & set(exact[qi].tolist())) / 100 for qi in range(len(queries))]))
-        return table, hits
+        return table, place, hits
 
-    per_query, recall = score(search(ef))
+    decile = position * 10 // n
+    per_query, by_position, recall = score(search(ef))
     output.mkdir(parents=True, exist_ok=False)
     np.save(output / 'per-query.npy', per_query)
+    np.save(output / 'per-query-position.npy', by_position)
     widths = {}
     for width in efs:
-        table, hits = (per_query, recall) if width == ef else score(search(width))
+        table, place, hits = (per_query, by_position, recall) if width == ef else score(search(width))
         np.save(output / f'per-query-ef{width}.npy', table)
+        np.save(output / f'per-query-position-ef{width}.npy', place)
         widths[str(width)] = {'recall_at_100': hits,
                               'miss_rate': {str(c): float(table[:, c - 1, :, 1].sum() / table[:, c - 1, :, 0].sum())
                                             for c in (1, 2, 3)}}
     report = {'backend': backend, 'order': order, 'seed': seed, 'ef': ef, 'M': M, 'ef_construction': ef_construction, 'count': int(n),
+              'metric': metric,
               'build_seconds': build_seconds, 'recall_at_100': recall,
               'cohorts': {str(c): {'documents': int((cohort == c).sum()),
                                    'mean_insertion_position': float(position[cohort == c].mean() / n),
@@ -269,6 +343,31 @@ def contrast(root, *, ef=None, draws=5000, seed=20261120):
     return out
 
 
+def position_curve(folder, *, order='shuffled', ef=None, draws=5000, seed=20261120):
+    """Misses by insertion decile for the builds of one order: the miss rate of each decile and its
+    rank-standardized ratio to the first decile, as the mean over seeds with a query bootstrap.
+
+    In a shuffled build a document's decile is independent of the document, so the curve shows the
+    effect of position alone.
+    """
+    name = 'per-query-position.npy' if ef is None else f'per-query-position-ef{ef}.npy'
+    tables = [np.load(path.parent / name) for path in sorted(Path(folder).glob('*/report.json'))
+              if json.loads(path.read_text())['order'] == order]
+    if not tables:
+        raise ValueError(f'no {order} build with position tables in {folder}')
+    totals = [table.sum(axis=0) for table in tables]
+    boot = np.empty((draws, 9))
+    for i, rows in enumerate(_draws(len(tables[0]), draws, seed)):
+        sums = [table[rows].sum(axis=0) for table in tables]
+        boot[i] = [np.mean([_ratio(total, d, 1) for total in sums]) for d in range(2, 11)]
+    return {'order': order, 'builds': len(tables),
+            'miss_rate_by_insertion_decile': [float(np.mean([total[d, :, 1].sum() / total[d, :, 0].sum() for total in totals]))
+                                              for d in range(10)],
+            'ratio_to_first_decile': [{'decile': d, 'value': float(np.mean([_ratio(total, d, 1) for total in totals])),
+                                       'interval_95': np.quantile(boot[:, d - 2], [.025, .975]).tolist()}
+                                      for d in range(2, 11)]}
+
+
 def robustness(sample, roots, output):
     """Aggregates of builds searched at several widths: {root name: {backend: {ef: ...}}}.
 
@@ -281,7 +380,8 @@ def robustness(sample, roots, output):
     for root in map(Path, roots):
         reports = [json.loads(path.read_text()) for path in sorted(root.glob('*/*/report.json'))]   # root/backend/build
         widths = sorted({int(w) for r in reports for w in r['widths']})
-        block = {'M': reports[0]['M'], 'ef_construction': reports[0]['ef_construction'], 'backends': {}}
+        block = {'M': reports[0]['M'], 'ef_construction': reports[0]['ef_construction'],
+                 'metric': reports[0].get('metric', 'ip'), 'backends': {}}
         if any((r['M'], r['ef_construction']) != (block['M'], block['ef_construction']) for r in reports):
             raise ValueError(f'mixed graph settings in {root}')
         for backend in sorted({r['backend'] for r in reports}):
@@ -296,6 +396,8 @@ def robustness(sample, roots, output):
                     'missed_by_cohort': {f"{b['order']}-{b['seed']}": {c: sum(v['missed'] for v in b['counts'][c].values())
                                                                      for c in '123'} for b in builds},
                     'contrasts': contrast(folder, ef=ef)}
+                if all((path.parent / f'per-query-position-ef{ef}.npy').exists() for path in folder.glob('*/report.json')):
+                    per_width[str(ef)]['position_curve_shuffled'] = position_curve(folder, order='shuffled', ef=ef)
             block['backends'][backend] = {
                 'builds': len(mine), 'build_minutes_median': float(np.median([r['build_seconds'] for r in mine]) / 60),
                 'indegree_by_insertion_decile': {f"{r['order']}-{r['seed']}": r['indegree_by_insertion_decile'] for r in mine},
@@ -329,6 +431,11 @@ def main():
     for name in ('dense', 'inputs', 'output'):
         p.add_argument(name, type=Path)
     p.add_argument('--count', type=int, default=300_000)
+    p = sub.add_parser('prepare-public', help='a public .fvecs benchmark with random arrival groups')
+    for name in ('base', 'queries', 'output'):
+        p.add_argument(name, type=Path)
+    p.add_argument('--metric', choices=('cosine', 'l2'), required=True)
+    p.add_argument('--count', type=int, default=300_000)
     p = sub.add_parser('run')
     p.add_argument('sample', type=Path)
     p.add_argument('output', type=Path)
@@ -351,6 +458,8 @@ def main():
     a = parser.parse_args()
     if a.command == 'prepare':
         r = prepare(a.dense, a.inputs, a.output, count=a.count)
+    elif a.command == 'prepare-public':
+        r = prepare_public(a.base, a.queries, a.output, metric=a.metric, count=a.count)
     elif a.command == 'run':
         r = run(a.sample, a.output, order=a.order, seed=a.seed, backend=a.backend, M=a.M,
                 ef_construction=a.ef_construction, efs=tuple(a.efs))
