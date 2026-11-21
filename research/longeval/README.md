@@ -45,9 +45,12 @@ The test is sign randomization with Holm adjustment; the intervals are bootstrap
   older ones at the same exact rank; IVF shows about 1.15 times. A held-out rebuild in random
   insertion order removes most of this excess. It is an insertion-order effect.
 - **Insertion order, full collection.** Building the same 1.66 million documents in reversed
-  arrival order brings the miss ratio of the latest arrivals from 1.60–1.75 to 0.97–0.98. The
-  paired change is +0.62 [+0.46, +0.80] for FAISS and +0.77 [+0.57, +0.98] for Epzero. A ratio of
-  about 1.2 stays with the later documents in a shuffled build.
+  arrival order brings the pooled miss ratio of the latest arrivals from 1.60–1.75 to 0.97–0.98.
+  The paired change is +0.62 [+0.46, +0.80] for FAISS and +0.77 [+0.57, +0.98] for Epzero.
+- **Within a query (post hoc).** Compared with first arrivals of the same query at the same
+  depth, the latest arrivals are missed 1.28–1.42 times as often when inserted last, 1.00–1.03
+  times at a random position and 0.82 times when inserted first. The ratio of about 1.2 that
+  survives shuffling in the pooled figures is the difficulty of the queries, not of the documents.
 - **Fresh content.** Queries whose answers are mostly new content lose about three times the
   average gap on a fixed-width HNSW index.
 - **Reordering does not fix effectiveness.** A shuffled rebuild only spreads the misses across
@@ -86,7 +89,8 @@ work ([docs/repair/](docs/repair/)).
 | `docs/repair/` | Pre-registered repair screens (RQ4), including the NGFix/RFix reproduction |
 | `docs/history/` | Superseded plans, the synthetic-pilot documentation and an earlier draft |
 | `trajectory-development.json`, `ivf-development.json` | Index configurations (frozen) |
-| `insertion-order-full*.json` | Aggregates of the full-scale insertion-order experiment (no identifiers): widths, contrasts and decile curves, and the counts of each build |
+| `insertion-order-full*.json`, `insertion-order-draw*.json` | Aggregates of the full-scale insertion-order experiment and of its three half-size draws (no identifiers): widths, contrasts and decile curves, and the counts of each full-collection build |
+| `insertion-strata*.json` | Within-query miss ratios (no identifiers): the five collections, the other search widths, GloVe and SIFT, and the held-out arms |
 | `insertion-pilot-*.json` | Aggregates of the insertion-order pilot (no identifiers): the first run (`summary`), other search widths and graph settings (`robustness`), misses by insertion decile (`position`), and the replication on GloVe and SIFT (`public-*`) |
 | `requirements.txt`, `encoder-requirements.txt` | CPU research and GPU encoder dependencies |
 | `../../scripts/pace/LONGEVAL*.md`, `longeval-*` | PACE runbooks, job scripts and packagers |
@@ -101,7 +105,7 @@ work ([docs/repair/](docs/repair/)).
 | Index trajectories | `backends.py`, `trajectory.py`, `ivf_trajectory.py`, `ivf_verification.py`, `runner.py` |
 | Held-out protocol | `heldout.py`, `heldout_analysis.py`, `freeze_protocol.py` |
 | Follow-up protocol | `freeze_extension.py` ([draft](docs/protocol/EXTENSION_PROTOCOL_DRAFT.md)) |
-| Post-freeze work | `heldout_cost.py`, `heldout_extension.py`, `heldout_exploratory.py`, `heldout_robustness.py`, `heldout_pool.py`, `insertion_pilot.py` |
+| Post-freeze work | `heldout_cost.py`, `heldout_extension.py`, `heldout_exploratory.py`, `heldout_robustness.py`, `heldout_pool.py`, `insertion_pilot.py`, `insertion_strata.py` |
 | Follow-up: human audit | `audit.py` (blinded annotation pages for dropped and replacement documents, and the analysis of returned grades) |
 | Follow-up: local relevance judge | `judge.py`, `judge-requirements.txt`, `judge-model.json`; `coverage.py` for the validation sample, the three validation measures and the coverage estimate ([runbook](../../scripts/pace/LONGEVAL_JUDGE_PILOT.md), [thresholds](docs/protocol/JUDGE_VALIDATION_THRESHOLDS.md)) |
 | Development diagnostics | `failure_diagnostic.py`, `trace_phases.py`, `work_budget.py`, `native_cost.py`, `native_cost_verification.py`, `retention_search.py`, `retention_diagnostic.py`, `feasibility.py` |
