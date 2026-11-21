@@ -82,7 +82,7 @@ work ([docs/repair/](docs/repair/)).
 | `docs/repair/` | Pre-registered repair screens (RQ4), including the NGFix/RFix reproduction |
 | `docs/history/` | Superseded plans, the synthetic-pilot documentation and an earlier draft |
 | `trajectory-development.json`, `ivf-development.json` | Index configurations (frozen) |
-| `insertion-pilot-summary.json`, `insertion-pilot-robustness.json` | Aggregate counts and ratios of the insertion-order pilot, and its repeats at other search widths and graph settings (no identifiers) |
+| `insertion-pilot-*.json` | Aggregates of the insertion-order pilot (no identifiers): the first run (`summary`), other search widths and graph settings (`robustness`), misses by insertion decile (`position`), and the replication on GloVe and SIFT (`public-*`) |
 | `requirements.txt`, `encoder-requirements.txt` | CPU research and GPU encoder dependencies |
 | `../../scripts/pace/LONGEVAL*.md`, `longeval-*` | PACE runbooks, job scripts and packagers |
 
