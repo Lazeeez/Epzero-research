@@ -12,6 +12,8 @@
    the recall target would a small calibration set need?
 5. Search width: at each fixed ef of the held-out sweep, does the effectiveness gap still change
    between snapshots 1 and 3? This separates the implementation from its calibration outcome.
+6. Scale: how large is exact search's own change in nDCG@10 between snapshots 1 and 3, which is
+   the trend that the ±0.01 margin on the gap's change has to be read against?
 
 Everything here describes existing, verified evidence. No new retrieval is run.
 """
@@ -314,6 +316,28 @@ def change_by_width(sweep, exact, judged, population):
     return {'by_backend': out, 'epzero_against_faiss': between}
 
 
+def own_change(runs, exact, judged, population):
+    """Each system's own nDCG@10 change from snapshot 1 to snapshot 3 on the panel (seeds averaged within query)."""
+    from .heldout_analysis import PRIMARY_ARMS, _estimate, _summary, score
+
+    def ndcg(run, step):
+        scores = score(run, judged[step], population)
+        return np.array([scores[q]['nDCG@10'] for q in population])
+
+    def summary(change):
+        result = _summary(_estimate(population, list(SEEDS), change))
+        return {'change': result['mean_difference'], 'interval_95': result['percentile_interval'],
+                'two_sided_randomization_p': result['two_sided_randomization_p']}
+
+    base = {s: ndcg(exact[s], s) for s in SNAPSHOTS}
+    out = {'exact': {'ndcg_by_snapshot': [float(base[s].mean()) for s in SNAPSHOTS],
+                     **summary(np.stack([base[3] - base[1]] * len(SEEDS), axis=1))}}
+    for name, (backend, mode, regime) in PRIMARY_ARMS.items():
+        values = {s: np.stack([ndcg(runs[(backend, mode, seed, s, regime)], s) for seed in SEEDS], axis=1) for s in (1, 3)}
+        out[name] = summary(values[3] - values[1])
+    return out
+
+
 def analyze(inputs, release, evidence, extension_evidence, development_root, output):
     inputs, evidence, extension_evidence, development_root, output = map(
         Path, (inputs, evidence, extension_evidence, development_root, output))
@@ -339,6 +363,7 @@ def analyze(inputs, release, evidence, extension_evidence, development_root, out
               'recall_change': recall_change(sorted(evidence.rglob('trajectory/report.json'))),
               'calibration_margin': calibration_margin(sorted(extension_evidence.rglob('sweep/snapshot-*/report.json'))),
               'change_by_width': change_by_width(sweep, exact, qrels['gpt-oss-120b'], population),
+              'own_change': own_change(runs, exact, qrels['gpt-oss-120b'], population),
               'calibration_power': calibration_power(sorted(extension_evidence.rglob('sweep/snapshot-*/report.json')))}
     atomic_json(output / 'report.json', report)
     return report
