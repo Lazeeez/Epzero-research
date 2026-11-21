@@ -78,3 +78,23 @@ def test_analysis_of_returned_grades(tmp_path):
     (tmp_path / 'other.json').write_text(json.dumps({'pairs_sha256': 'x', 'grades': grades}))
     with pytest.raises(ValueError, match='another set of pairs'):
         audit.analyze(tmp_path / 'kit', tmp_path / 'other.json')
+
+
+def test_abstentions_are_counted_and_left_out(tmp_path):
+    contract = kit(tmp_path / 'kit')
+    key = {row['pair']: row for row in map(json.loads, (tmp_path / 'kit/key.jsonl').read_text().splitlines())}
+    grades = {str(pair): 2 if row['role'] == 'dropped' else 0 for pair, row in key.items()}
+    skipped = next(pair for pair, row in key.items() if row['role'] == 'dropped')
+    grades[str(skipped)] = audit.ABSTAIN
+    del grades[str(next(pair for pair, row in key.items() if row['role'] == 'replacement'))]
+    (tmp_path / 'grades.json').write_text(json.dumps({'pairs_sha256': contract['pairs_sha256'], 'annotator': 'A', 'grades': grades}))
+    report = audit.analyze(tmp_path / 'kit', tmp_path / 'grades.json', draws=100)
+    assert report['abstained'] == {'dropped': 1, 'replacement': 0} and report['unanswered'] == 1 and report['complete'] is False
+    assert report['roles']['dropped']['graded'] == 5 and report['roles']['dropped']['mean_grade'] == 2.0
+    assert report['roles']['replacement']['graded'] == 5
+    page = (tmp_path / 'kit/annotate.html').read_text(encoding='utf-8')
+    assert 'Cannot judge' in page and 'grade(-1)' in page
+    grades[str(skipped)] = 5
+    (tmp_path / 'bad.json').write_text(json.dumps({'pairs_sha256': contract['pairs_sha256'], 'grades': grades}))
+    with pytest.raises(ValueError, match='or an abstention'):
+        audit.analyze(tmp_path / 'kit', tmp_path / 'bad.json')
