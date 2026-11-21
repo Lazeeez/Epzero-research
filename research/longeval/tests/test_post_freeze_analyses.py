@@ -233,3 +233,71 @@ def test_public_benchmark_with_random_arrival_groups(tmp_path, metric):
     with pytest.raises(ValueError, match='do not fit together'):
         insertion_pilot.prepare_public(tmp_path / 'base.fvecs', tmp_path / 'query.fvecs', tmp_path / 'bad', metric=metric,
                                        count=600, cohort_sizes=(300, 200, 50))
+
+
+def test_draw_quotas_keep_the_groups_in_proportion():
+    sizes = [869_902, 452_818, 339_180]
+    wanted = insertion_pilot.quotas(sizes, insertion_pilot.DRAW_SIZE)
+    assert sum(wanted) == 869_902 and wanted == [455_340, 237_022, 177_540]
+    assert all(abs(w / 869_902 - s / sum(sizes)) < 1e-6 for w, s in zip(wanted, sizes))
+    assert insertion_pilot.quotas([5, 3, 2], 10) == [5, 3, 2] and insertion_pilot.quotas([1, 1, 1], 2) == [1, 1, 0]
+    with pytest.raises(ValueError):
+        insertion_pilot.quotas([1, 1], 3)
+
+
+def test_comparison_with_a_heldout_run(tmp_path):
+    table = np.zeros((2, 3, 3, 2), dtype=np.int64)
+    table[:, 0, 0] = (100, 4)                       # 100 neighbours, 4 missed, for both queries
+    build, sample = tmp_path / 'build', tmp_path / 'sample'
+    build.mkdir()
+    sample.mkdir()
+    np.save(build / 'per-query.npy', table)
+    (build / 'report.json').write_text(json.dumps({'backend': 'epzero', 'seed': 11, 'order': 'appended', 'ef': 200}))
+    (sample / 'query-ids.json').write_text(json.dumps(['q1', 'q2']))
+    baseline = {'backend': 'epzero', 'seed': 11, 'mode': 'incremental',
+                'snapshots': [{}, {}, {'runs': {'frozen': {'ann_recall_per_query': {'q1': .96, 'q2': .95}}}}]}
+    (tmp_path / 'baseline.json').write_text(json.dumps(baseline))
+    result = insertion_pilot.compare_heldout(sample, build, tmp_path / 'baseline.json')
+    assert result['identical_per_query'] is False and result['queries_that_differ'] == 1
+    assert result['largest_absolute_difference'] == pytest.approx(.01) and result['mean_recall_this_build'] == pytest.approx(.96)
+    baseline['seed'] = 29
+    (tmp_path / 'baseline.json').write_text(json.dumps(baseline))
+    with pytest.raises(ValueError, match='another arm'):
+        insertion_pilot.compare_heldout(sample, build, tmp_path / 'baseline.json')
+
+
+def returned_job(folder, name, dataset, backend, seed, *, code='0'):
+    import hashlib
+    job = folder / name
+    build = job / dataset / backend / f'appended-{seed}'
+    build.mkdir(parents=True)
+    (build / 'report.json').write_text(json.dumps({'backend': backend, 'seed': seed, 'order': 'appended'}))
+    np.save(build / 'per-query.npy', np.zeros((2, 3, 3, 2), dtype=np.int64))
+    (job / 'arm.txt').write_text(f'dataset={dataset} backend={backend} seed={seed}\n')
+    (job / 'exit-code.txt').write_text(code + '\n')
+    (job / 'sample.json').write_text(json.dumps({'count': 10, 'draw': 0}))
+    lines = [f"{hashlib.sha256(path.read_bytes()).hexdigest()}  ./{path.relative_to(job).as_posix()}"
+             for path in sorted(job.rglob('*')) if path.is_file() and path.name != 'exit-code.txt']
+    (job / 'EVIDENCE-SHA256SUMS').write_text('\n'.join(lines) + '\n')
+    return job
+
+
+def test_collect_returned_jobs(tmp_path):
+    jobs = tmp_path / 'jobs'
+    returned_job(jobs, '101', 'full', 'epzero', 11)
+    returned_job(jobs, '102', 'full', 'faiss_hnsw', 11)
+    returned_job(jobs, '103', 'draw1', 'epzero', 11)
+    result = insertion_pilot.collect(jobs, 'full', tmp_path / 'full')
+    assert result == {'dataset': 'full', 'builds': 2, 'jobs': ['101', '102']}
+    assert (tmp_path / 'full/epzero/appended-11/per-query.npy').exists() and (tmp_path / 'full/sample/sample.json').exists()
+    assert not (tmp_path / 'full/epzero/appended-11').samefile(jobs / '101/full/epzero/appended-11')
+    # A changed file, a failed job and a duplicate build are all refused.
+    (jobs / '103/draw1/epzero/appended-11/report.json').write_text('{}')
+    with pytest.raises(ValueError, match='checksum mismatch'):
+        insertion_pilot.collect(jobs, 'draw1', tmp_path / 'draw1')
+    returned_job(jobs, '104', 'draw2', 'epzero', 11, code='1')
+    with pytest.raises(ValueError, match='did not complete'):
+        insertion_pilot.collect(jobs, 'draw2', tmp_path / 'draw2')
+    returned_job(jobs, '105', 'full', 'epzero', 11)
+    with pytest.raises(ValueError, match='two jobs returned'):
+        insertion_pilot.collect(jobs, 'full', tmp_path / 'again')
