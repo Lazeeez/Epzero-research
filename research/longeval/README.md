@@ -96,6 +96,7 @@ work ([docs/repair/](docs/repair/)).
 | Index trajectories | `backends.py`, `trajectory.py`, `ivf_trajectory.py`, `ivf_verification.py`, `runner.py` |
 | Held-out protocol | `heldout.py`, `heldout_analysis.py`, `freeze_protocol.py` |
 | Post-freeze work | `heldout_cost.py`, `heldout_extension.py`, `heldout_exploratory.py`, `heldout_robustness.py`, `heldout_pool.py`, `insertion_pilot.py` |
+| Follow-up: human audit | `audit.py` (blinded annotation pages for dropped and replacement documents, and the analysis of returned grades) |
 | Follow-up: local relevance judge | `judge.py`, `judge-requirements.txt`, `judge-model.json` ([runbook](../../scripts/pace/LONGEVAL_JUDGE_PILOT.md), [thresholds](docs/protocol/JUDGE_VALIDATION_THRESHOLDS.md)) |
 | Development diagnostics | `failure_diagnostic.py`, `trace_phases.py`, `work_budget.py`, `native_cost.py`, `native_cost_verification.py`, `retention_search.py`, `retention_diagnostic.py`, `feasibility.py` |
 | Repair screens (RQ4) | `frontier_search.py`, `frontier_pilot.py`, `witness_repair.py`, `witness_pilot.py`, `region_margin.py`, `ngfix_*.py`, `ngfix_driver.cpp`, `standard_graphs.py`, `standard_graph_pilot.py`, `pseudo_queries.py`, `pseudo_query_gates.py` |
