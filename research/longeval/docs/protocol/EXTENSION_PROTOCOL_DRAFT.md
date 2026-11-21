@@ -36,7 +36,7 @@ Freezing this protocol does not make these outcomes unseen. They are prior evide
 
 **Assessor.** GPT-OSS-120B run locally with the organisers' prompt and answer parser (`judge.py`,
 pinned by tests). The serving stack and model revision are those of the judge pilot
-(`judge-requirements.txt`, `judge-model.json`).
+(`judge-requirements.txt`, `judge-kernels.txt`, `judge-model.json`).
 
 - **TO DECIDE:** the sampling setting (provider default or temperature 0) and the answer cap, from
   the pilot's repeat agreement.
