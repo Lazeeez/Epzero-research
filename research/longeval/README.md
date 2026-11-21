@@ -76,7 +76,7 @@ work ([docs/repair/](docs/repair/)).
 | `*.py` | The experiment code (module map below) |
 | `tests/` | Unit and regression tests (pytest) |
 | `paper/` | Manuscript, figure script and rendered figures |
-| `docs/protocol/` | The approved protocol candidate, the earlier draft, and the judge-validation thresholds recorded for the follow-up |
+| `docs/protocol/` | The approved protocol candidate and the earlier draft; for the follow-up, the judge-validation thresholds and the extension protocol draft |
 | `docs/data/` | Release audit, vector ingestion, encoder and query-encoding validation |
 | `docs/development/` | Development experiments on training queries: trajectories, failures, IVF, cost |
 | `docs/repair/` | Pre-registered repair screens (RQ4), including the NGFix/RFix reproduction |
@@ -95,6 +95,7 @@ work ([docs/repair/](docs/repair/)).
 | Exact search and evaluation | `oracle.py`, `evaluation.py`, `paired_inference.py`, `relevance_analysis.py`, `development_relevance.py` |
 | Index trajectories | `backends.py`, `trajectory.py`, `ivf_trajectory.py`, `ivf_verification.py`, `runner.py` |
 | Held-out protocol | `heldout.py`, `heldout_analysis.py`, `freeze_protocol.py` |
+| Follow-up protocol | `freeze_extension.py` ([draft](docs/protocol/EXTENSION_PROTOCOL_DRAFT.md)) |
 | Post-freeze work | `heldout_cost.py`, `heldout_extension.py`, `heldout_exploratory.py`, `heldout_robustness.py`, `heldout_pool.py`, `insertion_pilot.py` |
 | Follow-up: human audit | `audit.py` (blinded annotation pages for dropped and replacement documents, and the analysis of returned grades) |
 | Follow-up: local relevance judge | `judge.py`, `judge-requirements.txt`, `judge-model.json` ([runbook](../../scripts/pace/LONGEVAL_JUDGE_PILOT.md), [thresholds](docs/protocol/JUDGE_VALIDATION_THRESHOLDS.md)) |
