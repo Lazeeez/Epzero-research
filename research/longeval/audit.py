@@ -13,6 +13,7 @@ that is dropped in one run and a replacement in another is left out, and counted
 `prepare` writes the annotation pages (one for everyone, one 50-pair overlap for a second annotator)
 and a separate key. The pages show only the query and the document; the key holds the roles and the
 official grades and is read by `analyze` alone. Grades use the scale of the organisers' prompt (0, 1, 2).
+An annotator who cannot judge a pair can say so; abstentions are counted and left out of the grade statistics.
 
 Everything written here holds LongEval text or identifiers and stays in the build folder.
 """
@@ -36,6 +37,7 @@ OVERLAP_PER_ROLE = 25
 ROLES = ('dropped', 'replacement')
 DEPTH = 10
 TEST_FILE = 'longeval_adhoc-queries-snapshot-test.tsv'
+ABSTAIN = -1
 SCALE = {0: 'The document has nothing to do with the query.',
          1: 'The document has some answer for the query, but the answer may be a bit unclear, or hidden amongst '
             'extraneous information.',
@@ -108,7 +110,8 @@ details { margin-top: 10px; } summary { cursor: pointer; color: var(--accent); }
 <div class="card" style="margin-top:8px">
 <div><b>0</b> &nbsp; __S0__</div><div><b>1</b> &nbsp; __S1__</div><div><b>2</b> &nbsp; __S2__</div>
 <div class="muted" style="margin-top:8px">Judge the document against the query as written. Do not look anything up, and do not go back to
-change grades because of later documents. Keys: <b>0</b>, <b>1</b>, <b>2</b> to grade; <b>&larr;</b> and <b>&rarr;</b> to move.</div>
+change grades because of later documents. If you cannot judge a pair (the document is unreadable, or the query has no clear meaning), choose
+<b>Cannot judge</b>. Keys: <b>0</b>, <b>1</b>, <b>2</b> to grade, <b>x</b> for cannot judge; <b>&larr;</b> and <b>&rarr;</b> to move.</div>
 </div></details>
 <div class="row"><label class="muted" for="who">Annotator</label><input id="who" placeholder="your initials"></div>
 <progress id="bar" value="0" max="1"></progress><div class="muted" id="count"></div>
@@ -137,9 +140,10 @@ function show() {
   el('bar').value = done / set.pairs.length;
   el('count').textContent = 'Pair ' + (state.at + 1) + ' of ' + set.pairs.length + ' \\u00b7 ' + done + ' graded';
   const box = el('grades'); box.innerHTML = '';
-  [0, 1, 2].forEach(g => {
+  [0, 1, 2, -1].forEach(g => {
     const b = document.createElement('button');
-    b.innerHTML = '<b>' + g + '</b>'; b.appendChild(document.createTextNode(scale[g]));
+    b.innerHTML = '<b>' + (g < 0 ? 'x' : g) + '</b>';
+    b.appendChild(document.createTextNode(g < 0 ? 'Cannot judge this pair.' : scale[g]));
     if (state.grades[p.pair] === g) b.className = 'on';
     b.onclick = () => grade(g); box.appendChild(b);
   });
@@ -160,6 +164,7 @@ el('save').onclick = () => {
 document.addEventListener('keydown', e => {
   if (['TEXTAREA', 'INPUT'].includes(document.activeElement.tagName)) return;
   if (['0', '1', '2'].includes(e.key)) grade(Number(e.key));
+  if (e.key === 'x') grade(-1);
   if (e.key === 'ArrowRight') move(1); if (e.key === 'ArrowLeft') move(-1);
 });
 show();
@@ -243,12 +248,14 @@ def analyze(kit, grades, *, second=None, draws=10_000, seed=SEED):
         return {int(pair): int(grade) for pair, grade in record['grades'].items()}, record.get('annotator')
 
     first, who = read(grades)
-    graded = sorted(pair for pair in first if pair in key)
-    if any(first[pair] not in (0, 1, 2) for pair in graded):
-        raise ValueError('grades must be 0, 1 or 2')
+    answered = sorted(pair for pair in first if pair in key)
+    if any(first[pair] not in (0, 1, 2, ABSTAIN) for pair in answered):
+        raise ValueError('grades must be 0, 1 or 2, or an abstention')
+    graded = [pair for pair in answered if first[pair] != ABSTAIN]
     by_role = {role: [pair for pair in graded if key[pair]['role'] == role] for role in ROLES}
     out = {'status': 'completed', 'kind': 'EXPLORATORY human audit', 'annotator': who, 'pairs': len(key), 'graded': len(graded),
-           'complete': len(graded) == len(key), 'roles': {}}
+           'abstained': {role: sum(first[pair] == ABSTAIN and key[pair]['role'] == role for pair in answered) for role in ROLES},
+           'unanswered': len(key) - len(answered), 'complete': len(answered) == len(key), 'roles': {}}
     for role, pairs in by_role.items():
         values = np.array([first[pair] for pair in pairs])
         out['roles'][role] = {'graded': len(pairs), 'mean_grade': float(values.mean()) if len(values) else None,
@@ -281,7 +288,8 @@ def analyze(kit, grades, *, second=None, draws=10_000, seed=SEED):
             'linear_weighted_kappa': kappa, 'confusion_human_rows_official_columns': confusion}
     if second is not None:
         other, other_who = read(second)
-        shared = sorted(pair for pair in other if pair in first and key.get(pair, {}).get('overlap'))
+        shared = sorted(pair for pair in other if pair in first and key.get(pair, {}).get('overlap')
+                        and first[pair] != ABSTAIN and other[pair] != ABSTAIN)
         if shared:
             kappa, confusion = _kappa([first[p] for p in shared], [other[p] for p in shared])
             out['between_annotators'] = {'second_annotator': other_who, 'pairs': len(shared),
