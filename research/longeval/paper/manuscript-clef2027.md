@@ -112,8 +112,8 @@ Our contributions are:
 - All of them use exact search or a single fixed index.
 
 **Streaming dense retrieval.** PLAID SHIRTTT [8] and MURR [9] address encoder and centroid drift
-in document streams, and AURORA [10] studies temporal reranking. These works change the model
-or the representation. We hold the representation fixed and isolate the index.
+in document streams. AURORA [10] keeps an HNSW graph and refits its quantizer when drift appears,
+on synthetic drift. These works change the model or the representation. We hold the representation fixed and isolate the index.
 
 **Dynamic ANN indexes.**
 - FreshDiskANN [11] and SPFresh [12] maintain graph and partition indexes under updates.
@@ -202,7 +202,8 @@ ran. Freezing hashed the protocol, the configurations, the analysis code and the
 55 files. It also recorded that no held-out outcome existed.
 
 **Primary labels.** The released GPT-OSS-120B judgments. The organisers graded a depth-10 pool
-of the 24 systems submitted to the lab, from the query alone [6]; the grade of a query–document
+of the 24 systems submitted to the lab, from the query alone, with a prompt adapted from UMBRELA
+[6, 22]; the grade of a query–document
 pair is the same at every snapshot where it appears. The panel is fixed: the 374 test queries
 with a positive judgment at all three snapshots.
 
@@ -635,24 +636,25 @@ LongEval-derived data are not redistributed. The scripts rebuild them from the o
 
 ## References
 
-1. Lin. Operational advice for dense and sparse retrievers: HNSW, flat, or inverted indexes? 2024.
-2. Tu, Jiang, Lin et al. Approximate nearest neighbor search and lightweight dense vector reranking in multi-stage retrieval. ICTIR 2020.
-3. Stahlberg and Byrne. On NMT search errors and model errors: Cat got your tongue? EMNLP 2019.
-4. Keller, Breuer and Schaer. Evaluation of temporal change in IR test collections. ICTIR 2024.
-5. LongEval at CLEF 2025: Longitudinal evaluation of IR systems on web and scientific data.
-6. Extended overview of the CLEF 2026 LongEval lab. CEUR Vol-4283.
-7. DS@GT at LongEval: Evaluating temporal performance in web search systems and topics with two-stage retrieval.
-8. Lawrie et al. PLAID SHIRTTT for large-scale streaming dense retrieval. SIGIR 2024.
-9. Yang et al. MURR: Model updating with regularized replay for searching a document stream. 2025.
-10. Saravanan, Salla and Amancherla. AURORA. Findings of ACL 2026.
-11. Singh et al. FreshDiskANN. 2021.
-12. Xu et al. SPFresh. SOSP 2023.
-13. Mohoney et al. Quake: Adaptive indexing for vector search. OSDI 2025.
-14. Baranchuk et al. DeDrift: Robust similarity search under content drift. ICCV 2023.
-15. Mandarapu and Kunkunuru. When to repair. 2026.
-16. Kuissi et al. Still fresh? 2026.
-17. NGFix/RFix: Dynamically detect and fix hardness for efficient approximate nearest neighbor search. 2025.
-18. Chen et al. RoarGraph. VLDB 2024.
-19. Malkov and Yashunin. Efficient and robust approximate nearest neighbor search using hierarchical navigable small world graphs. IEEE TPAMI 2020.
-20. Elliott and Clark. The impacts of data, ordering, and intrinsic dimensionality on recall in hierarchical navigable small worlds. 2024.
-21. Zerhoudi, Roegiest, Mitrović and Granitzer. As we may search: Local-first information retrieval. ICTIR 2026.
+1. Lin. Operational Advice for Dense and Sparse Retrievers: HNSW, Flat, or Inverted Indexes? ACL 2025 (Industry Track), pp. 865–872, 2025. https://doi.org/10.18653/v1/2025.acl-industry.61
+2. Tu et al. Approximate Nearest Neighbor Search and Lightweight Dense Vector Reranking in Multi-Stage Retrieval Architectures. ICTIR 2020, pp. 97–100, 2020. https://doi.org/10.1145/3409256.3409818
+3. Stahlberg and Byrne. On NMT Search Errors and Model Errors: Cat Got Your Tongue? EMNLP 2019, 2019. https://doi.org/10.18653/v1/D19-1331
+4. Keller, Breuer and Schaer. Evaluation of Temporal Change in IR Test Collections. ICTIR 2024, pp. 3–13, 2024. https://doi.org/10.1145/3664190.3672530
+5. Cancellieri et al. LongEval at CLEF 2025: Longitudinal Evaluation of IR Systems on Web and Scientific Data. CLEF 2025, LNCS, pp. 363–387, 2025. https://doi.org/10.1007/978-3-032-04354-2_20
+6. Bouaraba et al. Extended Overview of the CLEF 2026 LongEval Lab on Longitudinal Evaluation of Model Performance. CLEF 2026 Working Notes, CEUR vol. 4283, 2026. https://ceur-ws.org/Vol-4283/paper374.pdf
+7. Miyaguchi, Afrulbasha and Pramov. DS@GT at LongEval: Evaluating Temporal Performance in Web Search Systems and Topics with Two-Stage Retrieval. arXiv:2507.08360, 2025.
+8. Lawrie et al. PLAID SHIRTTT for Large-Scale Streaming Dense Retrieval. SIGIR 2024, pp. 2574–2578, 2024. https://doi.org/10.1145/3626772.3657964
+9. Yang et al. MURR: Model Updating with Regularized Replay for Searching a Document Stream. LNCS, pp. 85–100, 2025. https://doi.org/10.1007/978-3-031-88708-6_6
+10. Saravanan, Salla and Amancherla. AURORA: Neuro-Symbolic Continual Indexing for Evolving RAG Systems. Findings of ACL 2026, pp. 10179–10195, 2026. https://aclanthology.org/2026.findings-acl.495/
+11. Singh et al. FreshDiskANN: A Fast and Accurate Graph-Based ANN Index for Streaming Similarity Search. arXiv:2105.09613, 2021.
+12. Xu et al. SPFresh: Incremental In-Place Update for Billion-Scale Vector Search. SOSP 2023, pp. 545–561, 2023. https://doi.org/10.1145/3600006.3613166
+13. Mohoney et al. Quake: Adaptive Indexing for Vector Search. arXiv:2506.03437, 2025.
+14. Baranchuk et al. DeDrift: Robust Similarity Search under Content Drift. ICCV 2023, pp. 10992–11001, 2023. https://doi.org/10.1109/ICCV51070.2023.01012
+15. Mandarapu and Kunkunuru. When to Repair a Graph ANN Index: A Matched-Budget Negative Result, and the Interpolated-Baseline Trap That Hid It. arXiv:2607.00728, 2026.
+16. Kuissi et al. Still Fresh? Evaluating Temporal Drift in Retrieval Benchmarks. arXiv:2603.04532, 2026.
+17. Hua et al. Dynamically Detect and Fix Hardness for Efficient Approximate Nearest Neighbor Search. Proc. ACM Manag. Data 3, pp. 1–28, 2025. https://doi.org/10.1145/3769783
+18. Chen et al. RoarGraph: A Projected Bipartite Graph for Efficient Cross-Modal Approximate Nearest Neighbor Search. PVLDB 17, pp. 2735–2749, 2024. https://doi.org/10.14778/3681954.3681959
+19. Malkov and Yashunin. Efficient and Robust Approximate Nearest Neighbor Search Using Hierarchical Navigable Small World Graphs. IEEE TPAMI, 2020. https://doi.org/10.1109/TPAMI.2018.2889473
+20. Elliott and Clark. The Impacts of Data, Ordering, and Intrinsic Dimensionality on Recall in Hierarchical Navigable Small Worlds. ICTIR 2024, pp. 25–33, 2024. https://doi.org/10.1145/3664190.3672512
+21. Zerhoudi et al. As We May Search. ICTIR 2026, pp. 425–435, 2026. https://doi.org/10.1145/3805713.3820402
+22. Upadhyay et al. UMBRELA: UMbrela is the (Open-Source Reproduction of the) Bing RELevance Assessor. arXiv:2406.06519, 2024.
