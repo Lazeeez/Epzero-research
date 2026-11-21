@@ -637,8 +637,8 @@ aggregates are in [`insertion-pilot-public-glove.json`](insertion-pilot-public-g
 [`insertion-pilot-public-sift.json`](insertion-pilot-public-sift.json).
 
 **Reading.** The three ratios fit one account. Later documents are about 1.1 times harder to
-retrieve in themselves (the shuffled ratio), and insertion position multiplies or divides that by
-about 1.3. A practitioner report describes the opposite direction for an early small group
+retrieve in themselves on this sample (the shuffled ratio; about 1.2 on the full collection, see
+section 13), and insertion position multiplies or divides that by about 1.3. A practitioner report describes the opposite direction for an early small group
 followed by a much larger batch (<https://github.com/chroma-core/chroma/issues/7963>), which is
 why the reversed arm is the decisive test.
 
@@ -646,7 +646,8 @@ why the reversed arm is the decisive test.
 
 - The sample is 18% of snapshot 3.
 - The public benchmarks have randomly assigned groups. They show the effect of position, not of time.
-- The reversed arm has not been run at full scale. That is the confirming experiment.
+- The reversed arm was later run on the full collection (section 13). The paired contrast was
+  confirmed. The reversed ratio was not: it is about 1 there, not below 1.
 
 ## 11. The LLM grades against the released human grades
 
@@ -740,3 +741,153 @@ not a finding.
 
 These are fixed-width diagnostics on the test queries, designed after the held-out results were
 seen. They do not replace the frozen decision for the calibrated arms.
+
+## 13. Insertion order on the full collection (jobs 7208888–7208893)
+
+This is the full-scale follow-up to the pilot of section 10. Its design was recorded before any
+output was seen ([`INSERTION_ORDER_DESIGN_RECORD.md`](docs/protocol/INSERTION_ORDER_DESIGN_RECORD.md)).
+It is exploratory: the pilot and the held-out results were known when it was designed. The jobs
+ran on 21 November 2026 from the package `longeval-insertion-order-01`.
+
+**Setup.** All 1,661,900 snapshot-3 documents, with the 381 test queries and exact neighbours
+from an exhaustive search. Each implementation builds the index in the three orders of section 10
+(as arrived, reversed blocks, shuffled) with seeds 11, 29 and 47: 18 builds, searched at ef 100,
+200, 400 and 800. Settings are the study's (M 16, efConstruction 100, inner product, one thread,
+Gold 6226 nodes). A build takes 44–47 minutes.
+
+**Checks.**
+
+- All six jobs ended with exit code 0, and every returned file matches its job's checksum list.
+- The exact neighbours agree with the held-out references for all 381 queries: the same 100
+  documents per query, and scores within 6 × 10⁻¹⁶.
+- Each as-arrived build reproduces the held-out incremental run of the same implementation and
+  seed: recall is identical for all 381 queries in all six builds.
+- The as-arrived ratio of snapshots 2 and 3 together equals the value in section 1: 1.63 [1.49,
+  1.80] for Epzero and 1.54 [1.40, 1.69] for FAISS.
+
+**The primary contrast is confirmed.** The table gives the rank-standardized miss ratio of a
+later arrival group against snapshot-1 arrivals at ef 200, as the mean over three seeds with 95%
+paired query-bootstrap intervals (5,000 draws):
+
+| Implementation | Later group | As arrived | Shuffled | Reversed | As arrived − reversed | As arrived − shuffled |
+| --- | --- | --- | --- | --- | --- | --- |
+| FAISS | snapshot 3 | 1.60 [1.40, 1.81] | 1.23 [1.08, 1.39] | 0.97 [0.84, 1.11] | +0.62 [+0.46, +0.80] | +0.36 [+0.23, +0.52] |
+| FAISS | snapshot 2 | 1.49 [1.35, 1.65] | 1.23 [1.12, 1.34] | 1.03 [0.92, 1.15] | +0.46 [+0.33, +0.61] | +0.26 [+0.16, +0.39] |
+| FAISS | snapshots 2 and 3 together | 1.54 [1.40, 1.69] | 1.23 [1.12, 1.34] | 1.01 [0.91, 1.11] | +0.53 [+0.41, +0.67] | +0.31 [+0.20, +0.43] |
+| Epzero | snapshot 3 | 1.75 [1.54, 1.98] | 1.20 [1.05, 1.35] | 0.98 [0.85, 1.12] | +0.77 [+0.57, +0.98] | +0.55 [+0.40, +0.73] |
+| Epzero | snapshot 2 | 1.55 [1.40, 1.72] | 1.18 [1.08, 1.29] | 1.07 [0.96, 1.18] | +0.48 [+0.36, +0.63] | +0.37 [+0.26, +0.50] |
+| Epzero | snapshots 2 and 3 together | 1.63 [1.49, 1.80] | 1.19 [1.09, 1.29] | 1.03 [0.94, 1.13] | +0.60 [+0.48, +0.76] | +0.45 [+0.33, +0.59] |
+
+The primary contrast of the design record is the first and fourth rows of the sixth column:
++0.62 and +0.77. It is also above zero in each of the six seed-level comparisons (lowest interval
+bound +0.40), and for the pooled later group (lowest bound +0.37).
+
+![Miss ratio of snapshot-3 arrivals against snapshot-1 arrivals, by insertion order, on the full collection](paper/figures/fig-insertion-order.png)
+
+*Mean over three seeds with 95% query-bootstrap intervals; the short ticks are the single seeds.
+All of snapshot 3, ef 200.*
+
+**Reversal removes the excess; it does not turn it into a deficit.** This is where the full
+collection differs from the pilot. On the sample the reversed ratio was 0.82–0.84 and its interval
+lay below 1. Here it is 0.97 and 0.98, and every interval includes 1: by seed the ratios are 0.98 /
+1.02 / 0.93 for FAISS and 0.97 / 0.97 / 1.00 for Epzero. The statement that reversing the order
+moves the blind spot to the first arrivals does not hold at full scale. What holds is that the
+latest arrivals lose their excess when they are inserted first.
+
+**Why: the documents' own share is larger here.** The shuffled ratio is 1.20–1.23, against
+1.08–1.10 on the sample, and its interval lies above 1. It agrees with the two earlier full-scale
+estimates of the part that stays with the documents: the held-out shuffled rebuild of section 5
+(1.21 and 1.25) and IVF (1.14–1.17). Around that level, the order moves the ratio by about as much
+as on the sample:
+
+| | As arrived ÷ shuffled | Shuffled ÷ reversed |
+| --- | --- | --- |
+| FAISS, sample | 1.30 | 1.29 |
+| FAISS, full collection | 1.29 | 1.27 |
+| Epzero, sample | 1.35 | 1.34 |
+| Epzero, full collection | 1.46 | 1.22 |
+
+So the effect of position is about the same size at both scales, and what differs is the level it
+acts on. Why the later documents are harder in themselves, and why more so in the full collection
+than in an 18% sample, is not known. It is not a lack of incoming links: in shuffled builds the
+snapshot-3 arrivals have slightly more of them than the snapshot-1 arrivals (18.9 against 18.0 for
+Epzero, 19.4 against 18.4 for FAISS).
+
+**Counts behind the ratios.** Every build is scored on the same 38,100 exact neighbours: 24,365,
+7,837 and 5,898 from the arrival groups of snapshots 1, 2 and 3. The table gives the missed
+neighbours for seeds 11 / 29 / 47, and the mean miss rate of each group:
+
+| Build | Snapshot-1 arrivals | Snapshot-2 arrivals | Snapshot-3 arrivals | Mean miss rate |
+| --- | --- | --- | --- | --- |
+| FAISS, as arrived | 1,306 / 1,249 / 1,288 | 656 / 630 / 645 | 532 / 501 / 519 | 5.3% / 8.2% / 8.8% |
+| FAISS, shuffled | 1,417 / 1,426 / 1,432 | 601 / 607 / 568 | 446 / 444 / 451 | 5.8% / 7.6% / 7.6% |
+| FAISS, reversed | 1,597 / 1,569 / 1,726 | 560 / 553 / 591 | 397 / 406 / 405 | 6.7% / 7.2% / 6.8% |
+| Epzero, as arrived | 1,213 / 1,329 / 1,237 | 626 / 692 / 647 | 548 / 571 / 546 | 5.2% / 8.4% / 9.4% |
+| Epzero, shuffled | 1,474 / 1,454 / 1,520 | 592 / 585 / 594 | 444 / 446 / 459 | 6.1% / 7.5% / 7.6% |
+| Epzero, reversed | 1,672 / 1,631 / 1,611 | 594 / 595 / 580 | 411 / 403 / 411 | 6.7% / 7.5% / 6.9% |
+
+**Other search widths.** The miss ratio of snapshot-3 arrivals against snapshot-1 arrivals, as the
+mean over three seeds:
+
+| Implementation | ef | Recall@100 | As arrived | Shuffled | Reversed | As arrived − reversed |
+| --- | --- | --- | --- | --- | --- | --- |
+| FAISS | 100 | 0.881–0.891 | 1.49 [1.36, 1.64] | 1.23 [1.13, 1.34] | 0.94 [0.84, 1.04] | +0.56 [+0.45, +0.67] |
+| FAISS | 200 | 0.929–0.938 | 1.60 [1.40, 1.81] | 1.23 [1.08, 1.39] | 0.97 [0.84, 1.11] | +0.62 [+0.46, +0.80] |
+| FAISS | 400 | 0.958–0.964 | 1.59 [1.33, 1.89] | 1.22 [1.01, 1.43] | 0.94 [0.77, 1.11] | +0.65 [+0.45, +0.89] |
+| FAISS | 800 | 0.975–0.978 | 1.59 [1.29, 1.90] | 1.15 [0.90, 1.38] | 0.89 [0.69, 1.08] | +0.70 [+0.48, +0.95] |
+| Epzero | 100 | 0.876–0.887 | 1.54 [1.40, 1.69] | 1.23 [1.12, 1.34] | 0.95 [0.85, 1.06] | +0.59 [+0.47, +0.71] |
+| Epzero | 200 | 0.930–0.937 | 1.75 [1.54, 1.98] | 1.20 [1.05, 1.35] | 0.98 [0.85, 1.12] | +0.77 [+0.57, +0.98] |
+| Epzero | 400 | 0.957–0.964 | 1.69 [1.42, 1.98] | 1.19 [0.98, 1.41] | 0.96 [0.78, 1.13] | +0.73 [+0.53, +0.98] |
+| Epzero | 800 | 0.975–0.978 | 1.73 [1.42, 2.09] | 1.11 [0.88, 1.33] | 0.84 [0.62, 1.05] | +0.89 [+0.63, +1.24] |
+
+The as-arrived interval lies above 1 and the paired difference above zero in all eight rows
+(lowest bound +0.45). Seed by seed, the paired difference is above zero in all 24 combinations of
+implementation, seed and width (lowest bound +0.38). The reversed ratio is 0.84–0.98 and its interval includes 1 in all eight.
+The recall range covers the three orders; the reversed builds are the lowest, by 0.1–0.6 points
+on average.
+
+**Position alone: misses by insertion decile.** In the shuffled builds at ef 200, as the mean over
+three seeds, with the rank-standardized ratio to the first decile:
+
+| Insertion decile | Epzero: miss rate | Epzero: ratio to first decile | FAISS: miss rate | FAISS: ratio to first decile |
+| --- | --- | --- | --- | --- |
+| 1 | 4.9% | 1 (reference) | 5.0% | 1 (reference) |
+| 2 | 5.6% | 1.14 [1.04, 1.27] | 5.6% | 1.14 [1.03, 1.28] |
+| 3 | 6.2% | 1.29 [1.16, 1.46] | 6.0% | 1.22 [1.11, 1.37] |
+| 4 | 6.6% | 1.36 [1.24, 1.54] | 6.4% | 1.29 [1.17, 1.46] |
+| 5 | 6.6% | 1.36 [1.23, 1.53] | 6.4% | 1.31 [1.18, 1.48] |
+| 6 | 6.9% | 1.43 [1.29, 1.63] | 6.7% | 1.37 [1.24, 1.55] |
+| 7 | 7.4% | 1.53 [1.37, 1.76] | 7.1% | 1.45 [1.30, 1.65] |
+| 8 | 6.9% | 1.42 [1.25, 1.64] | 6.9% | 1.39 [1.25, 1.58] |
+| 9 | 7.4% | 1.54 [1.36, 1.78] | 7.3% | 1.48 [1.31, 1.72] |
+| 10 | 7.8% | 1.60 [1.42, 1.85] | 7.4% | 1.49 [1.33, 1.72] |
+
+The interval lies above 1 for all 18 ratios. The sample gave 1.57 and 1.47 for the last decile;
+the curve is the same at full scale. Over the four search widths the last decile's ratio is
+1.39–1.73, and 67 of the 72 intervals lie above 1.
+
+**Incoming links.** Base-layer incoming links fall with insertion position in every order and in
+both implementations: 28.0–29.6 for the first tenth of insertions and 11.5–13.7 for the last. By
+arrival group (snapshots 1 / 2 / 3) the means are 22.3 / 16.1 / 14.0 in the as-arrived FAISS
+builds and 14.7 / 20.3 / 26.2 in the reversed ones; for Epzero they are 22.1 / 15.4 / 13.1 and
+14.0 / 19.9 / 26.2. At most 0.06% of documents have no incoming link.
+
+**Reading.** Two things make the latest arrivals harder to retrieve in an index built by
+appending. One is their position: late insertions are missed about 1.3–1.5 times as often as the
+same documents at an average position, and the decile curve shows this with the documents held
+equal. The other stays with the documents in every order, a ratio of about 1.2. Position is the
+larger part: at ef 200, shuffling removes 0.36 of FAISS's excess of 0.60 and 0.55 of Epzero's
+0.75.
+
+**Limits.**
+
+- One graph setting (M 16, efConstruction 100). The denser graph was run on the sample only.
+- The documents' own share is measured, not explained.
+- The three draws of snapshot-1 size (18 jobs) have not been run. They would show whether that
+  share grows with the size of the collection.
+
+The aggregates are in [`insertion-order-full.json`](insertion-order-full.json) (widths, contrasts,
+decile curves) and [`insertion-order-full-builds.json`](insertion-order-full-builds.json) (counts
+by rank band and incoming links of each build). Both were written by the pilot's commands, so
+their `kind` field still says "pilot"; the `sample` field records the full collection. Neither
+holds identifiers.
