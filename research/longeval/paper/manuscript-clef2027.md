@@ -423,6 +423,13 @@ At most 0.02% of documents have no incoming link, so late insertions are weakly 
 unreachable. Recall@100 is 0.942–0.947 in every order: the order decides who bears the misses,
 not how many there are.
 
+The result does not rest on one setting. We repeated the builds at ef 100, 200, 400 and 800, and
+with a denser graph (M 32, efConstruction 200). In all 16 combinations of implementation, graph
+and width the as-arrived ratio lies above 1, the reversed ratio is below 1, and the paired
+difference is above zero. A wider search or a denser graph removes misses but concentrates the
+rest: the as-arrived ratio is 1.30–1.58 at M 16 and 1.55–2.22 at M 32, and it is higher at ef 800
+than at ef 200 in every case.
+
 This is a pilot on 18% of snapshot 3. The reversed order has not been run on the full collection.
 
 **Effect on effectiveness.** We split the 374 queries by the share of their exact snapshot-3
@@ -605,8 +612,8 @@ is the search width.
   top 10 results, so they cannot support an index comparison.
 - **Exploratory analyses.** The test queries were used once for the frozen analysis. Every
   analysis marked exploratory reuses them and was designed after those results were seen.
-- **Insertion-order reversal.** The reversed order was run on a 300,000-document sample at one
-  search width, not on the full collection.
+- **Insertion-order reversal.** The reversed order was run on a 300,000-document sample, at four
+  search widths and two graph settings, not on the full collection.
 - **Calibration design.** Calibration uses 50 queries and a coarse grid. This is a design choice,
   and it is what separates the two HNSW arms.
 - **Repair screens.** These are development screens, some on an 8,192-vector sample. They are
