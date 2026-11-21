@@ -36,3 +36,28 @@ def test_the_draft_is_not_freezable_and_every_listed_file_exists():
     assert not freeze_extension.RECEIPT.exists()
     missing = [name for name in freeze_extension.FROZEN[1:] if not (freeze_extension.ROOT / name).is_file()]
     assert missing == []
+
+
+def test_a_changed_file_blocks_the_freeze(tmp_path):
+    import shutil
+    import subprocess
+    if shutil.which('git') is None:
+        pytest.skip('needs git')
+    git = lambda *arguments: subprocess.run(['git', '-c', 'user.name=t', '-c', 'user.email=t@example.invalid', *arguments],
+                                            cwd=tmp_path, check=True, capture_output=True)
+    protocol, scorer = tmp_path / 'protocol.md', tmp_path / 'scorer.py'
+    protocol.write_bytes(b'Everything is decided.\n')
+    scorer.write_bytes(b'MARGIN = 1\n')
+    git('init', '-q')
+    git('add', 'protocol.md', 'scorer.py')
+    git('commit', '-q', '-m', 'design')
+    arguments = dict(root=tmp_path, protocol=protocol, receipt=tmp_path / 'receipt.json', files=('protocol.md', 'scorer.py'),
+                     outcomes={})
+    # The scoring module differs from the committed one: nothing may be frozen.
+    scorer.write_bytes(b'MARGIN = 2\n')
+    with pytest.raises(ValueError, match='uncommitted changes'):
+        freeze_extension.freeze(**arguments)
+    assert not (tmp_path / 'receipt.json').exists()
+    git('commit', '-q', '-am', 'change the margin')
+    record = freeze_extension.freeze(**arguments)
+    assert record['git_commit'] and record['files']['scorer.py'] == hashlib.sha256(b'MARGIN = 2\n').hexdigest()
