@@ -31,7 +31,8 @@ Three findings need no relevance labels:
   about 1.6 times as often as earlier ones at the same exact rank; IVF shows about 1.15 times. A
   held-out rebuild in random order removes most of the excess. On a 300,000-document sample,
   reversing the insertion order moves the excess onto the oldest documents (ratio 0.82–0.84).
-  The cause is the position in the insertion sequence, not the age of the document.
+  The cause is the position in the insertion sequence, not the age of the document: the effect
+  replicates on two public benchmarks with randomly assigned arrival groups.
 
 Four findings are stated under the organisers' LLM relevance labels:
 
@@ -430,6 +431,21 @@ difference is above zero. A wider search or a denser graph removes misses but co
 rest: the as-arrived ratio is 1.30–1.58 at M 16 and 1.55–2.22 at M 32, and it is higher at ef 800
 than at ef 200 in every case.
 
+**Position alone is enough.** In a shuffled build the position of a document in the insertion
+sequence is independent of the document. The miss rate still rises steadily with position: at
+ef 200 it goes from 4.2% in the first tenth of insertions to 6.0–6.5% in the last, a
+rank-standardized ratio of 1.47 [1.31, 1.67] for FAISS and 1.57 [1.40, 1.77] for Epzero
+(Figure 5a).
+
+**The effect is not specific to this collection.** We ran the same design on two public
+benchmarks, GloVe (cosine) and SIFT (Euclidean), with arrival groups assigned at random so that
+they differ only in where they are inserted. The shuffled ratio is then 0.92–1.03, as it
+should be. The as-arrived ratio is 1.09–1.30 on GloVe and 1.31–2.25 on SIFT across the four
+search widths, and the reversed ratio 0.72–0.85 and 0.33–0.63; the reversed interval lies
+below 1 and the paired difference above zero in all 16 cases. The decile curves have the same
+shape (Figure 5b, c). The under-retrieval of late insertions is a property of building an HNSW
+graph by insertion, in both implementations.
+
 This is a pilot on 18% of snapshot 3. The reversed order has not been run on the full collection.
 
 **Effect on effectiveness.** We split the 374 queries by the share of their exact snapshot-3
@@ -463,6 +479,10 @@ new-document blind spot is therefore a wider search (§4.5), not a periodic reor
 after snapshot 1, relative to snapshot-1 documents, on held-out queries at snapshot 3, with 95%
 query-bootstrap intervals. (b) The same ratio on development queries: filled markers show
 appended (incremental) insertion order, hollow markers a shuffled-order rebuild.
+
+**Figure 5** (`figures/fig-position.pdf`). Rank-standardized miss ratio of each insertion
+decile against the first, in shuffled builds at ef 200, for (a) the LongEval sample, (b) GloVe and
+(c) SIFT. Means over three seeds with 95% query-bootstrap intervals.
 
 **Figure 4** (`figures/fig-insertion-pilot.pdf`). Miss ratio of snapshot-3 arrivals against
 snapshot-1 arrivals by insertion order, on a 300,000-document sample at ef 200. Markers are means
@@ -601,7 +621,8 @@ is the search width.
 ## 6 Limitations
 
 - **Scope of data.** There is one collection and one embedding model, and the collection is
-  append-only. The equivalence result does not cover deletions or rewritten documents. LongEval
+  append-only. Only the insertion-position effect was replicated elsewhere, on two public
+  benchmarks. The equivalence result does not cover deletions or rewritten documents. LongEval
   Web, which has deletions, is the natural next test.
 - **Pooling.** Most documents that approximate search substitutes into the top 10 are
   ungraded, which biases the gap towards larger losses. The carried and condensed rescoring
