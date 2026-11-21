@@ -40,7 +40,8 @@ Four findings are stated under the organisers' LLM relevance labels:
   its leaderboard rank on these labels.
 - **Gap over time.** From snapshot 1 to snapshot 3, the gap's change is negligible within ±0.01
   for two of three arms. It is inconclusive for the third, whose calibration never triggered a
-  wider search while its gap widened from −0.006 to −0.012.
+  wider search while its gap widened from −0.006 to −0.012. Searched at the next wider setting,
+  its change lies within ±0.01 as well.
 - **Concentration.** At snapshot 3, 82–89% of queries lose nothing and the worst 5% carry 71–85%
   of the loss. On fixed-width HNSW, queries about new content lose about three times the average.
 - **Search width is the lever.** The gap shrinks to about 0.002–0.004 at every snapshot once
@@ -314,8 +315,19 @@ The second row tests the per-query change between snapshots instead of the level
 paired t-test at 5%). It removes the variation between queries: recall at snapshots 1 and 3
 correlates at 0.92–0.95 within a query, which halves the standard error. Either way, about 200
 queries are needed to detect a one-point fall in nine cases out of ten. Sampling noise is
-therefore enough to explain why Epzero's calibration stayed at ef 200; nothing points to the
-implementation.
+therefore enough to explain why Epzero's calibration stayed at ef 200.
+
+A safety margin is the cheaper remedy. Asking for 96% instead of 95% on the same 50 queries cuts
+the risk of keeping a too-narrow width from 21% to 5.5%, and with 200 queries a
+half-point margin brings it to 0.6%.
+
+**At the same width the two implementations behave alike.** *(Exploratory.)* The held-out sweep
+(§4.5) lets us hold the width fixed. At ef 400, the width that FAISS's calibration moved to,
+Epzero's change is −0.0026 [−0.0059, +0.0002], inside the ±0.01 margin, against
+−0.0022 [−0.0053, +0.0005] for FAISS. At ef 200 the two changes do not differ
+reliably (−0.0038 [−0.0101, +0.0010], p = 0.20). The change shrinks
+steadily as the search widens, from −0.0125 at ef 100 to −0.0006 at ef 800 for Epzero.
+The inconclusive result of the third arm therefore belongs to the width its calibration kept.
 
 **Figure 1** (`figures/fig-gap-recall.pdf`). (a) ANN-minus-exact nDCG@10 by snapshot at
 calibrated settings, mean over 374 queries and three seeds, with 95% query-bootstrap intervals.
@@ -558,8 +570,8 @@ is the search width.
 
 - Re-calibrate it as the collection grows, with a calibration set large enough, or a target with
   enough margin, to detect a one-point drift. Our 50-query calibration kept a too-narrow width
-  for one implementation, which sampling noise alone explains: about 200 queries are needed
-  (§4.2).
+  for one implementation, which sampling noise alone explains: about 200 queries are needed, or
+  a one-point margin on the target (§4.2).
 - Expect the misses of an appended HNSW index to fall on its newest documents. A system whose
   users mostly look for new content should measure recall on those documents, not only on
   average.
