@@ -20,6 +20,10 @@ document, so that table isolates the effect of position.
 `prepare-public` puts a public benchmark into the same format with arrival groups assigned at
 random. Position is then the only thing that differs between the groups.
 
+`prepare-full` prepares the full-scale experiment in the same format: all of snapshot 3, or a
+draw of snapshot-1 size that keeps the arrival groups in proportion. The builds are then run by
+the same `run` command (scripts/pace/LONGEVAL_INSERTION_ORDER.md).
+
 This is a mechanism pilot on a sample, not a result about the full collection.
 """
 from __future__ import annotations
@@ -71,6 +75,162 @@ def prepare(dense, inputs, output, *, count=300_000):
                'queries': len(q), 'ids_sha256': hashlib.sha256('\n'.join(ids).encode()).hexdigest()}
     (output / 'sample.json').write_text(json.dumps(summary, indent=2) + '\n')
     return summary
+
+
+DRAW_SIZE = 869_902                    # the size of snapshot 1
+
+
+def quotas(sizes, count):
+    """Split `count` over groups in proportion to their sizes (largest remainders get the leftover)."""
+    total = sum(sizes)
+    if not 0 < count <= total:
+        raise ValueError('draw size must be positive and at most the collection size')
+    shares = [count * size / total for size in sizes]
+    out = [int(share) for share in shares]
+    for index in sorted(range(len(sizes)), key=lambda i: (out[i] - shares[i], i))[:count - sum(out)]:
+        out[index] += 1
+    return out
+
+
+def prepare_full(dense, inputs, output, *, draw=0, count=None):
+    """The full-scale sample: all of snapshot 3 (draw 0), or draw 1, 2, ... of `count` documents
+    (default: the size of snapshot 1) that keeps the three arrival groups in proportion.
+
+    Exact neighbours are float64 inner products ordered by descending score, then descending
+    document ID, as in the study's exact search. For draw 0 they are compared with the held-out
+    exact references under the study's own rule: two exhaustive runs may differ only by rounding
+    near ties (heldout.reference_agreement).
+    """
+    from .dense import ARTIFACTS
+    from .heldout import ROLE, load_heldout, reference_agreement
+    from .heldout_exploratory import cohorts
+    from .mapped import MappedSnapshot
+    output = Path(output)
+    output.mkdir(parents=True, exist_ok=False)
+    first = cohorts(dense)
+    queries, refs, _, _ = load_heldout(inputs)
+    query_ids = list(queries[ROLE].ids)
+    q64 = np.ascontiguousarray(queries[ROLE].vectors).astype(np.float64)
+    with MappedSnapshot(Path(dense) / 'snapshot-3', expected_archive_sha256=ARTIFACTS[2]['archive_sha256']) as snap:
+        cohort_all = np.array([first[doc] for doc in snap.ids], dtype=np.int8)
+        if draw == 0:
+            if count is not None:
+                raise ValueError('draw 0 is the whole snapshot')
+            rows = np.arange(len(snap.ids))
+        else:
+            wanted = quotas([int((cohort_all == c).sum()) for c in (1, 2, 3)], DRAW_SIZE if count is None else count)
+            chosen = []
+            for c, quota in zip((1, 2, 3), wanted):
+                members = np.flatnonzero(cohort_all == c)
+                keys = sorted(members.tolist(), key=lambda i: hashlib.sha256(
+                    f'insertion-draw-v1:{draw}:'.encode() + snap.ids[i].encode()).digest())
+                chosen.extend(keys[:quota])
+            rows = np.sort(np.array(chosen))
+        n, dim = len(rows), snap.vectors.shape[1]
+        ids = [snap.ids[i] for i in rows]
+        vectors = np.lib.format.open_memmap(output / 'vectors.npy', mode='w+', dtype=np.float32, shape=(n, dim))
+        scores = np.empty((len(q64), n), dtype=np.float64)
+        for start in range(0, n, 20_000):
+            block = np.asarray(snap.vectors[rows[start:start + 20_000]], dtype=np.float32)
+            vectors[start:start + len(block)] = block
+            scores[:, start:start + len(block)] = (block.astype(np.float64) @ q64.T).T
+        vectors.flush()
+        del vectors
+    cohort = cohort_all[rows]
+    lexical = np.empty(n, dtype=np.int64)
+    lexical[np.argsort(np.array(ids, dtype=object), kind='stable')] = np.arange(n)
+    # Top 100 by descending score, then descending document ID; candidates are taken generously around the cut.
+    top = np.empty((len(q64), 100), dtype=np.int32)
+    top_scores = np.empty((len(q64), 100), dtype=np.float64)
+    for qi in range(len(q64)):
+        row = scores[qi]
+        candidates = np.argpartition(-row, 255)[:256]
+        candidates = candidates[np.lexsort((-lexical[candidates], -row[candidates]))]
+        top[qi] = candidates[:100]
+        top_scores[qi] = row[top[qi]]
+    del scores
+    np.save(output / 'cohort.npy', cohort)
+    np.save(output / 'lexical-rank.npy', lexical)
+    np.save(output / 'queries.npy', np.ascontiguousarray(queries[ROLE].vectors))
+    np.save(output / 'exact-top100.npy', top)
+    (output / 'query-ids.json').write_text(json.dumps(query_ids) + '\n')
+    summary = {'count': n, 'cohort_sizes': {str(c): int((cohort == c).sum()) for c in (1, 2, 3)},
+               'queries': len(query_ids), 'metric': 'ip', 'draw': draw, 'collection': 'snapshot 3',
+               'documents_in_snapshot': int(len(cohort_all)), 'ids_sha256': hashlib.sha256('\n'.join(ids).encode()).hexdigest()}
+    if draw == 0:
+        # The study's exact references for snapshot 3 must agree, up to rounding near ties.
+        mine = {query: [(ids[i], float(score)) for i, score in zip(top[qi], top_scores[qi])]
+                for qi, query in enumerate(query_ids)}
+        theirs = {query: [(doc, float(score)) for doc, score in refs[2][query][:100]] for query in query_ids}
+        summary['heldout_reference_check'] = reference_agreement(mine, theirs)
+    (output / 'sample.json').write_text(json.dumps(summary, indent=2) + '\n')
+    if draw == 0 and not summary['heldout_reference_check']['passed']:
+        raise ValueError('exact neighbours differ from the held-out references beyond rounding near ties')
+    return summary
+
+
+def compare_heldout(sample, build, baseline):
+    """Neighbour recall per query of a chronological full-snapshot build at ef 200 against the held-out
+    incremental run of the same implementation and seed. Recorded, not required: the two were built by
+    different code, and only the insertion order and the seed are the same."""
+    sample, build = Path(sample), Path(build)
+    report = json.loads((build / 'report.json').read_text())
+    baseline = json.loads(Path(baseline).read_text())
+    if (baseline['backend'], baseline['seed'], baseline['mode']) != (report['backend'], report['seed'], 'incremental'):
+        raise ValueError('the baseline is another arm')
+    if report['order'] != 'appended' or report['ef'] != 200:
+        raise ValueError('the comparison needs the chronological build at ef 200')
+    theirs = baseline['snapshots'][2]['runs']['frozen']['ann_recall_per_query']
+    table = np.load(build / 'per-query.npy')
+    mine = 1 - table[:, :, :, 1].sum(axis=(1, 2)) / table[:, :, :, 0].sum(axis=(1, 2))
+    other = np.array([theirs[query] for query in json.loads((sample / 'query-ids.json').read_text())])
+    result = {'backend': report['backend'], 'seed': report['seed'], 'queries': int(len(mine)),
+              'mean_recall_this_build': float(mine.mean()), 'mean_recall_heldout_run': float(other.mean()),
+              'identical_per_query': bool(np.array_equal(np.round(mine, 6), np.round(other, 6))),
+              'queries_that_differ': int(np.sum(np.round(mine, 6) != np.round(other, 6))),
+              'largest_absolute_difference': float(np.abs(mine - other).max())}
+    (build / 'heldout-comparison.json').write_text(json.dumps(result, indent=2) + '\n')
+    return result
+
+
+def collect(jobs, dataset, target):
+    """Gather the builds of one dataset from returned job folders into `target/<backend>/<order>-<seed>`.
+
+    Every copied file is checked against the job's own checksum list, and a job that did not end
+    with exit code 0 is refused. `target/sample/sample.json` is the sample summary of the dataset.
+    """
+    import shutil
+    jobs, target = Path(jobs), Path(target)
+    target.mkdir(parents=True, exist_ok=False)
+    summary, samples = [], set()
+    for job in sorted(path for path in jobs.iterdir() if path.is_dir()):
+        arm = dict(item.split('=') for item in (job / 'arm.txt').read_text().split())
+        if arm['dataset'] != dataset:
+            continue
+        if (job / 'exit-code.txt').read_text().strip() != '0':
+            raise ValueError(f'job {job.name} did not complete')
+        sums = {name: digest for digest, name in
+                (line.split(maxsplit=1) for line in (job / 'EVIDENCE-SHA256SUMS').read_text().splitlines())}
+        root = job / dataset / arm['backend']
+        for build in sorted(path for path in root.iterdir() if path.is_dir()):
+            destination = target / arm['backend'] / build.name
+            if destination.exists():
+                raise ValueError(f'two jobs returned {arm["backend"]}/{build.name}')
+            for path in sorted(build.iterdir()):
+                listed = sums.get('./' + path.relative_to(job).as_posix())
+                if listed is None or hashlib.sha256(path.read_bytes()).hexdigest() != listed:
+                    raise ValueError(f'checksum mismatch or unlisted file: {path}')
+            shutil.copytree(build, destination)
+            summary.append({'job': job.name, 'backend': arm['backend'], 'seed': int(arm['seed']), 'build': build.name})
+        samples.add((job / 'sample.json').read_text())
+    if not summary:
+        raise ValueError(f'no completed job for dataset {dataset}')
+    if len(samples) != 1:
+        raise ValueError('the jobs of one dataset disagree about the sample')
+    (target / 'sample').mkdir()
+    (target / 'sample' / 'sample.json').write_text(samples.pop())
+    (target / 'collected.json').write_text(json.dumps({'dataset': dataset, 'builds': summary}, indent=2) + '\n')
+    return {'dataset': dataset, 'builds': len(summary), 'jobs': sorted({item['job'] for item in summary})}
 
 
 def read_fvecs(path):
@@ -431,6 +591,18 @@ def main():
     for name in ('dense', 'inputs', 'output'):
         p.add_argument(name, type=Path)
     p.add_argument('--count', type=int, default=300_000)
+    p = sub.add_parser('prepare-full', help='all of snapshot 3 (draw 0) or a stratified draw of snapshot-1 size')
+    for name in ('dense', 'inputs', 'output'):
+        p.add_argument(name, type=Path)
+    p.add_argument('--draw', type=int, default=0)
+    p.add_argument('--count', type=int)
+    p = sub.add_parser('collect', help='gather returned full-scale job outputs of one dataset into one folder')
+    p.add_argument('jobs', type=Path)
+    p.add_argument('dataset', choices=('full', 'draw1', 'draw2', 'draw3'))
+    p.add_argument('target', type=Path)
+    p = sub.add_parser('compare-heldout', help='a chronological full build against the held-out incremental run')
+    for name in ('sample', 'build', 'baseline'):
+        p.add_argument(name, type=Path)
     p = sub.add_parser('prepare-public', help='a public .fvecs benchmark with random arrival groups')
     for name in ('base', 'queries', 'output'):
         p.add_argument(name, type=Path)
@@ -458,6 +630,12 @@ def main():
     a = parser.parse_args()
     if a.command == 'prepare':
         r = prepare(a.dense, a.inputs, a.output, count=a.count)
+    elif a.command == 'prepare-full':
+        r = prepare_full(a.dense, a.inputs, a.output, draw=a.draw, count=a.count)
+    elif a.command == 'collect':
+        r = collect(a.jobs, a.dataset, a.target)
+    elif a.command == 'compare-heldout':
+        r = compare_heldout(a.sample, a.build, a.baseline)
     elif a.command == 'prepare-public':
         r = prepare_public(a.base, a.queries, a.output, metric=a.metric, count=a.count)
     elif a.command == 'run':
