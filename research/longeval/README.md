@@ -44,6 +44,10 @@ The test is sign randomization with Holm adjustment; the intervals are bootstrap
 - **New documents.** HNSW misses documents inserted at later snapshots 1.5–1.6 times as often as
   older ones at the same exact rank; IVF shows about 1.15 times. A held-out rebuild in random
   insertion order removes most of this excess. It is an insertion-order effect.
+- **Insertion order, full collection.** Building the same 1.66 million documents in reversed
+  arrival order brings the miss ratio of the latest arrivals from 1.60–1.75 to 0.97–0.98. The
+  paired change is +0.62 [+0.46, +0.80] for FAISS and +0.77 [+0.57, +0.98] for Epzero. A ratio of
+  about 1.2 stays with the later documents in a shuffled build.
 - **Fresh content.** Queries whose answers are mostly new content lose about three times the
   average gap on a fixed-width HNSW index.
 - **Reordering does not fix effectiveness.** A shuffled rebuild only spreads the misses across
@@ -65,7 +69,7 @@ work ([docs/repair/](docs/repair/)).
 | [paper/manuscript-clef2027.md](paper/manuscript-clef2027.md) | Manuscript draft with all results; figures in [paper/figures/](paper/figures/) |
 | [FINAL_PROTOCOL_V1.md](FINAL_PROTOCOL_V1.md) | The frozen held-out protocol |
 | [HELDOUT_RESULTS.md](HELDOUT_RESULTS.md) | Primary held-out results and their verification |
-| [HELDOUT_EXPLORATORY.md](HELDOUT_EXPLORATORY.md) | Post-freeze analyses: timing, shuffled order, the ef sweep, external validation, the judging pool and the insertion-order pilot |
+| [HELDOUT_EXPLORATORY.md](HELDOUT_EXPLORATORY.md) | Post-freeze analyses: timing, shuffled order, the ef sweep, external validation, the judging pool, the insertion-order pilot and the full-scale insertion-order experiment |
 | [../../reports/longeval-research-statement.pdf](../../reports/longeval-research-statement.pdf) | Four-page statement of research |
 | [docs/RESEARCH_LOG.md](docs/RESEARCH_LOG.md) | Chronological log of every decision and PACE job |
 
@@ -82,6 +86,7 @@ work ([docs/repair/](docs/repair/)).
 | `docs/repair/` | Pre-registered repair screens (RQ4), including the NGFix/RFix reproduction |
 | `docs/history/` | Superseded plans, the synthetic-pilot documentation and an earlier draft |
 | `trajectory-development.json`, `ivf-development.json` | Index configurations (frozen) |
+| `insertion-order-full*.json` | Aggregates of the full-scale insertion-order experiment (no identifiers): widths, contrasts and decile curves, and the counts of each build |
 | `insertion-pilot-*.json` | Aggregates of the insertion-order pilot (no identifiers): the first run (`summary`), other search widths and graph settings (`robustness`), misses by insertion decile (`position`), and the replication on GloVe and SIFT (`public-*`) |
 | `requirements.txt`, `encoder-requirements.txt` | CPU research and GPU encoder dependencies |
 | `../../scripts/pace/LONGEVAL*.md`, `longeval-*` | PACE runbooks, job scripts and packagers |
