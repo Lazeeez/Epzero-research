@@ -561,6 +561,81 @@ base-layer links and the last tenth 18–20. At high recall few misses remain, s
 widen: at M 32 and ef 800 recall is above 0.99. The aggregates are in
 [`insertion-pilot-robustness.json`](insertion-pilot-robustness.json).
 
+**Position alone: misses by insertion decile.** A third run of the 18 builds recorded each missed
+neighbour by the tenth of the insertion sequence in which its document was inserted. It reproduces
+the earlier runs exactly at every width. In a shuffled build the position of a document is
+independent of the document, so the miss rate by decile shows the effect of position with nothing
+else varying. The table gives the shuffled builds at ef 200, as the mean over three seeds; the
+ratio is rank-standardized against the first decile, with 95% intervals:
+
+| Insertion decile | Epzero: miss rate | Epzero: ratio to first decile | FAISS: miss rate | FAISS: ratio to first decile |
+| --- | --- | --- | --- | --- |
+| 1 | 4.2% | 1 (reference) | 4.1% | 1 (reference) |
+| 2 | 4.7% | 1.14 [1.01, 1.30] | 4.6% | 1.14 [1.00, 1.30] |
+| 3 | 5.3% | 1.26 [1.12, 1.43] | 5.3% | 1.30 [1.16, 1.48] |
+| 4 | 5.2% | 1.26 [1.12, 1.41] | 5.1% | 1.25 [1.12, 1.41] |
+| 5 | 5.7% | 1.37 [1.25, 1.53] | 5.5% | 1.34 [1.21, 1.50] |
+| 6 | 5.6% | 1.35 [1.21, 1.50] | 5.7% | 1.39 [1.26, 1.55] |
+| 7 | 6.0% | 1.44 [1.29, 1.63] | 6.0% | 1.48 [1.33, 1.67] |
+| 8 | 6.6% | 1.59 [1.41, 1.81] | 6.6% | 1.61 [1.44, 1.83] |
+| 9 | 6.6% | 1.58 [1.42, 1.77] | 6.3% | 1.53 [1.38, 1.72] |
+| 10 | 6.5% | 1.57 [1.40, 1.77] | 6.0% | 1.47 [1.31, 1.67] |
+
+Every later decile is missed more often than the first, the interval lies above 1 for 17 of the 18
+ratios, and the rise is close to steady. Over the four search widths the last decile's ratio is
+1.46–1.88. The aggregates are in [`insertion-pilot-position.json`](insertion-pilot-position.json).
+
+![Miss ratio by insertion decile in shuffled builds](paper/figures/fig-position.png)
+
+*Rank-standardized miss ratio of each insertion decile against the first, in shuffled builds at
+ef 200: (a) the LongEval sample, (b) GloVe, (c) SIFT. Mean over three seeds with 95% query-bootstrap
+intervals.*
+
+**Replication on public benchmarks.** To separate the effect from this collection and its encoder,
+the same design was run on two public benchmarks: GloVe (100 dimensions, cosine) and SIFT (128
+dimensions, Euclidean). Each uses 300,000 vectors drawn at random, the pilot's group sizes, and
+the first 1,000 queries of the benchmark. The arrival groups are assigned at random, so they do
+not differ in content: any difference between them comes from where they are inserted. Settings
+are the study's (M 16, efConstruction 100, three seeds), 18 builds per benchmark. The table gives
+the miss ratio of the last group against the first:
+
+| Benchmark | Implementation | ef | Recall@100 | As arrived | Shuffled | Reversed | As arrived − reversed |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| GloVe | FAISS | 100 | 0.707–0.710 | 1.09 [1.07, 1.12] | 0.99 [0.97, 1.01] | 0.85 [0.83, 0.87] | +0.24 [+0.22, +0.26] |
+| GloVe | FAISS | 200 | 0.793–0.796 | 1.09 [1.06, 1.12] | 0.98 [0.96, 1.01] | 0.81 [0.78, 0.83] | +0.28 [+0.26, +0.31] |
+| GloVe | FAISS | 400 | 0.865–0.867 | 1.11 [1.07, 1.16] | 0.98 [0.95, 1.02] | 0.76 [0.73, 0.79] | +0.35 [+0.32, +0.39] |
+| GloVe | FAISS | 800 | 0.920–0.922 | 1.18 [1.12, 1.24] | 1.03 [0.98, 1.07] | 0.75 [0.71, 0.79] | +0.43 [+0.37, +0.48] |
+| GloVe | Epzero | 100 | 0.702–0.705 | 1.13 [1.11, 1.16] | 0.99 [0.97, 1.01] | 0.83 [0.81, 0.85] | +0.30 [+0.28, +0.33] |
+| GloVe | Epzero | 200 | 0.790–0.793 | 1.16 [1.13, 1.20] | 0.99 [0.96, 1.02] | 0.79 [0.77, 0.82] | +0.37 [+0.34, +0.40] |
+| GloVe | Epzero | 400 | 0.865–0.867 | 1.22 [1.17, 1.26] | 0.98 [0.95, 1.01] | 0.75 [0.72, 0.78] | +0.46 [+0.42, +0.51] |
+| GloVe | Epzero | 800 | 0.923–0.924 | 1.30 [1.24, 1.37] | 0.98 [0.93, 1.02] | 0.72 [0.68, 0.76] | +0.59 [+0.53, +0.65] |
+| SIFT | FAISS | 100 | 0.936–0.938 | 1.48 [1.40, 1.57] | 1.00 [0.95, 1.05] | 0.63 [0.59, 0.67] | +0.85 [+0.77, +0.94] |
+| SIFT | FAISS | 200 | 0.981–0.982 | 1.76 [1.57, 1.97] | 1.02 [0.94, 1.12] | 0.53 [0.46, 0.61] | +1.23 [+1.04, +1.42] |
+| SIFT | FAISS | 400 | 0.996–0.996 | 2.10 [1.64, 2.68] | 0.97 [0.81, 1.16] | 0.41 [0.28, 0.55] | +1.69 [+1.23, +2.27] |
+| SIFT | FAISS | 800 | 0.999–0.999 | 1.31 [0.58, 2.56] | 0.92 [0.61, 1.38] | 0.45 [0.17, 0.83] | +0.86 [+0.14, +2.13] |
+| SIFT | Epzero | 100 | 0.932–0.934 | 1.57 [1.48, 1.66] | 0.98 [0.94, 1.02] | 0.60 [0.56, 0.64] | +0.97 [+0.89, +1.06] |
+| SIFT | Epzero | 200 | 0.980–0.981 | 1.96 [1.76, 2.17] | 1.01 [0.93, 1.10] | 0.51 [0.44, 0.58] | +1.45 [+1.26, +1.66] |
+| SIFT | Epzero | 400 | 0.996–0.996 | 2.25 [1.76, 2.89] | 0.98 [0.83, 1.16] | 0.33 [0.22, 0.45] | +1.93 [+1.44, +2.55] |
+| SIFT | Epzero | 800 | 0.999–0.999 | 2.00 [1.04, 3.73] | 1.03 [0.67, 1.59] | 0.34 [0.11, 0.67] | +1.66 [+0.68, +3.35] |
+
+- **The control holds.** With random groups the shuffled ratio is 0.92–1.03, and its interval
+  includes 1 in 16 of 16 rows. The groups do not differ in themselves.
+
+- **Position alone reproduces the effect.** The reversed interval lies below 1 and the paired
+  difference above zero in all 16 rows. The as-arrived interval lies above 1 in 15 of 16; the
+  exception is at SIFT ef 800, where recall is 0.999 and almost no miss remains. The as-arrived
+  ratio is 1.09–1.30 on GloVe and 1.31–2.25 on SIFT; the reversed ratio is 0.72–0.85 and 0.33–0.63.
+
+- **The decile curve is the same.** In shuffled builds at ef 200 the miss rate rises from 17% in
+  the first decile to 21–23% in the last on GloVe (ratio 1.21 [1.16, 1.25] for FAISS and 1.35 [1.30,
+  1.40] for Epzero), and from 1.0% to 2.5–2.8% on SIFT (ratio 2.37 [2.08, 2.76] and 2.47 [2.18,
+  2.86]).
+
+The effect is therefore a property of how an HNSW graph is built by insertion, in both
+implementations, and not of this collection, its encoder or the inner-product metric. The
+aggregates are in [`insertion-pilot-public-glove.json`](insertion-pilot-public-glove.json) and
+[`insertion-pilot-public-sift.json`](insertion-pilot-public-sift.json).
+
 **Reading.** The three ratios fit one account. Later documents are about 1.1 times harder to
 retrieve in themselves (the shuffled ratio), and insertion position multiplies or divides that by
 about 1.3. A practitioner report describes the opposite direction for an early small group
@@ -570,6 +645,7 @@ why the reversed arm is the decisive test.
 **Limits.**
 
 - The sample is 18% of snapshot 3.
+- The public benchmarks have randomly assigned groups. They show the effect of position, not of time.
 - The reversed arm has not been run at full scale. That is the confirming experiment.
 
 ## 11. The LLM grades against the released human grades
