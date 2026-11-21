@@ -38,7 +38,7 @@ and to collect its evidence.
 | [LONGEVAL_HELDOUT_COST.md](LONGEVAL_HELDOUT_COST.md) | `longeval-heldout-cost.sbatch` | `package-longeval-heldout-cost.py` | Held-out native timing (secondary) | 7178503–7178505 |
 | [LONGEVAL_HELDOUT_EXT.md](LONGEVAL_HELDOUT_EXT.md) | `longeval-heldout-ext.sbatch` | `package-longeval-heldout-ext.py` | Shuffled order and ef sweep (exploratory) | 7179544–7179549 |
 | [LONGEVAL_INSERTION_ORDER.md](LONGEVAL_INSERTION_ORDER.md) | `longeval-insertion-order.sbatch` | `package-longeval-insertion-order.py` | Insertion order at full scale: as arrived, reversed, shuffled (exploratory follow-up) | all of snapshot 3: jobs 7208888–7208893; the three draws: jobs 7216195–7216212; all completed on 21 November 2026 |
-| [LONGEVAL_JUDGE_PILOT.md](LONGEVAL_JUDGE_PILOT.md) | `longeval-judge-pilot.sbatch` | `package-longeval-judge-pilot.py` | Local relevance-judge pilot on prompt-development pairs (GPU, exploratory follow-up) | job 7205655 (package 01) failed in the `server` phase on 21 November 2026, before any request; package 02 not yet run |
+| [LONGEVAL_JUDGE_PILOT.md](LONGEVAL_JUDGE_PILOT.md) | `longeval-judge-pilot.sbatch` | `package-longeval-judge-pilot.py` | Local relevance-judge pilot on prompt-development pairs (GPU, exploratory follow-up) | job 7205655 (package 01) failed in the `server` phase on 21 November 2026, before any request; job 7219729 (package 02) completed the same day: see `research/longeval/docs/protocol/JUDGE_PILOT_RESULTS.md` |
 
 The shared helpers are:
 
