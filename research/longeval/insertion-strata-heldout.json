@@ -1,0 +1,100 @@
+{
+  "snapshot": 3,
+  "queries": 381,
+  "later_group": "snapshots 2 and 3 together",
+  "arms": {
+    "epzero_hnsw_ef200": {
+      "pooled_ratio": {
+        "value": 1.633882847317442,
+        "interval_95": [
+          1.4910351509817101,
+          1.8018203003438527
+        ]
+      },
+      "within_query_ratio": {
+        "value": 1.3304845042443387,
+        "interval_95": [
+          1.2122769146530705,
+          1.4718433188176292
+        ]
+      },
+      "within_query_rate_difference": {
+        "value": 0.021290300566609535,
+        "interval_95": [
+          0.014613922466903928,
+          0.027935981010316187
+        ]
+      }
+    },
+    "faiss_hnsw_ef200": {
+      "pooled_ratio": {
+        "value": 1.5362437874499808,
+        "interval_95": [
+          1.4009167051127147,
+          1.6889093608295858
+        ]
+      },
+      "within_query_ratio": {
+        "value": 1.2517402365071317,
+        "interval_95": [
+          1.143717737058657,
+          1.3761845409158124
+        ]
+      },
+      "within_query_rate_difference": {
+        "value": 0.016524140304470723,
+        "interval_95": [
+          0.009921704940711098,
+          0.023109131437424456
+        ]
+      }
+    },
+    "ivf_frozen_training": {
+      "pooled_ratio": {
+        "value": 1.1668869235422878,
+        "interval_95": [
+          1.055162476960704,
+          1.289825988148833
+        ]
+      },
+      "within_query_ratio": {
+        "value": 1.1025662352006866,
+        "interval_95": [
+          1.0102842920776502,
+          1.2043366689240143
+        ]
+      },
+      "within_query_rate_difference": {
+        "value": 0.004406311812972589,
+        "interval_95": [
+          0.0004361071130101347,
+          0.00853129928569778
+        ]
+      }
+    },
+    "ivf_refreshed_training": {
+      "pooled_ratio": {
+        "value": 1.1402418586142902,
+        "interval_95": [
+          1.0318235052905014,
+          1.2579744156323454
+        ]
+      },
+      "within_query_ratio": {
+        "value": 1.0836417849477238,
+        "interval_95": [
+          0.9927976489092766,
+          1.1871825882387292
+        ]
+      },
+      "within_query_rate_difference": {
+        "value": 0.0036022525382503824,
+        "interval_95": [
+          -0.000375076617308717,
+          0.007659471031715386
+        ]
+      }
+    }
+  },
+  "kind": "EXPLORATORY within-query miss ratios of the held-out arms (aggregates only)"
+}
