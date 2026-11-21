@@ -9,7 +9,7 @@ from research.longeval import freeze_extension
 
 def test_freeze_refuses_until_the_protocol_is_final(tmp_path):
     protocol, receipt = tmp_path / 'protocol.md', tmp_path / 'receipt.json'
-    (tmp_path / 'code.py').write_text('x = 1\n')
+    (tmp_path / 'code.py').write_bytes(b'x = 1\n')                 # bytes: the hash must not depend on the platform
     (tmp_path / 'build/pilot').mkdir(parents=True)
     arguments = dict(root=tmp_path, protocol=protocol, receipt=receipt, files=('protocol.md', 'code.py'),
                      outcomes={'pilot': 'build/pilot', 'audit': 'build/audit'})
