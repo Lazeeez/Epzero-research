@@ -55,8 +55,9 @@ frozen file changed) is ready: 3 jobs per `scripts/pace/LONGEVAL_HELDOUT_COST.md
 draft `paper/manuscript-clef2027.md` (timing section is a placeholder). Then direction B.
 
 **Statement of research updated (2026-11-21):** `reports/longeval-research-statement.md` and its
-PDF (4 pages) now carry the insertion-order result at full scale (within-query ratios), the
-calibration and label analyses, a claim that matches the manuscript, and the follow-up plan.
+PDF were rewritten for submission as a short statement: motivation, questions, approach and
+findings in outline, without method details or result tables. The target is CLEF 2027. The
+detailed account is the manuscript.
 
 **Exploratory (post-freeze, 2026-11-20):** [HELDOUT_EXPLORATORY.md](../HELDOUT_EXPLORATORY.md).
 HNSW misses documents inserted after snapshot 1 at 1.54–1.63x the rank-matched rate
