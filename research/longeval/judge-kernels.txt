@@ -1,0 +1,8 @@
+# Prebuilt FlashInfer kernels for the pinned flashinfer-python 0.7.2.post1 on CUDA 13.0, Hopper GPUs (H100/H200).
+# Without them the model server compiles kernels at startup, which needs ninja, nvcc and a host compiler.
+# These are the wheels that `vllm download-kernels` selects for this version (FlashInfer's own index,
+# https://flashinfer.ai/whl and https://flashinfer.ai/whl/cu130), pinned here by release URL and SHA-256.
+# Install with: pip install --no-deps --require-hashes -r judge-kernels.txt
+https://github.com/flashinfer-ai/flashinfer/releases/download/v0.7.2.post1/flashinfer_cubin-0.7.2.post1-py3-none-any.whl --hash=sha256:1998c7006bcc06ee5dd3208a682af247382c6710d6b370a961381262c04c11f0
+https://github.com/flashinfer-ai/flashinfer/releases/download/v0.7.2.post1/flashinfer_jit_cache-0.7.2.post1+cu130-cp39-abi3-manylinux_2_28_x86_64.whl --hash=sha256:5a0a92ce56e11c19cec31948a4828b245314377eb587fe17307730b096225500
+https://github.com/flashinfer-ai/flashinfer/releases/download/v0.7.2.post1/flashinfer_jit_cache_sm90a-0.7.2.post1+cu130-cp39-abi3-manylinux_2_28_x86_64.whl --hash=sha256:52e5cc064b52290dad2f8889ee0eb5cd59621dfac8351841e4b3987d42d034a3
