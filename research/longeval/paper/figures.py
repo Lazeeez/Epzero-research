@@ -3,8 +3,9 @@
 Usage: python figures.py BUILD_DIR OUTPUT_DIR
 Inputs: longeval-heldout-analysis-01/report.json, longeval-heldout-exploratory-01/cohort-ratios.json,
 longeval-development-order-01/report.json, longeval-heldout-extension-analysis-01/report.json and the committed
-insertion-pilot-*.json files. Writes fig-gap-recall, fig-cohort, fig-recall-gap, fig-insertion-pilot and fig-position
-(pdf and png).
+insertion-pilot-*.json and insertion-order-full*.json files. Writes fig-gap-recall, fig-cohort, fig-recall-gap,
+fig-insertion-order and fig-position-full (the full collection), and fig-insertion-pilot and fig-position (the
+300,000-document sample), as pdf and png.
 """
 import json
 import sys
@@ -162,8 +163,8 @@ def recall_gap(build, out):
     plt.close(fig)
 
 
-def insertion_pilot(summary, out):
-    """Sample pilot: miss ratio of the last arrival group against the first, by insertion order."""
+def insertion_pilot(summary, out, name='fig-insertion-pilot', limits=(.6, 2.0)):
+    """Miss ratio of the last arrival group against the first, by insertion order (sample pilot or full collection)."""
     r = json.loads(Path(summary).read_text())
     orders = (('appended', 'As arrived'), ('shuffled', 'Shuffled'), ('reversed', 'Reversed'))
     fig, ax = plt.subplots(figsize=(5.2, 1.9), constrained_layout=True)
@@ -184,21 +185,20 @@ def insertion_pilot(summary, out):
     ax.set_yticks(range(len(orders)), [text for _, text in orders])
     ax.set_ylim(len(orders) - .5, -.5)
     ax.axvline(1, color=MUTED, linewidth=.6)
-    ax.set_xlim(.6, 2.0)
-    # Sample size and search width are stated in the caption.
+    ax.set_xlim(*limits)
+    # Collection size and search width are stated in the caption.
     ax.set_xlabel('Miss ratio, snapshot-3 arrivals vs snapshot-1 arrivals')
     style(ax)
     ax.grid(axis='y', visible=False)
     ax.grid(axis='x', color=GRID, linewidth=.6)
     for ext in ('pdf', 'png'):
-        fig.savefig(out / f'fig-insertion-pilot.{ext}', dpi=300)
+        fig.savefig(out / f'{name}.{ext}', dpi=300)
     plt.close(fig)
 
 
-def position(folder, out):
-    """Miss ratio by insertion decile in shuffled builds: the LongEval sample and two public benchmarks."""
-    panels = (('insertion-pilot-position.json', '(a) LongEval sample'), ('insertion-pilot-public-glove.json', '(b) GloVe'),
-              ('insertion-pilot-public-sift.json', '(c) SIFT'))
+def position(folder, out, stem='fig-position', first=('insertion-pilot-position.json', '(a) LongEval sample')):
+    """Miss ratio by insertion decile in shuffled builds: LongEval (sample or full collection) and two public benchmarks."""
+    panels = (first, ('insertion-pilot-public-glove.json', '(b) GloVe'), ('insertion-pilot-public-sift.json', '(c) SIFT'))
     fig, axes = plt.subplots(1, 3, figsize=(5.2, 1.9), constrained_layout=True)
     for ax, (name, title) in zip(axes, panels):
         (block,) = json.loads((Path(folder) / name).read_text())['settings'].values()
@@ -224,7 +224,7 @@ def position(folder, out):
         style(ax)
     axes[0].set_ylabel('Miss ratio vs first decile')
     for ext in ('pdf', 'png'):
-        fig.savefig(out / f'fig-position.{ext}', dpi=300)
+        fig.savefig(out / f'{stem}.{ext}', dpi=300)
     plt.close(fig)
 
 
@@ -234,6 +234,9 @@ if __name__ == '__main__':
     gap_recall(build, out)
     cohort(build, out)
     recall_gap(build, out)
-    insertion_pilot(Path(__file__).resolve().parents[1] / 'insertion-pilot-summary.json', out)
-    position(Path(__file__).resolve().parents[1], out)
+    aggregates = Path(__file__).resolve().parents[1]
+    insertion_pilot(aggregates / 'insertion-pilot-summary.json', out)
+    position(aggregates, out)
+    insertion_pilot(aggregates / 'insertion-order-full-builds.json', out, name='fig-insertion-order', limits=(.6, 2.4))
+    position(aggregates, out, stem='fig-position-full', first=('insertion-order-full.json', '(a) LongEval'))
     print('written', sorted(p.name for p in out.iterdir()))
