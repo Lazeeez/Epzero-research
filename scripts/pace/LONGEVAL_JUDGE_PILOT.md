@@ -49,19 +49,19 @@ srun --account=coc --qos=coc-ice --partition=coc-gpu,ice-gpu --gres=gpu:h200:1 -
 
 ## Submit
 
-Copy `longeval-judge-pilot-01.tar.gz` to the PACE LongEval checkout, compare its SHA-256 with
-`longeval-judge-pilot-01-receipt.json`, then:
+Copy `longeval-judge-pilot-02.tar.gz` to the PACE LongEval checkout, compare its SHA-256 with
+`longeval-judge-pilot-02-receipt.json`, then:
 
 ```bash
-sha256sum longeval-judge-pilot-01.tar.gz
-tar -xzf longeval-judge-pilot-01.tar.gz
-(cd longeval-judge-pilot-01 && sha256sum --check --quiet --strict SHA256SUMS && echo package OK)
-sbatch longeval-judge-pilot-01/scripts/pace/longeval-judge-pilot.sbatch
+sha256sum longeval-judge-pilot-02.tar.gz
+tar -xzf longeval-judge-pilot-02.tar.gz
+(cd longeval-judge-pilot-02 && sha256sum --check --quiet --strict SHA256SUMS && echo package OK)
+sbatch longeval-judge-pilot-02/scripts/pace/longeval-judge-pilot.sbatch
 ```
 
 Resources: one H200, 8 CPUs, 96 GB RAM, 160 GB node-local temporary disk, 4-hour ceiling. Expect
-about one hour, most of it setup: the Python packages (199 pinned wheels), the 65 GB model
-download and the model load. The judging itself is 1,080 requests, 16 at a time. Everything large
+about one hour, most of it setup: the Python packages (199 pinned wheels and 2 GB of prebuilt GPU
+kernels), the 65 GB model download and the model load. The judging itself is 1,080 requests, 16 at a time. Everything large
 stays on the node's temporary disk.
 
 ## What the job does, phase by phase
@@ -75,12 +75,22 @@ its phase.
 | `gpu` | Checks GPU memory and driver version | Another GPU type was allocated, or the driver is older than 580 |
 | `environment` | Sets up the node-local staging directory and checks free space | The temporary disk is shared storage or too small |
 | `tests` | Runs the judge's tests and validates the inputs | The package does not match its inputs |
-| `gpu-environment` | Installs the pinned serving stack into a fresh environment | A pinned wheel is unavailable for this platform |
+| `gpu-environment` | Installs the pinned serving stack and the prebuilt GPU kernels into a fresh environment, then checks the kernels (`kernel-toolchain.json`) | A pinned wheel is unavailable for this platform, or the kernels do not match the pinned FlashInfer |
 | `model` | Downloads the pinned model revision and verifies every file by SHA-256 | Network trouble (the same job can be resubmitted) or a changed file |
 | `server` | Starts the model server and waits until it answers | See `server-log-tail.txt` in the evidence |
 | `probe` | Sends one judgment and checks that the answer arrives separately from the reasoning | The server returns the answer in an unexpected shape; see `judging/probe.json` |
 | `judge` | Grades the 270 pairs under both settings, twice each | Requests that fail three times are recorded, not fatal |
 | `analyze` | Writes `judging/report.json` | — |
+
+## Earlier attempt
+
+Job 7205655 (package `longeval-judge-pilot-01`, 21 November 2026) installed the stack and verified
+the model, then stopped in the `server` phase after 6 min 49 s. The server tried to compile GPU
+kernels while loading the model and found no `ninja` on its search path; no prebuilt kernels were
+installed. No request was sent and no judgment exists from that job. This package installs the
+prebuilt kernels that `vllm download-kernels` selects for the pinned versions
+(`research/longeval/judge-kernels.txt`, pinned by SHA-256), and also puts the environment's own
+`ninja` and CUDA compiler on the server's search path in case a kernel is not covered.
 
 ## After completion
 
