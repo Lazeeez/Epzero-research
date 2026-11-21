@@ -28,7 +28,7 @@ Freezing this protocol does not make these outcomes unseen. They are prior evide
 | Primary and secondary held-out results | `HELDOUT_RESULTS.md` |
 | Exploratory analyses of the held-out evidence: arrival groups, replacements, condensed lists, fresh-content queries, shuffled order, ef sweep, baseline reproduction, leaderboard counterfactual, per-query tail, calibration size and margin, judging pool and carried grades, LLM against human grades, gap change by search width | `HELDOUT_EXPLORATORY.md`, sections 1–9, 11, 12 |
 | Insertion-order pilot on a 300,000-document sample: three orders, four search widths, two graph settings, insertion deciles, and two public benchmarks | `HELDOUT_EXPLORATORY.md`, section 10 |
-| Judge pilot on 270 prompt-development pairs | **TO DECIDE:** add the job number and the evidence checksum when the pilot has returned |
+| Judge pilot on 270 prompt-development pairs | `docs/protocol/JUDGE_PILOT_RESULTS.md`: job 7219729, evidence SHA-256 `4013158486b7a7913d242de757f73d3b3c3acc3c5fd2114b3d6f84dfa96cfcfa` |
 
 ## 3. Experiments
 
@@ -38,8 +38,11 @@ Freezing this protocol does not make these outcomes unseen. They are prior evide
 pinned by tests). The serving stack and model revision are those of the judge pilot
 (`judge-requirements.txt`, `judge-kernels.txt`, `judge-model.json`).
 
-- **TO DECIDE:** the sampling setting (provider default or temperature 0) and the answer cap, from
-  the pilot's repeat agreement.
+- **TO DECIDE:** the sampling setting (provider default or temperature 0), from the pilot's
+  repeat agreement. The pilot (`JUDGE_PILOT_RESULTS.md`) gives a repeat agreement of 0.874 with no
+  sampling parameter and 0.915 at temperature 0, a paired difference of +0.041 [−0.004, +0.085],
+  and no difference in agreement with the released grades. The author recommends temperature 0.
+- **Answer cap:** 4,096 tokens. The longest of the pilot's 1,080 answers used 773.
 - **What the released grades are.** The organisers sent no sampling parameter, so each released
   grade is one sample at their provider's default. The pilot's agreement between two repeats of
   the same setting is therefore the ceiling for any agreement with the released grades, and the
@@ -146,13 +149,12 @@ replicated elsewhere.
 
 Every **TO DECIDE** above, collected:
 
-1. Sampling setting and answer cap of the judge (after the pilot).
+1. Sampling setting of the judge. The pilot has returned; the author recommends temperature 0.
 2. Approval of the judge thresholds.
 3. Contributing runs of the judging pool.
 4. The reversal test of E2.
 5. The second annotator of E3.
 6. Whether the second encoder is in scope, and if so its model and margin.
-7. The judge pilot's job number and evidence checksum in section 2.
 
 ## 6. Freezing
 
