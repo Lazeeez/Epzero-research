@@ -19,8 +19,9 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from research.longeval.judge import MODEL_ID, MODEL_REVISION, validate_inputs  # noqa: E402
 
-NAME = 'longeval-judge-pilot-01'
-EXTRA = ('research/__init__.py', 'research/longeval/judge-requirements.txt', 'research/longeval/judge-model.json',
+NAME = 'longeval-judge-pilot-02'
+EXTRA = ('research/__init__.py', 'research/longeval/judge-requirements.txt', 'research/longeval/judge-kernels.txt',
+         'research/longeval/judge-model.json',
          'research/longeval/docs/protocol/JUDGE_VALIDATION_THRESHOLDS.md', 'research/longeval/tests/test_judge.py',
          'scripts/pace/longeval-node-env.sh', 'scripts/pace/longeval-judge-pilot.sbatch',
          'scripts/pace/longeval-judge-server.yaml', 'scripts/pace/LONGEVAL_JUDGE_PILOT.md',
