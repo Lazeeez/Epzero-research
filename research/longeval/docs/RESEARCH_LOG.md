@@ -54,6 +54,10 @@ raised ef while test recall fell 94.5→93.5%. RQ1 held: 27/27 identical.
 frozen file changed) is ready: 3 jobs per `scripts/pace/LONGEVAL_HELDOUT_COST.md`. Manuscript
 draft `paper/manuscript-clef2027.md` (timing section is a placeholder). Then direction B.
 
+**Statement of research updated (2026-11-21):** `reports/longeval-research-statement.md` and its
+PDF (4 pages) now carry the insertion-order result at full scale (within-query ratios), the
+calibration and label analyses, a claim that matches the manuscript, and the follow-up plan.
+
 **Exploratory (post-freeze, 2026-11-20):** [HELDOUT_EXPLORATORY.md](../HELDOUT_EXPLORATORY.md).
 HNSW misses documents inserted after snapshot 1 at 1.54–1.63x the rank-matched rate
 (IVF 1.14–1.17x); in development, shuffled-order rebuilds lower it in 4/4 comparisons. Dropped
