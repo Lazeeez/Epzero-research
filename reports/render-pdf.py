@@ -2,7 +2,7 @@
 
 Usage (needs the `markdown` package):
     python reports/render-pdf.py reports/longeval-research-statement.md statement.html
-    chrome --headless=new --no-pdf-header-footer --print-to-pdf=reports/longeval-research-statement.pdf statement.html
+    chrome --headless=new --no-pdf-header-footer --print-to-pdf=reports/lajat-longeval-research-statement.pdf statement.html
 """
 import re, sys
 from pathlib import Path
