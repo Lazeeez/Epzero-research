@@ -32,6 +32,22 @@ def test_timing_reproduces_the_heldout_baseline_and_records_work(tmp_path, monke
                                    evaluation_role='evaluation')
 
 
+def test_further_widths_are_timed_as_their_own_regimes(tmp_path, monkeypatch):
+    specs, queries, refs, config = small_problem(tmp_path)
+    queries = as_evaluation(queries)
+    baseline = trajectory.trajectory_core(specs, queries, refs, tmp_path / 'base', config, kind='faiss_hnsw',
+                                          mode='incremental', seed=11, provenance_record={}, evaluation_role='evaluation')
+    monkeypatch.setattr('research.longeval.heldout_cost.WIDE_EF', 40)
+    observer = HeldoutCostObserver(baseline, tmp_path / 'cost/native-cost', efs=(30, 20, 40, 20))
+    assert observer.efs == (20, 30)                           # sorted, deduplicated, the wide width not repeated
+    trajectory.trajectory_core(specs, queries, refs, tmp_path / 'cost/trajectory', config, kind='faiss_hnsw',
+                               mode='incremental', seed=11, provenance_record={}, snapshot_observer=observer,
+                               evaluation_role='evaluation')
+    rows = summarize(tmp_path / 'cost', tmp_path / 'summary')
+    assert {r['regime'] for r in rows} == {'frozen', 'matched_recall', 'wide', 'ef20', 'ef30'}
+    assert {r['ef'] for r in rows if r['regime'] == 'ef30'} == {30}
+
+
 def test_observer_rejects_a_development_baseline(tmp_path):
     with pytest.raises(ValueError, match='held-out incremental'):
         HeldoutCostObserver({'status': 'completed', 'mode': 'incremental', 'backend': 'epzero'}, tmp_path / 'x')
