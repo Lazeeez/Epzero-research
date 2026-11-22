@@ -89,7 +89,7 @@ work ([docs/repair/](docs/repair/)).
 | [FINAL_PROTOCOL_V1.md](FINAL_PROTOCOL_V1.md) | The frozen held-out protocol |
 | [HELDOUT_RESULTS.md](HELDOUT_RESULTS.md) | Primary held-out results and their verification |
 | [HELDOUT_EXPLORATORY.md](HELDOUT_EXPLORATORY.md) | Post-freeze analyses: timing, shuffled order, the ef sweep, external validation, the judging pool, the insertion-order pilot and the full-scale insertion-order experiment |
-| [../../reports/longeval-research-statement.pdf](../../reports/longeval-research-statement.pdf) | Statement of research (for submission): what the study asks, how it is designed, what it has found and what remains; the manuscript holds the method in detail |
+| [../../reports/lajat-longeval-research-statement.pdf](../../reports/lajat-longeval-research-statement.pdf) | Statement of research (for submission): what the study asks, how it is designed, what it has found and what remains; the manuscript holds the method in detail |
 | [docs/RESEARCH_LOG.md](docs/RESEARCH_LOG.md) | Chronological log of every decision and PACE job |
 
 ## Layout
