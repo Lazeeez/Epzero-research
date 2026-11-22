@@ -1105,3 +1105,39 @@ The aggregates hold no identifiers: [`insertion-order-full-m32.json`](insertion-
 [`insertion-strata-m32-ef100.json`](insertion-strata-m32-ef100.json), [`-ef200`](insertion-strata-m32-ef200.json),
 [`-ef400`](insertion-strata-m32-ef400.json) and [`-ef800`](insertion-strata-m32-ef800.json) (within-query
 ratios at M 32 and M 16, by width).
+
+## 16. Latency at every search width (jobs 7240404–7240406)
+
+Package 02 of the timing job (`scripts/pace/LONGEVAL_HELDOUT_COST.md`) reran the three timing jobs
+of section 5 with four more fixed widths: ef 100, 400, 800 and 1,600. The protocol is unchanged:
+each job rebuilds the held-out incremental indexes of one seed, requires every state and every
+analysed ranking to reproduce exactly, and times the 381 test queries with one warmup and three
+timed single-query calls on one thread of an exclusive Gold 6226 node.
+
+**Checks.** All three jobs printed PASS ("reproduced both baselines") and ended with exit code 0;
+every returned file matches its job's checksum list, and the archive's SHA-256 matches the one
+computed on PACE. The settings timed in both runs agree to within 0.5% (Epzero at ef 200: 2.53 /
+2.61 / 2.66 ms at snapshots 1 / 2 / 3 in both; at ef 3,200: 31.28–32.25 ms against 31.30–32.28 ms).
+
+Mean over the three seeds of the per-query median latency, with neighbour recall@100 and the
+search work (Epzero's distance computations; FAISS's native `ndis`), at snapshots 1 / 2 / 3:
+
+| ef | Recall@100 | Epzero latency (p95 at s3) | FAISS latency (p95 at s3) | Search work |
+| --- | --- | --- | --- | --- |
+| 100 | 0.899 / 0.889 / 0.883 | 1.34 / 1.40 / 1.43 ms (1.99) | 1.28 / 1.33 / 1.35 ms (1.85) | 1,515–1,613 |
+| 200 | 0.945 / 0.939 / 0.935 | 2.53 / 2.61 / 2.66 ms (3.64) | 2.35 / 2.42 / 2.46 ms (3.34) | 2,672–2,806 |
+| 400 | 0.968 / 0.965 / 0.963 | 4.82 / 4.93 / 4.99 ms (6.57) | 4.50 / 4.58 / 4.63 ms (6.02) | 4,826–5,047 |
+| 800 | 0.981 / 0.980 / 0.978 | 8.91 / 9.09 / 9.17 ms (11.98) | 8.39 / 8.52 / 8.58 ms (10.99) | 8,832–9,191 |
+| 1,600 | 0.988 / 0.987 / 0.986 | 16.57 / 16.91 / 17.06 ms (22.36) | 15.89 / 16.14 / 16.25 ms (20.69) | 16,189–16,834 |
+| 3,200 | 0.994 / 0.992 / 0.991 | 31.28 / 31.95 / 32.25 ms (42.58) | 30.86 / 31.37 / 31.57 ms (39.89) | 29,619–30,796 |
+
+The recall column is Epzero's; FAISS's differs by at most 0.005.
+
+- **ef 800 costs about 3.5 times ef 200.** At snapshot 3, 9.2 ms against 2.7 ms for Epzero and
+  8.6 against 2.5 for FAISS. This is the width at which the effectiveness gap shrinks to
+  0.002–0.003 at every snapshot (section 5).
+- **Latency follows the search work.** Doubling ef roughly doubles both, from ef 400 upwards.
+- **Growth adds little.** From snapshot 1 to snapshot 3, latency at a fixed width rises 2–7%.
+- **FAISS is 5–8% faster at the same width,** with about the same search work. These are the
+  study's indexes (full-precision vectors, the study's fixed settings), not either library's
+  fastest configuration.
