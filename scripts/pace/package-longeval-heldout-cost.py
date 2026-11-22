@@ -13,8 +13,9 @@ import sys
 import tarfile
 
 ROOT = Path(__file__).resolve().parents[2]
-BUILD = ROOT / 'build'
-NAME = 'longeval-heldout-cost-01'
+# The study's build folder (inputs and verified evidence); the first argument overrides it.
+BUILD = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else ROOT / 'build'
+NAME = 'longeval-heldout-cost-02'
 INPUTS = BUILD / 'longeval-heldout-inputs-01'
 JOBS = BUILD / 'longeval-heldout-01-evidence/build/pace-longeval-heldout/jobs'
 EVIDENCE_SHA256 = '886047e02cdabb1d73e914b019f6cd80f0d34acf0bcd0dd6d57326cd95fabf1f'
