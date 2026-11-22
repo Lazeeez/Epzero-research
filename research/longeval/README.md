@@ -14,10 +14,17 @@ from rebuilding it.
   ([FINAL_PROTOCOL_V1.md](FINAL_PROTOCOL_V1.md) and its receipt `FINAL_PROTOCOL_V1_FREEZE.json`).
 - **Target venue:** CLEF 2027 conference track.
 
-## Status (20 November 2026)
+## Status (22 November 2026)
 
-All primary held-out results are complete and verified. So are the secondary timing results and two
-exploratory follow-ups. The manuscript draft is in [paper/](paper/).
+- **Done and verified:** the primary held-out results, the secondary timing results, and the
+  exploratory follow-ups below, including the full-scale insertion-order experiment (24 PACE
+  jobs) and the judge pilot.
+- **Submitted to PACE:** the insertion-order experiment with a denser graph on the full collection
+  (6 jobs), and timing at ef 100, 400, 800 and 1600 (3 jobs).
+- **Waiting on the advisor:** six open decisions in the
+  [extension protocol draft](docs/protocol/EXTENSION_PROTOCOL_DRAFT.md). After them come the
+  freeze of the follow-up protocol, grading of the judging pool and the coverage analysis.
+- **Manuscript:** a full draft in [paper/](paper/), to be restructured and shortened.
 
 ## Results
 
@@ -56,10 +63,19 @@ The test is sign randomization with Holm adjustment; the intervals are bootstrap
 - **Reordering does not fix effectiveness.** A shuffled rebuild only spreads the misses across
   document ages.
 - **Search width does.** At about 98% recall (ef 800) the gap is 0.002–0.003 at every snapshot. At
-  ef 200, HNSW costs about 2.5 ms per query on a single thread.
+  ef 200, HNSW costs about 2.5 ms per query on a single thread; ef 800 has not yet been timed.
+- **Calibration size.** In a resampling study, a 50-query calibration set keeps a too-narrow
+  search width in 21–22% of draws. Requiring one point of recall above the target cuts that to
+  5.5%.
 - **Pooling.** Most documents that approximate search substitutes into the top 10 are unjudged. A
   condensed-list check shrinks every gap by roughly half to three-quarters, with the same pattern
   over time.
+- **Leniency.** On the 29 test queries that also have human grades, the released LLM labels agree
+  with them at a linear-weighted kappa of 0.24; they call 87% of the pairs relevant, the humans 60%.
+- **Judge pilot.** A local GPT-OSS-120B judge with the organisers' prompt and parser answered all
+  1,080 requests, agrees with the released grades about as well as with itself (87–90% the same
+  grade), and grades about 5,000 pairs an hour on one H200
+  ([results](docs/protocol/JUDGE_PILOT_RESULTS.md)).
 
 **Development findings (RQ3, RQ4).** Search failures come from limited search coverage, not index
 age. Four pre-registered graph-repair methods fail to beat a plain wider search at equal distance
@@ -127,8 +143,8 @@ Some tests skip under certain conditions:
   native build.
 - The `hnswlib` comparison tests run only if `hnswlib` is installed.
 
-The full experiments run on the PACE cluster: CPU jobs on Gold 6226 nodes, one GPU job for query
-encoding. Each job is a self-contained package that verifies its own checksums and inputs before
+The full experiments run on the PACE cluster: CPU jobs on Gold 6226 nodes, and GPU jobs for query
+encoding and the local relevance judge. Each job is a self-contained package that verifies its own checksums and inputs before
 downloading any data. The runbooks in `scripts/pace/` give the exact commands. The held-out ones are
 `LONGEVAL_TEST_QUERIES.md`, `LONGEVAL_HELDOUT.md`, `LONGEVAL_HELDOUT_COST.md` and
 `LONGEVAL_HELDOUT_EXT.md`.
