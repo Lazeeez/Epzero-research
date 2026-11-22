@@ -20,8 +20,8 @@ from rebuilding it.
   exploratory follow-ups below, including the full-scale insertion-order experiment (24 PACE
   jobs) and the judge pilot.
 - **Done since:** the insertion-order experiment with a denser graph on the full collection (6
-  jobs; section 15 of the exploratory record). Timing at ef 100, 400, 800 and 1600 has run (3 jobs);
-  its evidence is being copied back.
+  jobs; section 15 of the exploratory record), and timing at ef 100, 400, 800 and 1,600 (3 jobs;
+  section 16).
 - **Waiting on the advisor:** six open decisions in the
   [extension protocol draft](docs/protocol/EXTENSION_PROTOCOL_DRAFT.md). After them come the
   freeze of the follow-up protocol, grading of the judging pool and the coverage analysis.
@@ -64,7 +64,7 @@ The test is sign randomization with Holm adjustment; the intervals are bootstrap
 - **Reordering does not fix effectiveness.** A shuffled rebuild only spreads the misses across
   document ages.
 - **Search width does.** At about 98% recall (ef 800) the gap is 0.002–0.003 at every snapshot. At
-  ef 200, HNSW costs about 2.5 ms per query on a single thread; ef 800 has not yet been timed.
+  ef 200, HNSW costs about 2.5 ms per query on a single thread, and at ef 800 about 9 ms.
 - **Calibration size.** In a resampling study, a 50-query calibration set keeps a too-narrow
   search width in 21–22% of draws. Requiring one point of recall above the target cuts that to
   5.5%.
