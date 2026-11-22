@@ -19,8 +19,9 @@ from rebuilding it.
 - **Done and verified:** the primary held-out results, the secondary timing results, and the
   exploratory follow-ups below, including the full-scale insertion-order experiment (24 PACE
   jobs) and the judge pilot.
-- **Submitted to PACE:** the insertion-order experiment with a denser graph on the full collection
-  (6 jobs), and timing at ef 100, 400, 800 and 1600 (3 jobs).
+- **Done since:** the insertion-order experiment with a denser graph on the full collection (6
+  jobs; section 15 of the exploratory record). Timing at ef 100, 400, 800 and 1600 has run (3 jobs);
+  its evidence is being copied back.
 - **Waiting on the advisor:** six open decisions in the
   [extension protocol draft](docs/protocol/EXTENSION_PROTOCOL_DRAFT.md). After them come the
   freeze of the follow-up protocol, grading of the judging pool and the coverage analysis.
@@ -105,8 +106,8 @@ work ([docs/repair/](docs/repair/)).
 | `docs/repair/` | Pre-registered repair screens (RQ4), including the NGFix/RFix reproduction |
 | `docs/history/` | Superseded plans, the synthetic-pilot documentation and an earlier draft |
 | `trajectory-development.json`, `ivf-development.json` | Index configurations (frozen) |
-| `insertion-order-full*.json`, `insertion-order-draw*.json` | Aggregates of the full-scale insertion-order experiment and of its three half-size draws (no identifiers): widths, contrasts and decile curves, and the counts of each full-collection build |
-| `insertion-strata*.json` | Within-query miss ratios (no identifiers): the five collections, the other search widths, GloVe and SIFT, and the held-out arms |
+| `insertion-order-full*.json` (including `-m32`, the denser graph), `insertion-order-draw*.json` | Aggregates of the full-scale insertion-order experiment and of its three half-size draws (no identifiers): widths, contrasts and decile curves, and the counts of each full-collection build |
+| `insertion-strata*.json` | Within-query miss ratios (no identifiers): the five collections, the other search widths, GloVe and SIFT, the held-out arms, and the denser graph (`-m32-ef*`) |
 | `insertion-pilot-*.json` | Aggregates of the insertion-order pilot (no identifiers): the first run (`summary`), other search widths and graph settings (`robustness`), misses by insertion decile (`position`), and the replication on GloVe and SIFT (`public-*`) |
 | `requirements.txt`, `encoder-requirements.txt` | CPU research and GPU encoder dependencies |
 | `../../scripts/pace/LONGEVAL*.md`, `longeval-*` | PACE runbooks, job scripts and packagers |
