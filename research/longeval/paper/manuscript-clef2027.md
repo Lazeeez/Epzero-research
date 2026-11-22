@@ -53,7 +53,8 @@ Further exploratory findings:
 - **Concentration.** At snapshot 3, 82–89% of queries lose nothing and the worst 5% carry 71–85%
   of the loss. On fixed-width HNSW, queries about new content lose about three times the average.
 - **Search width.** The loss shrinks to about 0.002–0.004 at every snapshot at ef 800, where
-  recall is about 98%. The latency of that setting was not measured. Four pre-registered
+  recall is about 98%, at about 3.5 times the latency of ef 200 (8.4–9.2 ms against 2.3–2.7 ms
+  per query on one thread). Four pre-registered
   graph-repair strategies fail to beat an ordinary wider search at equal distance work.
 
 **What the labels leave open.** The labels are lenient: on the 29 queries that also have human
@@ -553,14 +554,19 @@ analysed runs exactly.
 
 | Index and setting | Latency | Search work |
 | --- | --- | --- |
+| HNSW at ef 100 | 1.3–1.4 ms | about 1,500–1,600 computations |
 | HNSW at ef 200 | 2.3–2.7 ms (p95 3.2–3.6 ms) | about 2,700–2,800 distance computations; grows only 3% from snapshot 1 to snapshot 3 |
 | FAISS HNSW at its calibrated ef 400 | 3.9 ms | about 4,300 computations |
+| HNSW at ef 400 | 4.5–5.0 ms | about 4,800–5,000 computations |
+| HNSW at ef 800 | 8.4–9.2 ms (p95 11.0–12.0 ms) | about 8,800–9,200 computations |
+| HNSW at ef 1,600 | 15.9–17.1 ms | about 16,200–16,800 computations |
 | HNSW at ef 3,200 | 31–32 ms | about 30,000 computations |
 | IVF at its calibrated nprobe (128) | 129–184 ms | 160,000–228,000 vectors scanned; grows 42% with the collection at the same nprobe |
 
-Moving HNSW from about 95% to about 98% recall takes ef 800, which we did not time. The two
-measured settings around it are ef 400, at 1.6 times the distance work of ef 200 (3.9 ms), and
-ef 3,200, at about 11 times (31 ms). The latency at ef 800 remains to be measured.
+Moving HNSW from about 95% to about 98% recall takes ef 800, at about 3.5 times the latency of
+ef 200 (8.4–9.2 ms against 2.3–2.7 ms at snapshots 1 to 3). Latency follows the distance work,
+and growth adds 2–7% at a fixed width. The widths other than ef 200, the calibrated one and
+3,200 were timed in a second run (exploratory), which repeated those three to within 0.5%.
 
 **Figure 3** (`figures/fig-recall-gap.pdf`). The ANN-minus-exact nDCG@10 gap against neighbour
 recall@100 across the ef sweep, for incrementally maintained (a) Epzero and (b) FAISS HNSW,
@@ -654,7 +660,8 @@ is the search width.
   users mostly look for new content should measure recall on those documents, not only on
   average.
 - Alternatively, target about 98% recall instead of 95%. The gap is then about 0.002–0.004 at
-  every snapshot. What that costs in latency remains to be measured.
+  every snapshot, at about 3.5 times the latency of a 95% setting (about 9 ms per query on one
+  thread for these 2,560-dimensional vectors, against 2.5 ms).
 
 **Why the effect is small.** Three things combine.
 
