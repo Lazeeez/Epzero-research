@@ -598,7 +598,7 @@ def main():
     p.add_argument('--count', type=int)
     p = sub.add_parser('collect', help='gather returned full-scale job outputs of one dataset into one folder')
     p.add_argument('jobs', type=Path)
-    p.add_argument('dataset', choices=('full', 'draw1', 'draw2', 'draw3'))
+    p.add_argument('dataset', choices=('full', 'draw1', 'draw2', 'draw3', 'full-m32'))
     p.add_argument('target', type=Path)
     p = sub.add_parser('compare-heldout', help='a chronological full build against the held-out incremental run')
     for name in ('sample', 'build', 'baseline'):
