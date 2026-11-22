@@ -883,7 +883,8 @@ shows that the second part belongs to the queries, not to the documents.
 
 **Limits.**
 
-- One graph setting (M 16, efConstruction 100). The denser graph was run on the sample only.
+- One graph setting (M 16, efConstruction 100). The denser graph was run on the sample only (it was
+  later run on the full collection: section 15).
 - The level that survives shuffling is explained in section 14, with the three draws of
   snapshot-1 size.
 
@@ -1035,7 +1036,8 @@ snapshot 1 against snapshot-1 arrivals:
 - The estimator assumes one ratio common to all queries. If the ratio varies, it is a weighted
   average.
 - Why queries with recent neighbours are harder was not examined.
-- One graph setting (M 16, efConstruction 100) on the full collection and the draws.
+- One graph setting (M 16, efConstruction 100) on the draws; the denser graph on the full
+  collection is in section 15.
 
 The aggregates hold no identifiers: [`insertion-order-draw1.json`](insertion-order-draw1.json),
 [`-draw2`](insertion-order-draw2.json) and [`-draw3`](insertion-order-draw3.json) for the draws;
@@ -1044,3 +1046,62 @@ The aggregates hold no identifiers: [`insertion-order-draw1.json`](insertion-ord
 [`-ef400`](insertion-strata-full-ef400.json) and [`-ef800`](insertion-strata-full-ef800.json) for
 the other widths; [`insertion-strata-public.json`](insertion-strata-public.json) for GloVe and
 SIFT; and [`insertion-strata-heldout.json`](insertion-strata-heldout.json) for the held-out arms.
+
+## 15. A denser graph on the full collection (jobs 7240397–7240402)
+
+The design was recorded on 22 November 2026, before the jobs were submitted
+(`scripts/pace/LONGEVAL_INSERTION_ORDER.md`, "Denser graph on the full snapshot"): the full-snapshot
+design of section 13 with M 32 and efConstruction 200 instead of M 16 and 100. The primary measure is
+the within-query ratio of section 14. On the 300,000-document sample the denser graph had made the
+effect stronger (section 10); this tests that on the full collection.
+
+**Checks.** All six jobs (two implementations, three seeds) ended with exit code 0, every returned
+file matches its job's checksum list, and all ran package 02 on Gold 6226 nodes. A build took
+about 2 hours (Epzero 120 minutes, FAISS 112), against 45 minutes at M 16.
+
+**The effect is stronger with the denser graph.** The within-query miss ratio of snapshot-3 arrivals
+against snapshot-1 arrivals, as the mean over three seeds with 95% paired query-bootstrap intervals:
+
+| ef | Graph | Implementation | As arrived | Shuffled | Reversed | As arrived − reversed |
+| --- | --- | --- | --- | --- | --- | --- |
+| 100 | M 16 | Epzero | 1.34 [1.22, 1.47] | 1.05 [0.98, 1.13] | 0.82 [0.74, 0.89] | +0.52 [+0.41, +0.64] |
+| 100 | M 16 | FAISS | 1.27 [1.16, 1.40] | 1.06 [0.99, 1.14] | 0.81 [0.74, 0.89] | +0.46 [+0.36, +0.57] |
+| 100 | M 32 | Epzero | 1.58 [1.39, 1.81] | 1.08 [0.98, 1.17] | 0.76 [0.66, 0.86] | +0.82 [+0.66, +1.03] |
+| 100 | M 32 | FAISS | 1.54 [1.36, 1.75] | 1.07 [0.97, 1.17] | 0.77 [0.67, 0.87] | +0.77 [+0.61, +0.96] |
+| 200 | M 16 | Epzero | 1.42 [1.25, 1.63] | 1.00 [0.90, 1.10] | 0.82 [0.72, 0.92] | +0.60 [+0.44, +0.79] |
+| 200 | M 16 | FAISS | 1.28 [1.12, 1.47] | 1.03 [0.93, 1.14] | 0.82 [0.72, 0.92] | +0.46 [+0.33, +0.62] |
+| 200 | M 32 | Epzero | 1.65 [1.38, 2.02] | 0.99 [0.87, 1.11] | 0.69 [0.54, 0.82] | +0.97 [+0.72, +1.32] |
+| 200 | M 32 | FAISS | 1.66 [1.40, 2.01] | 0.99 [0.87, 1.12] | 0.67 [0.54, 0.81] | +0.99 [+0.75, +1.32] |
+| 400 | M 32 | Epzero | 1.42 [1.10, 1.86] | 0.88 [0.71, 1.05] | 0.61 [0.44, 0.78] | +0.80 [+0.55, +1.22] |
+| 400 | M 32 | FAISS | 1.43 [1.11, 1.87] | 0.87 [0.71, 1.03] | 0.64 [0.46, 0.82] | +0.79 [+0.53, +1.20] |
+| 800 | M 32 | Epzero | 1.49 [1.08, 2.09] | 0.83 [0.63, 1.05] | 0.52 [0.33, 0.70] | +0.97 [+0.58, +1.61] |
+| 800 | M 32 | FAISS | 1.43 [1.01, 2.02] | 0.83 [0.63, 1.05] | 0.51 [0.34, 0.69] | +0.91 [+0.54, +1.52] |
+
+- **At every width,** with the denser graph the as-arrived interval lies above 1, the reversed
+  interval below 1, and the shuffled interval includes 1. The paired difference is above zero
+  in every row.
+- **At ef 100 and 200 the denser graph moves both ends further from 1** than the study's graph
+  does: 1.54–1.66 against 1.27–1.42 as arrived, and 0.67–0.77 against 0.81–0.82 reversed.
+- **More neighbours are found, and the rest fall more on the latest arrivals.** Recall@100 at
+  ef 200 is 0.961–0.969 against 0.929–0.938 at M 16. In the shuffled builds the last tenth of
+  insertions is missed 1.76–1.91 times as often as the first at ef 200 (1.49–1.60 at M 16), and
+  1.82–2.41 times over the four widths.
+- **Incoming links fall with position as before,** from 47.8–50.0 for the first tenth of
+  insertions to 17.3–19.4 for the last.
+- The pooled ratios (section 13's measure) show the same: 2.10 and 2.15 as arrived at ef 200,
+  against 1.75 and 1.60 at M 16; the paired difference is above zero for every seed at every
+  width (lowest bound +0.56).
+
+**Reading.** The pilot's pattern holds at full scale: a graph built with more links per document
+finds more neighbours, but the neighbours it still misses are concentrated more heavily on the
+documents inserted last. Tuning the graph for recall does not remove the effect of insertion
+position; it sharpens it.
+
+**Limits.** At ef 400 and 800 few misses remain (recall 0.98–0.99), so the intervals are wide.
+Only the full snapshot was run with the denser graph, not the draws.
+
+The aggregates hold no identifiers: [`insertion-order-full-m32.json`](insertion-order-full-m32.json)
+(pooled ratios, recall, decile curves, incoming links) and
+[`insertion-strata-m32-ef100.json`](insertion-strata-m32-ef100.json), [`-ef200`](insertion-strata-m32-ef200.json),
+[`-ef400`](insertion-strata-m32-ef400.json) and [`-ef800`](insertion-strata-m32-ef800.json) (within-query
+ratios at M 32 and M 16, by width).
