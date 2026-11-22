@@ -17,7 +17,7 @@ import sys
 import tarfile
 
 ROOT = Path(__file__).resolve().parents[2]
-NAME = 'longeval-insertion-order-01'
+NAME = 'longeval-insertion-order-02'
 EXTRA = ('research/__init__.py', 'research/longeval/FINAL_PROTOCOL_V1_FREEZE.json',
          'research/longeval/tests/test_post_freeze_analyses.py', 'scripts/pace/longeval-node-env.sh',
          'scripts/pace/longeval-insertion-order.sbatch', 'scripts/pace/LONGEVAL_INSERTION_ORDER.md',
@@ -64,7 +64,7 @@ def main():
         raise ValueError('job script or runbook does not reference this package')
     manifest = {'package': NAME, 'purpose': 'EXPLORATORY full-scale insertion-order builds; post-freeze; no judgments',
                 'freeze_sha256': sha(payload['research/longeval/FINAL_PROTOCOL_V1_FREEZE.json']),
-                'baseline_jobs': baselines, 'datasets': ['full', 'draw1', 'draw2', 'draw3'],
+                'baseline_jobs': baselines, 'datasets': ['full', 'draw1', 'draw2', 'draw3', 'full-m32'],
                 'orders': ['appended', 'reversed', 'shuffled'], 'seeds': [11, 29, 47],
                 'files': {name: sha(raw) for name, raw in sorted(payload.items())}}
     payload['manifest.json'] = (json.dumps(manifest, indent=2, sort_keys=True) + '\n').encode()
