@@ -19,7 +19,7 @@
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:?submit from the isolated research checkout}"
 ROOT="$PWD"
-PACKAGE="$ROOT/longeval-heldout-cost-01"
+PACKAGE="$ROOT/longeval-heldout-cost-02"
 PYTHON="$ROOT/build/pace-longeval/venv/bin/python"
 OUTPUT="$ROOT/build/pace-longeval-heldout-cost/jobs/${SLURM_JOB_ID:?requires a Slurm job}"
 SEED="${1:?seed}"
@@ -105,7 +105,8 @@ for backend in $ORDER; do
     (cd "$STAGE" && srun --cpu-bind=cores --mem-bind=local /usr/bin/time -v -o "$OUTPUT/$backend-resources.txt" \
         "$PYTHON" -P -m research.longeval.heldout_cost run "$STAGE/dense" "$STAGE/preparation/vectors/audit.json" \
         "$PACKAGE/inputs" "$PACKAGE/inputs/baselines/$backend-$SEED.json" "$OUTPUT/$backend" \
-        "$PACKAGE/research/longeval/trajectory-development.json" --package-root "$PACKAGE")
+        "$PACKAGE/research/longeval/trajectory-development.json" --package-root "$PACKAGE" \
+        --efs 100 400 800 1600)
 done
 (cd "$OUTPUT" && find . -type f ! -name EVIDENCE-SHA256SUMS ! -name exit-code.txt -print0 | sort -z \
     | xargs -0 sha256sum > EVIDENCE-SHA256SUMS)
