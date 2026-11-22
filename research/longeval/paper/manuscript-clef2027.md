@@ -466,11 +466,15 @@ every order and in both implementations, from 28.0–29.6 for the first tenth of
 weakly connected, not unreachable. Recall@100 is 0.929–0.938 in every order: the order decides
 who bears the misses far more than how many there are.
 
-**A denser graph, on a sample.** Before the full-scale run we ran the same design on a sample of
-300,000 snapshot-3 documents, at the same four widths and also with a denser graph (M 32,
-efConstruction 200). In all 16 combinations of implementation, graph and width the as-arrived
-ratio lies above 1 and the paired difference above zero. A denser graph removes misses but
-concentrates the rest: the pooled as-arrived ratio is 1.30–1.58 at M 16 and 1.55–2.22 at M 32.
+**A denser graph sharpens the effect.** We repeated the full-collection design with a denser graph
+(M 32, efConstruction 200), recording the design and its measure before the jobs ran; a pilot on a
+300,000-document sample had pointed the same way. The denser graph finds more neighbours (recall@100
+at ef 200 of 0.961–0.969 against 0.929–0.938), but the misses that remain fall more heavily on the
+latest arrivals. Within a query at ef 200 they are missed 1.65–1.66 times as often as first
+arrivals when inserted last (1.28–1.42 at M 16), 0.99 times at a random position, and 0.67–0.69
+times when inserted first (0.82). At every width the as-arrived interval lies above 1, the
+reversed interval below 1 and the shuffled interval includes 1. Tuning the graph for recall does
+not remove the effect of insertion position; it sharpens it.
 
 **Position alone is enough.** In a shuffled build the position of a document in the insertion
 sequence is independent of the document and of the query. The miss rate still rises steadily with position: on the
@@ -679,8 +683,8 @@ is the search width.
   top 10 results, so they cannot support an index comparison.
 - **Exploratory analyses.** The test queries were used once for the frozen analysis. Every
   analysis marked exploratory reuses them and was designed after those results were seen.
-- **Insertion order.** The full-collection experiment used one graph setting; the denser graph
-  was run on a 300,000-document sample only. The within-query ratio was added after the pooled
+- **Insertion order.** The full-collection experiment used two graph settings, and the
+  half-size draws one. The within-query ratio was added after the pooled
   full-collection result was seen. It assumes one ratio common to all queries, and we did not
   examine why queries about recent documents are harder.
 - **Calibration design.** Calibration uses 50 queries and a coarse grid. This is a design choice,
