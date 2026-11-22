@@ -4,7 +4,8 @@ Rebuilds each held-out incremental HNSW index and requires its states and rankin
 reproduce the analysed held-out runs exactly. Then, outside the primary analysis, it times the
 381 test queries with the development native-cost protocol: one warmup and three timed
 single-query native calls, one thread. Settings are fixed ef=200, calibration-selected ef, and
-a wide diagnostic ef=3200. Nothing here can change a primary input or output.
+a wide diagnostic ef=3200, plus any further fixed widths given with `--efs` (regime `ef<N>`).
+Nothing here can change a primary input or output.
 """
 from __future__ import annotations
 
@@ -27,11 +28,12 @@ REGIMES = ('frozen', 'matched_recall', 'wide')
 
 
 class HeldoutCostObserver:
-    def __init__(self, baseline, output):
+    def __init__(self, baseline, output, efs=()):
         if (baseline.get('status') != 'completed' or baseline.get('mode') != 'incremental'
                 or baseline.get('evaluation_role') != ROLE or baseline.get('backend') not in ('epzero', 'faiss_hnsw')):
             raise ValueError('requires a completed held-out incremental HNSW baseline')
         self.baseline, self.output = baseline, Path(output)
+        self.efs = tuple(sorted(set(int(ef) for ef in efs) - {WIDE_EF}))
         self.output.mkdir(parents=True, exist_ok=False)
 
     def __call__(self, backend, stage, queries, reference, config):
@@ -59,13 +61,13 @@ class HeldoutCostObserver:
         refs = {q: reference[q] for q in cohort.ids}
         try:
             for regime, effort in (('frozen', config['ef']), ('matched_recall', stage['calibration']['effort']),
-                                   ('wide', WIDE_EF)):
+                                   ('wide', WIDE_EF), *((f'ef{ef}', ef) for ef in self.efs)):
                 run, measurements = native_cohort(backend, cohort, config['k'], effort)
                 path = destination / f'{regime}.run'
                 write_run(path, run)
                 if read_run(path) != run:
                     raise ValueError('timing run export changed results')
-                if regime != 'wide' and checksum(path) != expected['runs'][regime]['sha256']:
+                if regime in ('frozen', 'matched_recall') and checksum(path) != expected['runs'][regime]['sha256']:
                     raise ValueError('single-query and analysed held-out rankings differ')
                 recalls = ann_recall(run, refs)
                 report['runs'][regime] = {'effort': effort, 'file': path.name, 'sha256': checksum(path),
@@ -100,7 +102,7 @@ def check_baseline(baseline, inputs, config_path):
     return {'status': 'preflight_passed', 'backend': baseline['backend'], 'seed': baseline['seed']}
 
 
-def run(folder, audit_path, inputs, baseline_path, output, config_path, *, package_root):
+def run(folder, audit_path, inputs, baseline_path, output, config_path, *, package_root, efs=()):
     from .trajectory import trajectory_core
     baseline = json.loads(Path(baseline_path).read_text())
     check_baseline(baseline, inputs, config_path)
@@ -114,7 +116,7 @@ def run(folder, audit_path, inputs, baseline_path, output, config_path, *, packa
     atomic_json(output / 'inputs.json', {'baseline_report_sha256': checksum(baseline_path), 'source_sha256': checksum(__file__)})
     record = heldout_provenance(package_root, 'checkout-build')
     record['heldout_inputs'] = {**evidence, **audits, 'config_sha256': checksum(config_path)}
-    observer = HeldoutCostObserver(baseline, output / 'native-cost')
+    observer = HeldoutCostObserver(baseline, output / 'native-cost', efs=efs)
     return trajectory_core(specs, queries, refs, output / 'trajectory', config, kind=baseline['backend'],
                            mode='incremental', seed=baseline['seed'], provenance_record=record,
                            snapshot_observer=observer, evaluation_role=ROLE)
@@ -154,6 +156,7 @@ def main():
     for name in ('folder', 'audit', 'inputs', 'baseline', 'output', 'config'):
         p.add_argument(name, type=Path)
     p.add_argument('--package-root', type=Path, required=True)
+    p.add_argument('--efs', type=int, nargs='*', default=(), help='further fixed search widths to time')
     p = sub.add_parser('summary')
     p.add_argument('evidence', type=Path)
     p.add_argument('output', type=Path)
@@ -161,7 +164,7 @@ def main():
     if a.command == 'check':
         r = check_baseline(json.loads(a.baseline.read_text()), a.inputs, a.config)
     elif a.command == 'run':
-        r = run(a.folder, a.audit, a.inputs, a.baseline, a.output, a.config, package_root=a.package_root)
+        r = run(a.folder, a.audit, a.inputs, a.baseline, a.output, a.config, package_root=a.package_root, efs=a.efs)
         r = {k: r[k] for k in ('status', 'backend', 'mode', 'seed')}
     else:
         r = {'rows': len(summarize(a.evidence, a.output))}
