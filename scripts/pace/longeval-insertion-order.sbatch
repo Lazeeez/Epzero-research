@@ -20,15 +20,20 @@
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:?submit from the isolated research checkout}"
 ROOT="$PWD"
-PACKAGE="$ROOT/longeval-insertion-order-01"
+PACKAGE="$ROOT/longeval-insertion-order-02"
 PYTHON="$ROOT/build/pace-longeval/venv/bin/python"
 DATASET="${1:?dataset}"
 BACKEND="${2:?backend}"
 SEED="${3:?seed}"
+GRAPH="${4:-m16}"
 case "$DATASET" in full) DRAW=0 ;; draw1) DRAW=1 ;; draw2) DRAW=2 ;; draw3) DRAW=3 ;;
     *) echo 'dataset must be full, draw1, draw2 or draw3' >&2; exit 2 ;; esac
 case "$BACKEND" in epzero|faiss_hnsw) ;; *) echo 'backend must be epzero or faiss_hnsw' >&2; exit 2 ;; esac
 case "$SEED" in 11|29|47) ;; *) echo 'seed must be 11, 29 or 47' >&2; exit 2 ;; esac
+# m16 is the study's graph; m32 is the denser graph of the sample pilot, run on the full snapshot only.
+case "$GRAPH" in m16) M=16; EFC=100; LABEL="$DATASET" ;; m32) M=32; EFC=200; LABEL="$DATASET-m32" ;;
+    *) echo 'graph must be m16 or m32' >&2; exit 2 ;; esac
+if [ "$GRAPH" = m32 ] && [ "$DATASET" != full ]; then echo 'the m32 graph is run on the full snapshot only' >&2; exit 2; fi
 OUTPUT="$ROOT/build/pace-longeval-insertion-order/jobs/${SLURM_JOB_ID:?requires a Slurm job}"
 PHASE=initialization
 mkdir -p "$(dirname "$OUTPUT")"
@@ -48,7 +53,7 @@ finish() {
     exit "$code"
 }
 trap finish EXIT
-printf 'dataset=%s backend=%s seed=%s\n' "$DATASET" "$BACKEND" "$SEED" | tee "$OUTPUT/arm.txt"
+printf 'dataset=%s backend=%s seed=%s graph=%s\n' "$LABEL" "$BACKEND" "$SEED" "$GRAPH" | tee "$OUTPUT/arm.txt"
 
 PHASE=package
 echo "phase=$PHASE"
@@ -110,20 +115,20 @@ for order in appended reversed shuffled; do
     # Each order is built in a fresh process; only the node-local sample is shared.
     (cd "$STAGE" && srun --cpu-bind=cores --mem-bind=local /usr/bin/time -v -o "$OUTPUT/$order-resources.txt" \
         "$PYTHON" -P -m research.longeval.insertion_pilot run "$STAGE/sample" \
-        "$OUTPUT/$DATASET/$BACKEND/$order-$SEED" --order "$order" --seed "$SEED" --backend "$BACKEND" \
-        --M 16 --ef-construction 100 --efs 100 200 400 800) > "$OUTPUT/$order-summary.json"
+        "$OUTPUT/$LABEL/$BACKEND/$order-$SEED" --order "$order" --seed "$SEED" --backend "$BACKEND" \
+        --M "$M" --ef-construction "$EFC" --efs 100 200 400 800) > "$OUTPUT/$order-summary.json"
     printf 'built %s\n' "$order"
 done
 
 PHASE=compare
 echo "phase=$PHASE"
-if [ "$DATASET" = full ]; then
+if [ "$DATASET" = full ] && [ "$GRAPH" = m16 ]; then
     # Recorded, not required: does the chronological build match the held-out incremental run per query?
     (cd "$STAGE" && "$PYTHON" -P -m research.longeval.insertion_pilot compare-heldout "$STAGE/sample" \
-        "$OUTPUT/$DATASET/$BACKEND/appended-$SEED" "$PACKAGE/inputs/baselines/$BACKEND-$SEED.json") \
+        "$OUTPUT/$LABEL/$BACKEND/appended-$SEED" "$PACKAGE/inputs/baselines/$BACKEND-$SEED.json") \
         | tee "$OUTPUT/heldout-comparison.json"
 fi
 (cd "$OUTPUT" && find . -type f ! -name EVIDENCE-SHA256SUMS ! -name exit-code.txt -print0 | sort -z \
     | xargs -0 sha256sum > EVIDENCE-SHA256SUMS)
 PHASE=done
-printf 'PASS: insertion-order builds completed for %s %s seed %s: %s\n' "$DATASET" "$BACKEND" "$SEED" "$OUTPUT"
+printf 'PASS: insertion-order builds completed for %s %s seed %s: %s\n' "$LABEL" "$BACKEND" "$SEED" "$OUTPUT"
