@@ -20,16 +20,22 @@ RECEIPT = HERE / 'EXTENSION_PROTOCOL_V1_FREEZE.json'
 OPEN = 'TO DECIDE'
 FROZEN = ('research/longeval/docs/protocol/EXTENSION_PROTOCOL_V1.md',
           'research/longeval/docs/protocol/JUDGE_VALIDATION_THRESHOLDS.md',
+          'research/longeval/docs/protocol/E4_SECOND_ENCODER.md',
           'research/longeval/judge.py', 'research/longeval/judge-requirements.txt', 'research/longeval/judge-kernels.txt',
           'research/longeval/judge-model.json',
           'research/longeval/coverage.py', 'research/longeval/audit.py', 'research/longeval/insertion_pilot.py',
           'research/longeval/heldout_pool.py', 'research/longeval/evaluation.py',
           'scripts/pace/longeval-judge-pilot.sbatch', 'scripts/pace/longeval-judge-server.yaml',
           'scripts/pace/LONGEVAL_JUDGE_PILOT.md', 'scripts/pace/longeval-insertion-order.sbatch',
-          'scripts/pace/LONGEVAL_INSERTION_ORDER.md')
+          'scripts/pace/LONGEVAL_INSERTION_ORDER.md',
+          'research/longeval/order_pairs.py', 'research/longeval/insertion_strata.py',
+          'scripts/pace/longeval-insertion-order-ids.sbatch', 'scripts/pace/LONGEVAL_INSERTION_ORDER_IDS.md',
+          'scripts/pace/package-longeval-insertion-order-ids.py')
 # Follow-up outcomes that may already exist when the protocol is frozen; their presence is recorded, not refused.
 OUTCOMES = {'judge pilot evidence': 'build/pace-longeval-judge-pilot',
             'full-scale insertion-order evidence': 'build/pace-longeval-insertion-order',
+            'order rerun with IDs and confirmation queries': 'build/pace-longeval-insertion-order-ids',
+            'second-encoder vectors': 'build/longeval-bge-vectors',
             'human audit grades': 'build/longeval-human-audit-01/grades'}
 
 
