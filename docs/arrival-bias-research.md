@@ -865,6 +865,8 @@ to `docs/screen-d5-*.md`.
 | D6 | Clean sequential timing, 17 widths, `extra_backlinks` 0 / 4 / 8 | With 4: single-thread throughput −0.1% to +24% across recall@10 0.90–0.99 on all three datasets (+24% at 0.98 on LongEval, +13% at 0.99 on SIFT); build +0–5%. With 8: smaller throughput gain, −2.3% in one cell. **4 is the candidate default** |
 | D7 | Product path: 8-bit codes, refined bulk build of snapshot 1, later snapshots inserted one at a time; against a full rebuild | The bias reaches users: excess 2.27 pp grown against 0.22 rebuilt. `extra_backlinks` 4 cut it only 37% (prediction against) |
 | D7b | Diagnosis | Not the 8-bit construction (full-vector build: same excess, −32%). 8 links cut it 49%, but the oldest cohort rises 0.31 pp (limit 0.3). The larger product-path excess may come from the refine pass or 8-bit ranges trained on snapshot 1 only; untested |
+| D8 | Refine pass or stale 8-bit ranges? | The refine pass: without it the grown excess is 0.91 pp smaller; snapshot-1 ranges add only 0.27 pp (quantizer staleness small without drift) |
+| D9 | Refine each snapshot's insertions (new `refine_links(first=...)`), alone and with `extra_backlinks` 4 | Alone −31% (prediction against). **Together −77%** (2.27 → 0.53 pp); recall@100 0.9509 against the rebuild's 0.9522; oldest +0.29 pp; 8 s of refine on all cores instead of a 49 s rebuild. **Lead product design** |
 
 `extra_backlinks` (design A in its online form: a stand-in for the later arrivals a new node has not
 had) is the lead candidate, with 4 as the candidate default. It is on the Epzero branch
