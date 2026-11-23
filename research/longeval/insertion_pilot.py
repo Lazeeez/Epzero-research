@@ -29,6 +29,7 @@ This is a mechanism pilot on a sample, not a result about the full collection.
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import json
 from pathlib import Path
@@ -102,15 +103,27 @@ def prepare_full(dense, inputs, output, *, draw=0, count=None):
     near ties (heldout.reference_agreement).
     """
     from .dense import ARTIFACTS
-    from .heldout import ROLE, load_heldout, reference_agreement
+    from .heldout import ROLE, _development_reference, load_heldout, reference_agreement
     from .heldout_exploratory import cohorts
     from .mapped import MappedSnapshot
+    from .query_diagnostic import load_queries
     output = Path(output)
     output.mkdir(parents=True, exist_ok=False)
     first = cohorts(dense)
     queries, refs, _, _ = load_heldout(inputs)
     query_ids = list(queries[ROLE].ids)
-    q64 = np.ascontiguousarray(queries[ROLE].vectors).astype(np.float64)
+    test_vectors = np.ascontiguousarray(queries[ROLE].vectors)
+    confirm_ids, confirm_vectors = [], np.empty((0, test_vectors.shape[1]), dtype=np.float32)
+    if draw == 0:
+        # The 100 training queries: never used for any arrival-order outcome, so they confirm it.
+        training = Path(inputs) / 'training'
+        confirm_ids, values, raw = load_queries(training / 'queries', training / 'float32')
+        if raw['dtype'] != 'float32' or raw['device'] != 'cuda' or raw.get('tf32') is not False:
+            raise ValueError('confirmation queries must use the declared CUDA float32 representation')
+        if set(confirm_ids) & set(query_ids):
+            raise ValueError('confirmation and test query IDs overlap')
+        confirm_ids, confirm_vectors = list(confirm_ids), np.ascontiguousarray(values, dtype=np.float32)
+    q64 = np.vstack([test_vectors, confirm_vectors]).astype(np.float64)
     with MappedSnapshot(Path(dense) / 'snapshot-3', expected_archive_sha256=ARTIFACTS[2]['archive_sha256']) as snap:
         cohort_all = np.array([first[doc] for doc in snap.ids], dtype=np.int8)
         if draw == 0:
@@ -149,23 +162,36 @@ def prepare_full(dense, inputs, output, *, draw=0, count=None):
         top[qi] = candidates[:100]
         top_scores[qi] = row[top[qi]]
     del scores
+    nt = len(query_ids)
     np.save(output / 'cohort.npy', cohort)
     np.save(output / 'lexical-rank.npy', lexical)
-    np.save(output / 'queries.npy', np.ascontiguousarray(queries[ROLE].vectors))
-    np.save(output / 'exact-top100.npy', top)
+    np.save(output / 'queries.npy', test_vectors)
+    np.save(output / 'exact-top100.npy', top[:nt])
     (output / 'query-ids.json').write_text(json.dumps(query_ids) + '\n')
     summary = {'count': n, 'cohort_sizes': {str(c): int((cohort == c).sum()) for c in (1, 2, 3)},
                'queries': len(query_ids), 'metric': 'ip', 'draw': draw, 'collection': 'snapshot 3',
                'documents_in_snapshot': int(len(cohort_all)), 'ids_sha256': hashlib.sha256('\n'.join(ids).encode()).hexdigest()}
     if draw == 0:
+        # Document IDs in sample order, so returned positions can be mapped to LongEval documents.
+        with gzip.open(output / 'doc-ids.txt.gz', 'wt', encoding='utf-8') as handle:
+            handle.write('\n'.join(ids) + '\n')
+        np.save(output / 'confirm-queries.npy', confirm_vectors)
+        np.save(output / 'confirm-exact-top100.npy', top[nt:])
+        (output / 'confirm-query-ids.json').write_text(json.dumps(confirm_ids) + '\n')
+        summary['confirm_queries'] = len(confirm_ids)
+
         # The study's exact references for snapshot 3 must agree, up to rounding near ties.
-        mine = {query: [(ids[i], float(score)) for i, score in zip(top[qi], top_scores[qi])]
-                for qi, query in enumerate(query_ids)}
+        def listed(rows, offset):
+            return {query: [(ids[i], float(score)) for i, score in zip(top[offset + qi], top_scores[offset + qi])]
+                    for qi, query in enumerate(rows)}
         theirs = {query: [(doc, float(score)) for doc, score in refs[2][query][:100]] for query in query_ids}
-        summary['heldout_reference_check'] = reference_agreement(mine, theirs)
+        summary['heldout_reference_check'] = reference_agreement(listed(query_ids, 0), theirs)
+        development = _development_reference(inputs, 3)[1]
+        theirs = {query: [(doc, float(score)) for doc, score in development[query][:100]] for query in confirm_ids}
+        summary['confirm_reference_check'] = reference_agreement(listed(confirm_ids, nt), theirs)
     (output / 'sample.json').write_text(json.dumps(summary, indent=2) + '\n')
-    if draw == 0 and not summary['heldout_reference_check']['passed']:
-        raise ValueError('exact neighbours differ from the held-out references beyond rounding near ties')
+    if draw == 0 and not (summary['heldout_reference_check']['passed'] and summary['confirm_reference_check']['passed']):
+        raise ValueError('exact neighbours differ from the study references beyond rounding near ties')
     return summary
 
 
@@ -304,7 +330,13 @@ def insertion_order(ids_sorted_rank, cohort, order, seed):
 
 
 def run(sample, output, *, order, seed, backend='faiss_hnsw', ef=200, M=16, ef_construction=100, efs=()):
-    """Build one index and score it at `ef`; `efs` lists further search widths for the same build."""
+    """Build one index and score it at `ef`; `efs` lists further search widths for the same build.
+
+    Every width also saves the returned top-100 sample positions (`labels-ef{w}.npy`), so the same
+    (query, target) pair can be followed across builds. If the sample holds a confirmation query set
+    (`confirm-queries.npy`, `confirm-exact-top100.npy`), it is searched at the same widths and saved
+    under the `confirm-` prefix; it is never used to choose anything.
+    """
     import faiss
     faiss.omp_set_num_threads(1)
     if backend not in ('faiss_hnsw', 'epzero'):
@@ -314,6 +346,9 @@ def run(sample, output, *, order, seed, backend='faiss_hnsw', ef=200, M=16, ef_c
     cohort = np.load(sample / 'cohort.npy')
     queries = np.load(sample / 'queries.npy')
     exact = np.load(sample / 'exact-top100.npy')
+    confirm = None
+    if (sample / 'confirm-queries.npy').exists():
+        confirm = (np.load(sample / 'confirm-queries.npy'), np.load(sample / 'confirm-exact-top100.npy'))
     n, dim = vectors.shape
     metric = json.loads((sample / 'sample.json').read_text()).get('metric', 'ip')
     if metric not in ('ip', 'l2'):
@@ -332,9 +367,9 @@ def run(sample, output, *, order, seed, backend='faiss_hnsw', ef=200, M=16, ef_c
                 index.add(row.reshape(1, -1))
         build_seconds = time.perf_counter() - started
 
-        def search(width):
+        def search(width, rows=queries):
             index.hnsw.efSearch = width
-            _, labels = index.search(np.ascontiguousarray(queries), 100)
+            _, labels = index.search(np.ascontiguousarray(rows), 100)
             return sequence[labels]                         # storage position -> sample position
         hnsw = index.hnsw
         neighbors = faiss.vector_to_array(hnsw.neighbors)
@@ -356,8 +391,8 @@ def run(sample, output, *, order, seed, backend='faiss_hnsw', ef=200, M=16, ef_c
             index.add(np.ascontiguousarray(vectors[chunk]), labels=chunk.astype(np.int64), threads=1)
         build_seconds = time.perf_counter() - started
 
-        def search(width):
-            labels, _ = index.search(np.ascontiguousarray(queries), k=100, ef=width, rerank=0, rerank_z=0, patience=0,
+        def search(width, rows=queries):
+            labels, _ = index.search(np.ascontiguousarray(rows), k=100, ef=width, rerank=0, rerank_z=0, patience=0,
                                      threads=1)
             return np.asarray(labels, dtype=np.int64)       # labels are sample positions
         indegree = np.zeros(n, dtype=np.int64)
@@ -366,35 +401,54 @@ def run(sample, output, *, order, seed, backend='faiss_hnsw', ef=200, M=16, ef_c
             links = np.asarray(index.neighbors(label, 0), dtype=np.int64)
             outdegree[label] = len(links)
             np.add.at(indegree, links, 1)
-    def score(found):
+    def score(found, targets=exact):
         # Misses by cohort and exact-rank band, per query (for a query bootstrap).
-        table = np.zeros((len(queries), 3, len(BANDS), 2), dtype=np.int64)   # [query, cohort, band, (n, missed)]
-        place = np.zeros((len(queries), 10, len(BANDS), 2), dtype=np.int64)  # [query, insertion decile, band, (n, missed)]
-        for qi in range(len(queries)):
+        table = np.zeros((len(targets), 3, len(BANDS), 2), dtype=np.int64)   # [query, cohort, band, (n, missed)]
+        place = np.zeros((len(targets), 10, len(BANDS), 2), dtype=np.int64)  # [query, insertion decile, band, (n, missed)]
+        for qi in range(len(targets)):
             returned = set(found[qi].tolist())
-            for rank, doc in enumerate(exact[qi], 1):
+            for rank, doc in enumerate(targets[qi], 1):
                 band = next(i for i, b in enumerate(BANDS) if b[0] <= rank <= b[1])
                 missed = doc not in returned
                 table[qi, cohort[doc] - 1, band, 0] += 1
                 table[qi, cohort[doc] - 1, band, 1] += missed
                 place[qi, decile[doc], band, 0] += 1
                 place[qi, decile[doc], band, 1] += missed
-        hits = float(np.mean([len(set(found[qi].tolist()) & set(exact[qi].tolist())) / 100 for qi in range(len(queries))]))
+        hits = float(np.mean([len(set(found[qi].tolist()) & set(targets[qi].tolist())) / 100 for qi in range(len(targets))]))
         return table, place, hits
 
+    def summary(table, hits):
+        return {'recall_at_100': hits,
+                'miss_rate': {str(c): float(table[:, c - 1, :, 1].sum() / table[:, c - 1, :, 0].sum()) for c in (1, 2, 3)}}
+
     decile = position * 10 // n
-    per_query, by_position, recall = score(search(ef))
+    found_at = {ef: search(ef)}
+    per_query, by_position, recall = score(found_at[ef])
     output.mkdir(parents=True, exist_ok=False)
     np.save(output / 'per-query.npy', per_query)
     np.save(output / 'per-query-position.npy', by_position)
+    np.save(output / f'labels-ef{ef}.npy', found_at[ef].astype(np.int32))
     widths = {}
     for width in efs:
-        table, place, hits = (per_query, by_position, recall) if width == ef else score(search(width))
+        if width == ef:
+            table, place, hits = per_query, by_position, recall
+        else:
+            found_at[width] = search(width)
+            table, place, hits = score(found_at[width])
+            np.save(output / f'labels-ef{width}.npy', found_at[width].astype(np.int32))
         np.save(output / f'per-query-ef{width}.npy', table)
         np.save(output / f'per-query-position-ef{width}.npy', place)
-        widths[str(width)] = {'recall_at_100': hits,
-                              'miss_rate': {str(c): float(table[:, c - 1, :, 1].sum() / table[:, c - 1, :, 0].sum())
-                                            for c in (1, 2, 3)}}
+        widths[str(width)] = summary(table, hits)
+    confirmed = {}
+    if confirm is not None:
+        rows, targets = confirm
+        for width in sorted({ef, *efs}):
+            found = search(width, rows)
+            table, place, hits = score(found, targets)
+            np.save(output / f'confirm-labels-ef{width}.npy', found.astype(np.int32))
+            np.save(output / f'confirm-per-query-ef{width}.npy', table)
+            np.save(output / f'confirm-per-query-position-ef{width}.npy', place)
+            confirmed[str(width)] = summary(table, hits)
     report = {'backend': backend, 'order': order, 'seed': seed, 'ef': ef, 'M': M, 'ef_construction': ef_construction, 'count': int(n),
               'metric': metric,
               'build_seconds': build_seconds, 'recall_at_100': recall,
@@ -411,6 +465,8 @@ def run(sample, output, *, order, seed, backend='faiss_hnsw', ef=200, M=16, ef_c
               'indegree_by_insertion_decile': [float(indegree[(position * 10 // n) == d].mean()) for d in range(10)]}
     if widths:
         report['widths'] = widths
+    if confirmed:
+        report['confirm'] = {'queries': int(len(confirm[0])), 'widths': confirmed}
     (output / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
     return report
 
