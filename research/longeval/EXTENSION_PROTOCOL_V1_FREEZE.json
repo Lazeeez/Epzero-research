@@ -1,0 +1,37 @@
+{
+  "files": {
+    "research/longeval/audit.py": "a30ebaa574f9fb79c26cfed013bbab1cce0030db4c008ebb66f93369bdb35a77",
+    "research/longeval/coverage.py": "80d7bb7a49a4031f8da0c1736becb83bea580a2682b62b43ef3baf91494266b6",
+    "research/longeval/docs/protocol/E4_SECOND_ENCODER.md": "6ddd92f7d0d4d93eb3acd94a4eafc0ef8cda38ed6bf75aac815821218853f218",
+    "research/longeval/docs/protocol/EXTENSION_PROTOCOL_V1.md": "0c42269b51544969f70db85312220bc618c4103138e86b7ac4081df5d8441508",
+    "research/longeval/docs/protocol/JUDGE_VALIDATION_THRESHOLDS.md": "b3741c3a1b4eb3686edfd87172d4e792749e21a4254dabab0c318e008de024fb",
+    "research/longeval/evaluation.py": "a20168b9103cdd2ea47fe2a53dda031e6ad9425374aa8cc116f594fe55c6f6a0",
+    "research/longeval/heldout_pool.py": "d970500c22ecc65e57c48209a3c5f682d20fb635067a604f446440cb6ad8cc17",
+    "research/longeval/insertion_pilot.py": "55dde120f52ffb08789765329d7273276449b4ecffb8c9a877feb9ff7135d469",
+    "research/longeval/insertion_strata.py": "7c48bc2b7691d1c6ad98b7a5cf476dcde68c1673e5c2ff5b381981a40b44c271",
+    "research/longeval/judge-kernels.txt": "03d29badbcea7dd95d40dd18ea93d902f2039c7ef8af84a6a5ee8bcdc83d2dd1",
+    "research/longeval/judge-model.json": "a1ee482edeaa60be14403525cacfecc39b4d5c30759cbd604490a81312da52c6",
+    "research/longeval/judge-requirements.txt": "2a27be73ecebdda75a5e0606fb43409a90b4ca42392055d003dff59f7da4e014",
+    "research/longeval/judge.py": "66a340ecca83252dcb8449a9b5de23d49f11f978074eaed7ffddc245d42538e4",
+    "research/longeval/order_pairs.py": "ef916012311028c236ce729d01e64700191574b2b2627989870f6b8e7daf71f9",
+    "scripts/pace/LONGEVAL_INSERTION_ORDER.md": "746f96a78412b82ee95a0b0f00090c002ef2c25db50b44da5a2dbbd24524a0dd",
+    "scripts/pace/LONGEVAL_INSERTION_ORDER_IDS.md": "2225196e1e6ce92d046a26bad091b8606c059f6e1504fcf5695c5ffcaddf71a2",
+    "scripts/pace/LONGEVAL_JUDGE_PILOT.md": "ac12ec067734e43c3882829af43c427f3eaf254cdc80c14b85a8292f5c6ec2e5",
+    "scripts/pace/longeval-insertion-order-ids.sbatch": "2a1abe97ddc6210267b5f1562f3dee792f6b479db4a1672d6dde6f4bd88aeb71",
+    "scripts/pace/longeval-insertion-order.sbatch": "1dad2622d80018e2b4a5ce8ecc2316ac64b1878313cbd2e5e7b7a6c61b019447",
+    "scripts/pace/longeval-judge-pilot.sbatch": "58f7dc25edda70b59a8afe4d1d0c9515378af6f1c0d40569cbc68540f9556733",
+    "scripts/pace/longeval-judge-server.yaml": "8aac01b5c1ef704f0e27afd969a3755fd560d607fb946b12450544002267b8c6",
+    "scripts/pace/package-longeval-insertion-order-ids.py": "007f82d44903fbab0a4daeea1d9ef788df0c652e106ab932bcef7aaa144081d1"
+  },
+  "frozen_utc": "2026-11-23T12:22:00.151102+00:00",
+  "git_commit": "2cb3d24417131bd6ecf9d95ff1ab3c1966d28575",
+  "outcomes_present_at_freeze": {
+    "full-scale insertion-order evidence": true,
+    "human audit grades": false,
+    "judge pilot evidence": true,
+    "order rerun with IDs and confirmation queries": false,
+    "second-encoder vectors": false
+  },
+  "protocol": "EXTENSION_PROTOCOL_V1",
+  "statement": "Follow-up to FINAL_PROTOCOL_V1 on the same test queries. The held-out results and the exploratory analyses listed in the protocol were known when it was frozen."
+}
