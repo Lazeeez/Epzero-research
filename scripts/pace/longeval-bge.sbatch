@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # E4 (second encoder): encode the LongEval-Sci collection and queries with BGE-base-en-v1.5.
 # Design, pinned revision and predictions: research/longeval/docs/protocol/E4_SECOND_ENCODER.md.
-#   sbatch longeval-bge-01/scripts/pace/longeval-bge.sbatch
+#   sbatch longeval-bge-02/scripts/pace/longeval-bge.sbatch
 # Downloads (document archives, model) and the environment stay on compute-node disk; the vectors are
 # copied to the scratch build folder. They are derived from LongEval data and are never committed.
 #SBATCH --job-name=longeval-bge
@@ -11,7 +11,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:h200:1
 #SBATCH --mem=96G
 #SBATCH --tmp=60G
 #SBATCH --time=04:00:00
@@ -19,7 +19,7 @@
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:?submit from the isolated research checkout}"
 ROOT="$PWD"
-PACKAGE="$ROOT/longeval-bge-01"
+PACKAGE="$ROOT/longeval-bge-02"
 CPU_PYTHON="$ROOT/build/pace-longeval/venv/bin/python"
 UV="$ROOT/build/pace-longeval/tools/bin/uv"
 OUTPUT="$ROOT/build/pace-longeval-bge/jobs/${SLURM_JOB_ID:?requires a Slurm job}"
@@ -48,6 +48,8 @@ cp "$PACKAGE/SHA256SUMS" "$PACKAGE/manifest.json" "$OUTPUT/"
 
 PHASE=gpu
 echo "phase=$PHASE"
+# Job 7254797 (package -01, any GPU) stopped here with exit 127: the node had no nvidia-smi.
+command -v nvidia-smi > /dev/null || { echo "nvidia-smi not found: this node has no NVIDIA driver tools" >&2; exit 1; }
 nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader | tee "$OUTPUT/gpu.txt"
 MIB="$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | head -n 1 | tr -d ' ')"
 [ "$MIB" -ge "$MIN_GPU_MIB" ] || { echo "GPU has ${MIB} MiB; at least ${MIN_GPU_MIB} MiB required" >&2; exit 1; }
