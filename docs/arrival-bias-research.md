@@ -862,11 +862,13 @@ to `docs/screen-d5-*.md`.
 | D3 | Online `extra_backlinks` 4 / 8: the closest construction candidates a new node did not choose link to it | Excess 1.62 → 0.78 / 0.41 pp; as arrived minus reversed halved; oldest +0.08 / +0.16 pp; recall +0.18 / +0.25 pp; work +0.4 / +0.9%; build +2 / +4% |
 | D4 | `extra_backlinks` 8 on SIFT, GloVe and two more LongEval seeds | Excess cut 67–87% everywhere; oldest +0.05 to +0.21 pp; recall +0.25 to +0.75 pp; work +0.6% to +5.2% (SIFT just above the predicted 5%) |
 | D5 | Recall against work over the whole width range | Not a uniform speed-up: 1–5% more work at low recall, 6–21% less at recall@10 ≥ 0.98; neutral to slightly positive overall |
+| D6 | Clean sequential timing, 17 widths, `extra_backlinks` 0 / 4 / 8 | With 4: single-thread throughput −0.1% to +24% across recall@10 0.90–0.99 on all three datasets (+24% at 0.98 on LongEval, +13% at 0.99 on SIFT); build +0–5%. With 8: smaller throughput gain, −2.3% in one cell. **4 is the candidate default** |
 
 `extra_backlinks` (design A in its online form: a stand-in for the later arrivals a new node has not
-had) is the lead candidate. It is on the Epzero branch `min-backlinks`, off by default. Before any
-claim: a clean timing run, three seeds per arm, then the confirmation readings (BGE vectors, a public
-streaming workload) and the margins of decision 3.
+had) is the lead candidate, with 4 as the candidate default. It is on the Epzero branch
+`min-backlinks`, off by default. Before any claim: three seeds per arm, timing on a PACE node, the
+compressed (SQ8) configuration, then the confirmation readings (BGE vectors, a public streaming
+workload) and the margins of decision 3.
 
 ### 8.3 Baselines every design must beat
 
