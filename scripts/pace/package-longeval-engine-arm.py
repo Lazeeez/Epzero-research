@@ -33,7 +33,8 @@ def sha(raw):
 
 def engine_source(oryx):
     commit = subprocess.check_output(['git', 'rev-parse', BRANCH], cwd=oryx, text=True).strip()
-    raw = subprocess.check_output(['git', 'archive', '--format=tar', commit, 'engine'], cwd=oryx)
+    # core.autocrlf off: package the committed bytes, not a Windows checkout's line endings.
+    raw = subprocess.check_output(['git', '-c', 'core.autocrlf=false', 'archive', '--format=tar', commit, 'engine'], cwd=oryx)
     files = {}
     with tarfile.open(fileobj=io.BytesIO(raw)) as tar:
         for member in tar.getmembers():
