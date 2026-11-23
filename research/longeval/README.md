@@ -25,7 +25,8 @@ from rebuilding it.
 - **Waiting on the advisor:** six open decisions in the
   [extension protocol draft](docs/protocol/EXTENSION_PROTOCOL_DRAFT.md). After them come the
   freeze of the follow-up protocol, grading of the judging pool and the coverage analysis.
-- **Manuscript:** a full draft in [paper/](paper/), to be restructured and shortened.
+- **Manuscript:** restructured around the findings and cut to about 3,950 words for CLEF's 12-page
+  limit ([paper/](paper/)); the longer draft is kept in `docs/history/`. LNCS conversion remains.
 
 ## Results
 
