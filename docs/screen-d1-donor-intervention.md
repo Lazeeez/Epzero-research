@@ -42,3 +42,31 @@ comparison), donor choice does not matter at this scale and design A is preferre
 
 One seed and one build: a screen, not an estimate. A design it favours is tested with three seeds and
 then on the confirmation readings.
+
+## Result (run 23 November 2026, after the design above was committed)
+
+FAISS HNSW, 300K sample, seed 11, as arrived; every snapshot-3 document (61,792) given up to 4 new
+incoming links (about 247,000 links per arm); 381 test queries, exact top-100.
+
+| Arm | Newest-cohort excess, ef 100 / 200 / 400 (pp) | Oldest-cohort miss, ef 200 | Recall@100, ef 200 | Distance computations per query, ef 200 | Links displaced | Target in-degree |
+| --- | --- | --- | --- | --- | --- | --- |
+| Baseline (unedited) | 2.14 / 1.36 / 0.64 | 4.56% | 0.9460 | 2,889 | — | 15.7 |
+| closest | 0.14 / 0.35 / 0.21 | 4.50% | 0.9485 | 2,942 | 28,835 | 19.5 |
+| uniform | 0.30 / 0.39 / 0.12 | 4.48% | 0.9487 | 2,968 | 26,639 | 19.5 |
+| hub | 0.00 / 0.42 / 0.08 | 4.50% | 0.9487 | 2,959 | 75,594 | 19.4 |
+
+**Against the prediction:** the three arms differ by at most 0.07 points at ef 200 (0.28 at ef 100,
+0.13 at ef 400), within the 0.2-point noise of a two-build comparison, and **closest** and **hub** did
+not beat **uniform**. At this scale, *how many* incoming links a late document has matters; *which*
+nearby documents supply them does not. Design A (guarantee incoming links) is preferred over design C
+(choose donors). The hub arm displaced nearly three times as many existing links for no gain.
+
+**What the intervention did:** at ef 200 the newest cohort's excess fell from 1.36 to 0.35–0.42
+points; the oldest cohort was not harmed (4.56% → 4.48–4.50%); overall recall rose 0.25 points; work
+rose about 2–3% (distance computations). Searching wider on the unedited graph is far costlier for the
+same purpose: at ef 400 (79% more distance computations) the excess is still 0.64.
+
+**Limits:** one seed, one implementation, development queries; a post-hoc edit of the final graph
+using exact neighbours, which an engine would not compute; only the newest cohort was treated. The
+next step is an online version inside Epzero's insertion (every insertion guarantees itself incoming
+links), evaluated on whole builds in all three orders.
