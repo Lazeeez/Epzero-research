@@ -37,11 +37,14 @@ def main():
     queries = np.ascontiguousarray(np.load(a.sample / 'queries.npy'))
     exact = np.load(a.sample / 'exact-top100.npy')
     n, dim = vectors.shape
+    metric = json.loads((a.sample / 'sample.json').read_text()).get('metric', 'ip')
+    if metric not in ('ip', 'l2'):
+        raise ValueError('unknown metric')
     sequence = insertion_order(np.load(a.sample / 'lexical-rank.npy'), cohort, a.order, a.seed)
     position = np.empty(n, dtype=np.int64)
     position[sequence] = np.arange(n)
     decile = position * 10 // n
-    index = epzero.Index(dim=dim, metric='ip', max_elements=n, M=16, ef_construction=100, seed=a.seed,
+    index = epzero.Index(dim=dim, metric=metric, max_elements=n, M=16, ef_construction=100, seed=a.seed,
                          quantization='none', keep_vectors=True, nav_dim=0, fill_links=False, fast_build=False,
                          half_vectors=False, extra_backlinks=a.extra_backlinks)
     started = time.perf_counter()
@@ -78,7 +81,7 @@ def main():
             'recall_at_100': float(1 - table[..., 1].sum() / table[..., 0].sum()),
             'distance_computations_per_query': float(computations), 'ms_per_query': ms}
     np.save(out / 'per-query.npy', np.load(out / 'per-query-ef200.npy'))
-    report = {'backend': 'epzero-dev', 'order': a.order, 'seed': a.seed, 'ef': 200, 'M': 16, 'ef_construction': 100,
+    report = {'backend': 'epzero-dev', 'metric': metric, 'order': a.order, 'seed': a.seed, 'ef': 200, 'M': 16, 'ef_construction': 100,
               'extra_backlinks': a.extra_backlinks, 'count': int(n), 'build_seconds': build_seconds,
               'indegree_by_insertion_decile': [float(indegree[decile == d].mean()) for d in range(10)],
               'widths': widths}
