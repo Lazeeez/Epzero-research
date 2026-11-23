@@ -2,17 +2,19 @@
 predictions: docs/protocol/E4_SECOND_ENCODER.md, frozen with the extension protocol).
 
     python -m research.longeval.bge_encoder fetch MODEL_DIR
-    python -m research.longeval.bge_encoder encode MODEL_DIR DENSE DOCUMENTS RELEASE OUTPUT --device cuda
+    python -m research.longeval.bge_encoder ids DENSE IDS.json.gz          # locally, from the verified snapshot
+    python -m research.longeval.bge_encoder encode MODEL_DIR IDS.json.gz DOCUMENTS RELEASE OUTPUT --device cuda
 
-DENSE holds the released Qwen snapshots (only their document IDs are read, so the BGE collection is
-exactly the study's); DOCUMENTS holds the pinned text archives; RELEASE the released files (query
-texts). OUTPUT receives the snapshot-3 document vectors (float32, L2-normalised, 768 columns, in the
+IDS lists the document IDs of the released Qwen snapshot 3 in its order (written by `ids` from the
+verified snapshot, so the BGE collection is exactly the study's); DOCUMENTS holds the pinned text
+archives; RELEASE the released files (query texts). OUTPUT receives the snapshot-3 document vectors (float32, L2-normalised, 768 columns, in the
 order of the released snapshot-3 IDs), the test and training query vectors, and a report. Everything
 written is derived from LongEval data and is never committed.
 """
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import importlib.metadata
 import json
@@ -138,10 +140,27 @@ def min_cosine(a, b):
     return float(np.min(np.sum(a * b, axis=1) / (np.linalg.norm(a, axis=1) * np.linalg.norm(b, axis=1))))
 
 
-def encode_collection(model_folder, dense, documents, release, output, *, device='cuda', batch_size=128):
+def write_ids(dense, path):
+    """The document IDs of the verified released snapshot 3, in its order."""
     from .dense import ARTIFACTS
-    from .judge import document_texts
     from .mapped import MappedSnapshot
+    with MappedSnapshot(Path(dense) / 'snapshot-3', expected_archive_sha256=ARTIFACTS[2]['archive_sha256']) as snap:
+        ids = list(snap.ids)
+    with gzip.open(path, 'wt', encoding='utf-8') as handle:
+        json.dump(ids, handle)
+    return {'documents': len(ids), 'sha256': checksum(path)}
+
+
+def read_ids(path):
+    with gzip.open(path, 'rt', encoding='utf-8') as handle:
+        ids = json.load(handle)
+    if len(ids) != len(set(ids)) or not all(isinstance(d, str) and d for d in ids):
+        raise ValueError('document ID list is not a list of unique, non-empty strings')
+    return ids
+
+
+def encode_collection(model_folder, ids_path, documents, release, output, *, device='cuda', batch_size=128):
+    from .judge import document_texts
     from .release import read_queries
     output = Path(output)
     output.mkdir(parents=True, exist_ok=False)
@@ -154,8 +173,8 @@ def encode_collection(model_folder, dense, documents, release, output, *, device
         report['model_identity'] = verify_model(model_folder)
         report['packages'] = {name: importlib.metadata.version(name)
                               for name in ('torch', 'transformers', 'numpy', 'safetensors', 'tokenizers')}
-        with MappedSnapshot(Path(dense) / 'snapshot-3', expected_archive_sha256=ARTIFACTS[2]['archive_sha256']) as snap:
-            ids = list(snap.ids)
+        ids = read_ids(ids_path)
+        report['ids_sha256'] = checksum(ids_path)
         started = time.perf_counter()
         found = document_texts(documents, ids)                    # refuses if any study document has no text
         texts = [found[d] for d in ids]
@@ -218,16 +237,21 @@ def main():
     sub = parser.add_subparsers(dest='command', required=True)
     p = sub.add_parser('fetch', help='download and verify the pinned model files')
     p.add_argument('model', type=Path)
+    p = sub.add_parser('ids', help='write the document IDs of the verified released snapshot 3')
+    p.add_argument('dense', type=Path)
+    p.add_argument('output', type=Path)
     p = sub.add_parser('encode', help='encode the snapshot-3 collection and the queries')
-    for name in ('model', 'dense', 'documents', 'release', 'output'):
+    for name in ('model', 'ids', 'documents', 'release', 'output'):
         p.add_argument(name, type=Path)
     p.add_argument('--device', choices=('cuda', 'cpu'), default='cuda')
     p.add_argument('--batch-size', type=int, default=128)
     a = parser.parse_args()
     if a.command == 'fetch':
         print(json.dumps(fetch_model(a.model), indent=2))
+    elif a.command == 'ids':
+        print(json.dumps(write_ids(a.dense, a.output), indent=2))
     else:
-        print(json.dumps(encode_collection(a.model, a.dense, a.documents, a.release, a.output, device=a.device,
+        print(json.dumps(encode_collection(a.model, a.ids, a.documents, a.release, a.output, device=a.device,
                                            batch_size=a.batch_size), indent=2))
 
 
