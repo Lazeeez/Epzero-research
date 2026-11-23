@@ -30,3 +30,24 @@ recall@10, distance computations, insertion time for snapshots 2 and 3.
 Grown without the option shows a newest-cohort excess clearly above the rebuilt reference (by at
 least 1 point at ef 200); `extra_backlinks` 4 cuts the grown excess by at least half, with the
 oldest cohort's miss rate rising by at most 0.3 points and recall not falling.
+
+## Result (run 23 November 2026, after the design above was committed)
+
+| Mode | extra_backlinks | Newest-cohort excess, ef 100 / 200 / 400 (pp) | Miss rate by cohort, ef 200 | Recall@100 / @10, ef 200 | Distance computations, ef 200 | Time |
+| --- | --- | --- | --- | --- | --- | --- |
+| rebuilt (reference) | 0 | 0.11 / 0.22 / 0.20 | 4.42 / 5.21 / 5.39% | 0.9522 / 0.9777 | 3,144 | bulk 49 s |
+| grown | 0 | 3.29 / 2.27 / 1.07 | 4.06 / 6.80 / 6.96% | 0.9476 / 0.9793 | 3,032 | bulk 24 s + inserts 66 s |
+| grown | 4 | 1.96 / 1.44 / 0.57 | 4.22 / 6.34 / 6.41% | 0.9487 / 0.9769 | 3,047 | bulk 24 s + inserts 69 s |
+
+**Prediction 1 held:** documents added after the initial build are missed clearly more often than
+after a rebuild (excess 2.27 against 0.22 points at ef 200). This is the arrival bias users of the
+product path would see.
+
+**Prediction 2 failed:** `extra_backlinks` 4 cut the grown excess by 37% at ef 200 (47% at ef 400,
+40% at ef 100), not by half; the oldest cohort's miss rate rose 0.16 points (within 0.3); recall@100
+rose 0.11 points but **recall@10 fell 0.24 points** (0.16 at ef 400).
+
+**Possible reasons, to test (screen D7b):** in this configuration the graph is built on 8-bit codes
+(`fast_build`), so the extra links are chosen, and the farthest link evicted, by approximate
+distances; and the bulk-built part was refined, which already equalised it. Tests: `extra_backlinks`
+8, and `extra_backlinks` 4 with `fast_build` off.
