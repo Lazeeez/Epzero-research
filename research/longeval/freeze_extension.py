@@ -32,11 +32,17 @@ FROZEN = ('research/longeval/docs/protocol/EXTENSION_PROTOCOL_V1.md',
           'scripts/pace/longeval-insertion-order-ids.sbatch', 'scripts/pace/LONGEVAL_INSERTION_ORDER_IDS.md',
           'scripts/pace/package-longeval-insertion-order-ids.py')
 # Follow-up outcomes that may already exist when the protocol is frozen; their presence is recorded, not refused.
-OUTCOMES = {'judge pilot evidence': 'build/pace-longeval-judge-pilot',
-            'full-scale insertion-order evidence': 'build/pace-longeval-insertion-order',
-            'order rerun with IDs and confirmation queries': 'build/pace-longeval-insertion-order-ids',
-            'second-encoder vectors': 'build/longeval-bge-vectors',
-            'human audit grades': 'build/longeval-human-audit-01/grades'}
+# Each outcome lists every place it can be: the job folder on the cluster and the verified local evidence copies.
+OUTCOMES = {'judge pilot evidence': ('build/pace-longeval-judge-pilot', 'build/longeval-judge-7219729-evidence'),
+            'full-scale insertion-order evidence': ('build/pace-longeval-insertion-order',
+                                                    'build/longeval-insertion-order-01-evidence',
+                                                    'build/longeval-insertion-order-02-evidence',
+                                                    'build/longeval-insertion-order-m32-evidence'),
+            'order rerun with IDs and confirmation queries': ('build/pace-longeval-insertion-order-ids',
+                                                              'build/longeval-insertion-order-03-evidence'),
+            'second-encoder vectors': ('build/longeval-bge-vectors',),
+            'human audit grades': ('build/longeval-human-audit-01/grades', 'build/longeval-human-audit-02/grades',
+                                   'build/longeval-human-audit-03/grades')}
 
 
 def freeze(*, root=ROOT, protocol=PROTOCOL, receipt=RECEIPT, files=FROZEN, outcomes=None, build=None):
@@ -62,7 +68,8 @@ def freeze(*, root=ROOT, protocol=PROTOCOL, receipt=RECEIPT, files=FROZEN, outco
               'frozen_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'git_commit': commit,
               'statement': 'Follow-up to FINAL_PROTOCOL_V1 on the same test queries. The held-out results and the '
                            'exploratory analyses listed in the protocol were known when it was frozen.',
-              'outcomes_present_at_freeze': {name: (base / path).exists() for name, path in outcomes.items()},
+              'outcomes_present_at_freeze': {name: any((base / path).exists() for path in ((paths,) if isinstance(paths, str) else paths))
+                                             for name, paths in outcomes.items()},
               'files': {name: checksum(root / name) for name in files}}
     with receipt.open('x', encoding='utf-8', newline='\n') as stream:
         json.dump(record, stream, indent=2, sort_keys=True)
