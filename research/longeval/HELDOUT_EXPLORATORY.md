@@ -1141,3 +1141,89 @@ The recall column is Epzero's; FAISS's differs by at most 0.005.
 - **FAISS is 5–8% faster at the same width,** with about the same search work. These are the
   study's indexes (full-precision vectors, the study's fixed settings), not either library's
   fastest configuration.
+
+## 17. How much each result depends on a choice a reader can question
+
+Written on 23 November 2026, after every result above was known: these analyses test choices, they
+do not add findings to the frozen ones. The code is `heldout_sensitivity.py` (held-out evidence)
+and `insertion_strata.heterogeneity` (insertion-order builds); the aggregates are
+[`heldout-sensitivity.json`](heldout-sensitivity.json) and `insertion-heterogeneity-*.json`. The
+nDCG@10 scorer used for repeated rescoring reproduces the frozen, pytrec_eval-checked scorer to
+within 3.3 × 10⁻¹⁶.
+
+**What the primary intervals rule out.** The frozen margin is ±0.01. The 95% intervals themselves
+are much narrower for two arms, and their 90% intervals (two one-sided tests at 5%) lie within
+±0.004:
+
+| Arm | Gap s1 / s3 | Relative change of the gap | D | 95% interval | Largest change the interval allows |
+| --- | --- | --- | --- | --- | --- |
+| Epzero HNSW | −0.0057 / −0.0117 | ×2.04 | −0.0059 | [−0.0129, −0.0006] | 0.0129 |
+| FAISS HNSW | −0.0048 / −0.0055 | ×1.15 | −0.0007 | [−0.0038, +0.0027] | 0.0038 |
+| IVF, frozen | −0.0065 / −0.0080 | ×1.24 | −0.0015 | [−0.0037, +0.0005] | 0.0037 |
+
+For FAISS and IVF a change in the gap larger than about 0.004 nDCG@10 is ruled out. In relative
+terms that is not small: the interval still allows the gap to grow by up to about 60-80%.
+
+**Which grades count as relevant.** Under the official grades (0-2), counting only grade 2 as
+relevant, or counting any positive grade as fully relevant, D is −0.0059 / −0.0061 / −0.0065 for
+Epzero, −0.0007 / +0.0003 / −0.0015 for FAISS and −0.0015 / −0.0012 / −0.0021 for IVF. The pattern
+does not depend on the threshold.
+
+**Construction randomness.** The frozen intervals resample queries; seeds are averaged within a
+query. Resampling the three seeds as well (two-level bootstrap, 10,000 draws):
+
+| Arm | D by seed 11 / 29 / 47 | 95% interval, queries only | 95% interval, queries and seeds |
+| --- | --- | --- | --- |
+| Epzero HNSW | −0.0033 / −0.0110 / −0.0035 | [−0.0129, −0.0006] | [−0.0146, +0.0011] |
+| FAISS HNSW | −0.0026 / +0.0017 / −0.0012 | [−0.0038, +0.0027] | [−0.0042, +0.0042] |
+| IVF, frozen | −0.0013 / −0.0035 / +0.0002 | [−0.0037, +0.0005] | [−0.0046, +0.0012] |
+
+Most of Epzero's change comes from one seed, and with seeds resampled its interval includes 0.
+Three seeds are too few to separate construction randomness from the effect; more seeds need a
+new run.
+
+**Noise in the labels.** Each released grade is one draw of an LLM assessor. The judge pilot
+measured how often a second draw of the same setting changes a grade (87.4% unchanged). Regrading
+all 27,500 graded pairs on the panel with that repeat behaviour, 200 times, moves D by a standard
+deviation of 0.0007 (Epzero), 0.0007 (FAISS) and 0.0004 (IVF), against interval half-widths of
+about 0.003-0.006. The labels' sampling noise is a small part of the uncertainty.
+
+**The panel.** It leaves out 7 of the 381 test queries, those without a positive judgment at every
+snapshot; 2 of them are fresh-content queries (at least half of the exact snapshot-3 top 10 new).
+
+**Fresh content or hard queries?** Fresh-content queries were already harder at snapshot 1, before
+any new content existed: the correlation between a query's share of new content at snapshot 3 and
+its neighbour recall at snapshot 1 is −0.22 (HNSW). Comparing fresh-content and other queries
+within thirds of snapshot-1 recall (stratum-weighted, bootstrap within strata):
+
+| Arm | Fresh minus other, unadjusted | Adjusted for snapshot-1 difficulty | 95% interval |
+| --- | --- | --- | --- |
+| Epzero HNSW | −0.018 | −0.017 | [−0.045, +0.004] |
+| FAISS HNSW | −0.003 | −0.003 | [−0.013, +0.005] |
+| IVF, frozen | −0.002 | −0.001 | [−0.010, +0.007] |
+
+Epzero's extra loss on fresh-content queries is concentrated in the hardest third (−0.065 against
+−0.020); after the adjustment no arm shows a reliable extra loss on fresh content. The statement
+that fresh-content queries lose about three times the average stands as a description, but most
+of it is the difficulty of those queries.
+
+**Is the within-query ratio one common ratio?** The Mantel–Haenszel ratio assumes so. Computed
+separately within each exact-rank band, the ratios agree (spread 0.02-0.20 at M 16). Computed within
+thirds of the queries by the share of their exact neighbours that arrived after snapshot 1, they do
+not, in the as-arrived builds:
+
+| Graph, implementation | As arrived: fewest / middle / most later neighbours | Shuffled | Reversed |
+| --- | --- | --- | --- |
+| M 16, Epzero | 2.25 [1.54, 3.19] / 1.62 / 1.16 [0.95, 1.39] | 1.15 / 1.07 / 0.92 | 0.93 / 0.94 / 0.72 |
+| M 16, FAISS | 2.01 [1.43, 2.72] / 1.46 / 1.06 [0.87, 1.28] | 1.04 / 1.17 / 0.93 | 0.88 / 0.94 / 0.73 |
+| M 32, Epzero | 2.51 [1.48, 4.19] / 2.05 / 1.33 [1.04, 1.70] | 1.04 / 1.04 / 0.94 | 0.71 / 0.85 / 0.59 |
+| M 32, FAISS | 2.67 [1.48, 4.54] / 2.18 / 1.28 [1.01, 1.63] | 1.07 / 1.02 / 0.97 | 0.69 / 0.84 / 0.57 |
+
+A late arrival is missed most when it lands in a neighbourhood of mostly older documents (2.0-2.7
+times as often), and least when its neighbourhood is itself mostly new (1.06-1.33). In shuffled
+builds the three groups agree (spread 0.10-0.24), as they should. The within-query ratio of
+section 14 is therefore a weighted average over these groups, not one common ratio.
+
+A first version of this split grouped queries by the miss rate of their snapshot-1 neighbours,
+which is the ratio's own denominator; it inflated the ratio of the easiest group (about 3 even in
+shuffled builds) and was replaced before any result was used.
