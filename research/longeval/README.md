@@ -108,6 +108,7 @@ work ([docs/repair/](docs/repair/)).
 | `docs/history/` | Superseded plans, the synthetic-pilot documentation and an earlier draft |
 | `trajectory-development.json`, `ivf-development.json` | Index configurations (frozen) |
 | `insertion-order-full*.json` (including `-m32`, the denser graph), `insertion-order-draw*.json` | Aggregates of the full-scale insertion-order experiment and of its three half-size draws (no identifiers): widths, contrasts and decile curves, and the counts of each full-collection build |
+| `heldout-sensitivity.json`, `insertion-heterogeneity-*.json` | Sensitivity of the held-out results (bounds, relevance threshold, seeds, label noise, panel, fresh content against difficulty) and heterogeneity of the within-query ratio (aggregates only) |
 | `insertion-strata*.json` | Within-query miss ratios (no identifiers): the five collections, the other search widths, GloVe and SIFT, the held-out arms, and the denser graph (`-m32-ef*`) |
 | `insertion-pilot-*.json` | Aggregates of the insertion-order pilot (no identifiers): the first run (`summary`), other search widths and graph settings (`robustness`), misses by insertion decile (`position`), and the replication on GloVe and SIFT (`public-*`) |
 | `requirements.txt`, `encoder-requirements.txt` | CPU research and GPU encoder dependencies |
@@ -123,7 +124,7 @@ work ([docs/repair/](docs/repair/)).
 | Index trajectories | `backends.py`, `trajectory.py`, `ivf_trajectory.py`, `ivf_verification.py`, `runner.py` |
 | Held-out protocol | `heldout.py`, `heldout_analysis.py`, `freeze_protocol.py` |
 | Follow-up protocol | `freeze_extension.py` ([draft](docs/protocol/EXTENSION_PROTOCOL_DRAFT.md)) |
-| Post-freeze work | `heldout_cost.py`, `heldout_extension.py`, `heldout_exploratory.py`, `heldout_robustness.py`, `heldout_pool.py`, `insertion_pilot.py`, `insertion_strata.py` |
+| Post-freeze work | `heldout_cost.py`, `heldout_extension.py`, `heldout_exploratory.py`, `heldout_robustness.py`, `heldout_pool.py`, `heldout_sensitivity.py`, `insertion_pilot.py`, `insertion_strata.py` |
 | Follow-up: human audit | `audit.py` (blinded annotation pages for dropped and replacement documents, and the analysis of returned grades) |
 | Follow-up: local relevance judge | `judge.py`, `judge-requirements.txt`, `judge-kernels.txt`, `judge-model.json`; `coverage.py` for the validation sample, the three validation measures and the coverage estimate ([runbook](../../scripts/pace/LONGEVAL_JUDGE_PILOT.md), [thresholds](docs/protocol/JUDGE_VALIDATION_THRESHOLDS.md)) |
 | Development diagnostics | `failure_diagnostic.py`, `trace_phases.py`, `work_budget.py`, `native_cost.py`, `native_cost_verification.py`, `retention_search.py`, `retention_diagnostic.py`, `feasibility.py` |
