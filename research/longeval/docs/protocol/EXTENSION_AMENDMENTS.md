@@ -23,3 +23,19 @@ snapshot 1, and the 100 put in their place, "sampled with seed 20261123 by a sam
 
 **Known at the time:** no output of the order rerun existed (its jobs had not been submitted), so no
 audit pair could have been seen.
+
+## 2. Fewer eligible pairs than the audit's 50 per group (24 November 2026)
+
+**What happened:** with the order rerun's output in hand, the sampler (amendment 1) found only 46
+dropped pairs from snapshot 3 in the seed-11 as-arrived and reversed builds at ef 200 (both
+implementations, primary panel, excluding pairs seen in both roles), against the 50 per group the
+runbook fixed. It stopped before drawing anything, as designed.
+
+**What is done:** a balanced census at the smaller count. When either arrival group has fewer
+eligible dropped pairs than 50, both groups take that many: all 46 dropped pairs of snapshot 3, 46
+drawn from snapshot 1 by the same keyed hash, and one replacement for each; 184 pairs in all. The
+second annotator's overlap stays at 13 dropped pairs per group with their replacements (52 pairs).
+Pooling seeds 29 and 47 was rejected because it changes the population the runbook fixed.
+
+**Known at the time:** the counts of eligible pairs by group (46 for snapshot 3); no pair had been
+drawn, no page written, and no grade or official label of any eligible pair inspected.
