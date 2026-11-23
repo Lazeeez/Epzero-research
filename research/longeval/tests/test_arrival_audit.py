@@ -45,3 +45,14 @@ def test_selection_refuses_too_few_pairs():
     dropped, replacements, both = arrival_audit.build_roles(builds, exact, cohort, doc_ids, query_ids, query_ids)
     with pytest.raises(ValueError):
         arrival_audit.select(dropped, replacements, both, per_group=50)
+
+
+def test_a_balanced_census_when_a_group_is_short():
+    builds, exact, cohort, doc_ids, query_ids = synthetic(queries=12)
+    dropped, replacements, both = arrival_audit.build_roles(builds, exact, cohort, doc_ids, query_ids, query_ids)
+    newest = sum(1 for k, v in dropped.items() if v['group'] == 3 and k not in both)
+    chosen, counts = arrival_audit.select(dropped, replacements, both, per_group=10_000, overlap=2, census=True)
+    smaller = min(newest, sum(1 for k, v in dropped.items() if v['group'] == 1 and k not in both))
+    assert counts['balanced_census'] == smaller
+    roles = [(c['role'], c['arrival_group']) for c in chosen]
+    assert roles.count(('dropped', 3)) == roles.count(('dropped', 1)) == smaller
