@@ -91,3 +91,14 @@ def test_aggregate_separates_the_query_from_the_order(tmp_path):
     assert json.loads((tmp_path / 'out.json').read_text())['strata'] == 'query x exact-rank band'
     with pytest.raises(ValueError, match='no build'):
         strata.tables(tmp_path / 'empty')
+
+
+def test_heterogeneity_finds_a_common_ratio_and_a_band_that_differs(tmp_path):
+    write_builds(tmp_path / 'common', 'epzero')
+    common = strata.heterogeneity(tmp_path / 'common' / 'epzero', ef=None, draws=200)
+    # The generator gives every query and band the same order effect: subgroups agree.
+    appended = common['appended']
+    assert all(abs(appended[f'band {lo}-{hi}']['value'] - 1.5) < .2 for lo, hi in BANDS)
+    assert appended['spread across bands']['value'] < .3
+    assert set(appended) >= {'third with fewest later neighbours', 'middle third', 'third with most later neighbours',
+                             'spread across query thirds'}
