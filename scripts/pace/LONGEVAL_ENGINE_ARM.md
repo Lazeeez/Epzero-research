@@ -85,3 +85,50 @@ sha256sum longeval-engine-arm-01-evidence.tar.gz
 The archive holds run files derived from LongEval data: copy it to the local `build` directory and
 never commit it. Locally, merge the three jobs' `builds` folders and run
 `python -m research.longeval.engine_arm_analysis BUILDS OUT.json` and again with `--confirm`.
+
+## Result (jobs 7254793–7254795, 24 November 2026)
+
+All three jobs passed; every evidence file verified; the test and confirmation queries' exact
+neighbours matched the study's references; the node-built Epzero carried both repair options
+(`engine-check.json`). Aggregates: `research/longeval/engine-arm-01-confirm.json` and
+`engine-arm-01-test.json`. Ef 200, seeds 11, 29, 47 averaged within query, 10,000 bootstrap draws.
+
+| Reading | Arm | Newest-cohort excess | Oldest-cohort miss | Recall@100 |
+| --- | --- | --- | --- | --- |
+| Confirmation (100) | grown | 1.46 pp | 3.41% | 95.76% |
+| | repaired | −0.32 pp | 3.69% | 95.84% |
+| | rebuilt | −0.80 pp | 4.14% | 95.69% |
+| Development (381) | grown | 3.41 pp | 4.85% | 93.61% |
+| | repaired | 1.54 pp | 4.89% | 94.10% |
+| | rebuilt | 0.43 pp | 5.19% | 94.19% |
+
+Repaired minus grown, with 95% intervals:
+
+- **Confirmation:** excess −1.78 [−3.06, −0.76]; oldest +0.28 [−0.13, +0.87]; recall +0.08 [−0.42, +0.45].
+- **Development:** excess −1.87 [−2.41, −1.36]; oldest +0.04 [−0.18, +0.25]; recall +0.49 [+0.27, +0.75].
+
+**Decision under the rules fixed beforehand:**
+
+- **Confirmation reading: passed.** The excess falls with an interval excluding 0 and ends at −0.32
+  points, under 1.0. No harm is reported, not gated: the oldest cohort's upper bound (+0.87) is above
+  0.75 with 100 queries.
+- **Development reading: failed** on the absolute criterion. The excess falls by 55% with an
+  interval excluding 0, and there is no harm (oldest +0.04, recall +0.49), but the repaired excess
+  (1.54 points) is above the 1.0-point target. At full scale the grown excess (3.41) is larger than
+  on the 300K development sample (2.22).
+
+**Predictions:** "passes on both readings": **failed** (the development reading). "Repaired excess
+less than half of grown": held (0.45 of it on the development queries; below zero on the confirmation
+queries). "Recall@100 higher in repaired": held on both. "Refine of later snapshots faster than their
+insertion": held (30 s on all cores against 733 s single-threaded).
+
+**Cost:** later insertions 702 → 733 s (+4%); refines 30 s; distance computations at ef 200 2,937 →
+3,009 (+2.5%). The rebuild reaches a lower excess but raises the oldest cohort's miss rate (+0.34 on
+the development queries, +0.73 on the confirmation queries) and costs a 182 s bulk build.
+
+**Reading:** the repair reliably removes about half or more of the arrival bias at full scale and
+improves recall, at small cost, and passes the confirmation reading. It does not yet bring the newest
+cohort's excess under one point on all queries. Under decision 1 the paper may present it as the
+remedy only after the remaining confirmation readings (BGE vectors and a public streaming workload);
+a stronger setting (`extra_backlinks` 8 cut the excess further on the development sample, screen
+D7b) is the next development step.
