@@ -31,6 +31,7 @@ def main():
     parser.add_argument('--order', choices=('appended', 'shuffled', 'reversed'), required=True)
     parser.add_argument('--extra-backlinks', type=int, required=True)
     parser.add_argument('--seed', type=int, default=11)
+    parser.add_argument('--widths', type=int, nargs='+', default=list(WIDTHS))
     a = parser.parse_args()
     import epzero
     vectors = np.load(a.sample / 'vectors.npy', mmap_mode='r')
@@ -49,7 +50,7 @@ def main():
         index.add(np.ascontiguousarray(vectors[chunk]), labels=chunk.astype(np.int64), threads=1)
     build = time.perf_counter() - started
     rows = []
-    for width in WIDTHS:
+    for width in a.widths:
         for k in (10, 100):
             if k > width and k == 100:
                 continue
