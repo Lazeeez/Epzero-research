@@ -127,17 +127,20 @@ not mean that the grades agree with human judgment. The local judge's agreement 
 grades will be reported beside the three measures, with no threshold, so that a reader can see
 both.
 
-## 6. Open points for the advisor
+## 6. Decisions (formerly open points for the advisor)
 
-1. Approve the three thresholds, or replace them with the stricter bar of section 5.
-2. Approve deciding on the point estimate, with the interval reported beside it.
-3. Fix the number of queries for measure 3. All complete lists can be used at no extra cost if
-   the full pool is graded anyway.
-4. Confirm the reference family (120B, or 20B if hardware requires it) before the validation
-   sample is graded.
-5. Confirm that agreement with the released human grades is reported without a threshold, or set
-   one.
+Decided by the author on 23 November 2026, the advisor being unavailable, before any local judge
+grade of the validation sample or the pool exists.
+
+1. **Thresholds:** the three of section 3 are the gate. The stricter bar of section 5 (binary
+   agreement ≥ 0.932, kappa ≥ 0.835) is reported as a second tier: meeting it allows "at least as
+   close to the official grades as the released 20B labels".
+2. **Decision on the point estimate**, with the 95% query-clustered interval reported beside it.
+3. **Measure 3 uses every complete exact-search top-10 list** at each snapshot (362–366 per
+   snapshot), since the full pool is graded anyway.
+4. **Reference family: GPT-OSS-120B**, the model run locally in the judge pilot.
+5. **Agreement with the released human grades is reported without a threshold.**
 
 ## Amendment log
 
-No amendments.
+- 23 November 2026: section 6 decisions recorded (see above).
