@@ -29,11 +29,12 @@ def test_freeze_refuses_until_the_protocol_is_final(tmp_path):
         freeze_extension.freeze(**arguments)
 
 
-def test_the_draft_is_not_freezable_and_every_listed_file_exists():
-    # The committed draft holds open decisions, and the final file does not exist yet.
+def test_the_protocol_has_no_open_decision_and_every_listed_file_exists():
+    # Every decision is recorded (23 November 2026), in the draft or in the finalised file.
+    final = freeze_extension.PROTOCOL
     draft = freeze_extension.HERE / 'docs/protocol/EXTENSION_PROTOCOL_DRAFT.md'
-    assert freeze_extension.OPEN in draft.read_text(encoding='utf-8')
-    assert not freeze_extension.RECEIPT.exists()
+    text = (final if final.is_file() else draft).read_text(encoding='utf-8')
+    assert freeze_extension.OPEN not in text
     missing = [name for name in freeze_extension.FROZEN[1:] if not (freeze_extension.ROOT / name).is_file()]
     assert missing == []
 
