@@ -162,6 +162,86 @@ def small_sample(folder, n=600, dim=16, queries=12):
     return folder
 
 
+def test_prepare_full_adds_checked_confirmation_queries(tmp_path, monkeypatch):
+    """The full-scale preparation, with stand-ins for the LongEval data and loaders."""
+    from types import SimpleNamespace
+    from research.longeval import heldout, heldout_exploratory, mapped, query_diagnostic
+    rng = np.random.default_rng(4)
+    n, dim = 400, 8
+    doc_ids = [f'doc{i:04d}' for i in rng.permutation(n)]
+    vectors = rng.standard_normal((n, dim)).astype(np.float32)
+    test_q = rng.standard_normal((6, dim)).astype(np.float32)
+    train_q = rng.standard_normal((4, dim)).astype(np.float32)
+    test_ids, train_ids = [f't{i}' for i in range(6)], [f'r{i}' for i in range(4)]
+
+    def reference(q):
+        # The study's rule: score descending, then document ID descending.
+        scores = vectors.astype(np.float64) @ q.astype(np.float64)
+        order = sorted(range(n), key=lambda i: (-scores[i], [-ord(c) for c in doc_ids[i]]))[:100]
+        return [(doc_ids[i], float(scores[i])) for i in order]
+
+    class Snapshot:
+        def __init__(self, *args, **kwargs):
+            self.ids, self.vectors = doc_ids, vectors
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+    refs = [None, None, {q: reference(v) for q, v in zip(test_ids, test_q)}]
+    monkeypatch.setattr(mapped, 'MappedSnapshot', Snapshot)
+    monkeypatch.setattr(heldout_exploratory, 'cohorts', lambda dense: {d: 1 + i % 3 for i, d in enumerate(doc_ids)})
+    monkeypatch.setattr(heldout, 'load_heldout', lambda inputs: (
+        {heldout.ROLE: SimpleNamespace(ids=test_ids, vectors=test_q)}, refs, None, None))
+    monkeypatch.setattr(query_diagnostic, 'load_queries', lambda *a: (
+        train_ids, train_q, {'dtype': 'float32', 'device': 'cuda', 'tf32': False}))
+    development = {q: reference(v) for q, v in zip(train_ids, train_q)}
+    monkeypatch.setattr(heldout, '_development_reference', lambda inputs, step: ({}, development))
+    summary = insertion_pilot.prepare_full(tmp_path / 'dense', tmp_path / 'inputs', tmp_path / 'sample')
+    assert summary['heldout_reference_check']['passed'] and summary['confirm_reference_check']['passed']
+    assert summary['confirm_queries'] == 4
+    sample = tmp_path / 'sample'
+    assert np.load(sample / 'exact-top100.npy').shape == (6, 100)
+    assert np.load(sample / 'confirm-exact-top100.npy').shape == (4, 100)
+    assert json.loads((sample / 'confirm-query-ids.json').read_text()) == train_ids
+    import gzip
+    assert gzip.open(sample / 'doc-ids.txt.gz', 'rt').read().split() == doc_ids
+    # A confirmation reference that disagrees stops the preparation.
+    development['r0'] = list(reversed(development['r0']))[:100]
+    development['r0'] = [(d, s + 1.0) for d, s in development['r0']]
+    with pytest.raises(ValueError):
+        insertion_pilot.prepare_full(tmp_path / 'dense', tmp_path / 'inputs', tmp_path / 'sample2')
+
+
+def test_pilot_saves_returned_ids_and_scores_the_confirmation_queries(tmp_path):
+    pytest.importorskip('faiss')
+    sample = small_sample(tmp_path / 'sample')
+    vectors = np.load(sample / 'vectors.npy')
+    confirm = np.random.default_rng(9).standard_normal((5, vectors.shape[1])).astype(np.float32)
+    np.save(sample / 'confirm-queries.npy', confirm)
+    np.save(sample / 'confirm-exact-top100.npy', np.argsort(-(confirm.astype(np.float64) @ vectors.astype(np.float64).T),
+                                                           axis=1, kind='stable')[:, :100].astype(np.int32))
+    report = insertion_pilot.run(sample, tmp_path / 'build', order='appended', seed=11, ef=40, M=8, ef_construction=40,
+                                 efs=(10, 40))
+    folder, exact = tmp_path / 'build', np.load(sample / 'exact-top100.npy')
+    for width in (10, 40):
+        labels = np.load(folder / f'labels-ef{width}.npy')
+        assert labels.shape == (12, 100) and labels.dtype == np.int32
+        # The saved IDs reproduce the saved miss counts exactly.
+        table = np.load(folder / f'per-query-ef{width}.npy')
+        missed = sum(len(set(exact[q].tolist()) - set(labels[q].tolist())) for q in range(12))
+        assert missed == table[..., 1].sum()
+        found = np.load(folder / f'confirm-labels-ef{width}.npy')
+        assert found.shape == (5, 100)
+        assert np.load(folder / f'confirm-per-query-ef{width}.npy')[..., 0].sum() == 5 * 100
+    assert report['confirm']['queries'] == 5 and list(report['confirm']['widths']) == ['10', '40']
+    # Without a confirmation set nothing changes in the report.
+    plain = small_sample(tmp_path / 'plain')
+    assert 'confirm' not in insertion_pilot.run(plain, tmp_path / 'plain-build', order='appended', seed=11, ef=40, M=8,
+                                                ef_construction=40)
+
+
 def test_pilot_width_sweep_and_robustness_summary(tmp_path):
     pytest.importorskip('faiss')
     sample = small_sample(tmp_path / 'sample')
