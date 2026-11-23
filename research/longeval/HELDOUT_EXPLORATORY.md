@@ -1268,3 +1268,39 @@ history. The per-query spread of calibration recall is large (SD about 0.06–0.
 
 Not yet done from the design: the calibration-size study of section 8 redone by resampling the
 calibration queries.
+
+## 19. The order rerun: reproduction, confirmation and paired analysis
+
+Six jobs (7253605–7253610, 24 November 2026; package `longeval-insertion-order-03`; design, checks
+and predictions recorded before submission in `scripts/pace/LONGEVAL_INSERTION_ORDER_IDS.md`, frozen
+with the extension protocol) rebuilt all of snapshot 3 in the three orders for both implementations
+and three seeds, saving returned IDs and searching the 100 confirmation queries (the LongEval-Sci
+training queries, never used for any arrival-order outcome). All jobs passed and verified; the exact
+neighbours of both query sets matched the study's references.
+
+**Reproduction (check fixed beforehand): held.** All 72 per-query tables (18 builds × 4 widths) are
+identical to the first full-scale run's.
+
+**Confirmation (primary, fixed beforehand): held.** On the 100 confirmation queries at ef 200, the
+newest cohort's within-query excess (snapshot 3 against 1), as arrived minus reversed, is
+**+3.11 points [+1.33, +4.91] for Epzero** and **+2.39 points [+0.84, +3.97] for FAISS** (test
+queries: +4.28 and +3.41). The contrast is positive at every width; its interval excludes 0 at ef 100
+and 400 for both implementations, and at ef 800 for Epzero (+1.13 [+0.02, +2.36]) but not for FAISS
+(+0.68 [−0.25, +1.67]). Aggregates: `insertion-order-confirm-ef{100,200,400,800}.json`.
+
+**Secondary predictions:** within-query ratio as arrived above 1 — held (Epzero 1.33 [1.02, 1.73];
+FAISS 1.04 [0.74, 1.52], with an interval including 1); shuffled within [0.85, 1.15] — **did not
+hold** (Epzero 0.82, FAISS 0.78: on these queries the newest documents are easier in themselves);
+reversed below 1 — held (0.80, 0.71); overall recall@100 within 1 point across orders — held (0.24
+points for Epzero, 0.49 for FAISS). Because the shuffled builds show a content difference on these
+queries, the as-arrived minus reversed contrast, which holds content fixed, is the right primary
+measure, as pre-specified.
+
+**Paired, target-level** (`order_pairs.py`; counts are seed averages; aggregates
+`order-pairs-{epzero,faiss_hnsw}-{test,confirm}.json`). Moving the arrival blocks from as-arrived to
+reversed, on the test queries for Epzero: of 5,898 newest-cohort (query, target) pairs, 276 are
+rescued and 129 newly lost (−2.49 points [−3.34, −1.63]); of the oldest cohort's, 407 are rescued and
+785 newly lost (+1.55 points); the gap between the two cohorts changes by −4.04 points [−4.97,
+−3.10] (FAISS −3.38 [−4.26, −2.51]). On the confirmation queries the gap change is −2.70 [−4.38,
+−1.04] (Epzero) and −1.85 [−3.29, −0.43] (FAISS). The order moves individual losses between cohorts in
+both directions, with a large net transfer: a ratio near one, or a stable mean, would hide it.
