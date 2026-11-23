@@ -362,12 +362,16 @@ The gradient is the same whatever the content and whatever the order, so it is c
 
 So in-degree grows with age, and the newest nodes depend on a few conditional reverse links.
 
-**Caveat: this is a hypothesis, not yet shown.** Even a process with no rejection at all, in which
-each arrival picks *m* incumbents uniformly, gives older nodes more incoming links: the expected
-number of later choices of a node is the sum of *m/(t−1)* over the later steps *t*. A degree slope
-alone therefore cannot tell "passive opportunity" from "rejection by the diversity heuristic". That
-needs edge events: reverse-link proposals, acceptance, survival and evictions by age, distance and
-list occupancy. Likewise, the query-tercile result (largest ratio when few of a query's answers are
+**Resolved on 23 November 2026: it is mostly passive accumulation, not rejection.** Even a process
+with no rejection at all, in which each arrival picks *m* incumbents uniformly, gives older nodes more
+incoming links: the expected number of later choices of a node is the sum of *m/(t−1)* over the later
+steps *t*. Measured directly (screen D2, `screen-d2-min-backlinks.md`): right after insertion a node
+already has on average 12.5 incoming links from the 12.6 neighbours it chose (only 1.4% fewer than
+4), yet at the end of the build in-degree runs from 28.3 (first tenth) to 13.7 (last tenth).
+Rejection by full neighbours (step 2 above) is real but minor; the gradient comes from old nodes
+receiving forward links from every later arrival nearby. A guaranteed floor of incoming links at
+insertion therefore had no effect, while giving late nodes extra incoming links from nodes they had
+not chosen (screen D1) removed most of their excess. Likewise, the query-tercile result (largest ratio when few of a query's answers are
 later arrivals) describes queries, not each target's own neighbourhood. The stronger ratio at M 32
 is confounded with efConstruction 200 and a lower base rate (4.2). GRAB-ANNS
 describes the same thing informally as incumbents forming a "geometric shield" around new nodes; we
