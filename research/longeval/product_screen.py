@@ -31,6 +31,8 @@ def main():
     parser.add_argument('--exact-build', action='store_true', help='fast_build off: build the graph on full vectors')
     parser.add_argument('--no-refine', action='store_true', help='skip the refine pass after the bulk build')
     parser.add_argument('--train-on-first', action='store_true', help='train the 8-bit ranges on snapshot 1 only')
+    parser.add_argument('--refine-each-snapshot', action='store_true',
+                        help='grown: after each later snapshot, refine the documents it added')
     a = parser.parse_args()
     import epzero
     vectors = np.load(a.sample / 'vectors.npy', mmap_mode='r')
@@ -52,11 +54,19 @@ def main():
     if not a.no_refine:
         index.refine_links(threads=0, ef=50)           # what epzero.build() does after the bulk build (ef = max(efC/2, 2M))
     bulk_seconds = time.perf_counter() - started
-    started = time.perf_counter()
-    for start in range(0, len(later), 1024):
-        chunk = later[start:start + 1024]
-        index.add(np.ascontiguousarray(vectors[chunk]), labels=chunk.astype(np.int64), threads=1)
-    insert_seconds = time.perf_counter() - started
+    insert_seconds = refine_seconds = 0.0
+    for step in (2, 3):
+        batch = later[cohort[later] == step]
+        position = len(index)                            # nothing is removed in this screen
+        started = time.perf_counter()
+        for start in range(0, len(batch), 1024):
+            chunk = batch[start:start + 1024]
+            index.add(np.ascontiguousarray(vectors[chunk]), labels=chunk.astype(np.int64), threads=1)
+        insert_seconds += time.perf_counter() - started
+        if a.refine_each_snapshot and len(batch):
+            started = time.perf_counter()
+            index.refine_links(threads=0, ef=50, first=position)
+            refine_seconds += time.perf_counter() - started
     band_of = np.zeros(101, dtype=np.int64)
     for b, (lo, hi) in enumerate(BANDS):
         band_of[lo:hi + 1] = b
@@ -82,7 +92,8 @@ def main():
     report = {'kind': 'EXPLORATORY development screen D7 (aggregates only)', 'mode': a.mode, 'fast_build': not a.exact_build, 'refine': not a.no_refine,
               'ranges_trained_on': 'snapshot 1' if a.train_on_first or a.mode == 'grown' else 'all',
               'extra_backlinks': a.extra_backlinks, 'seed': a.seed, 'metric': metric,
-              'bulk_seconds': bulk_seconds, 'insert_seconds': insert_seconds, 'later_documents': int(len(later)),
+              'bulk_seconds': bulk_seconds, 'insert_seconds': insert_seconds, 'refine_seconds': refine_seconds,
+              'refine_each_snapshot': a.refine_each_snapshot, 'later_documents': int(len(later)),
               'widths': widths}
     a.output.parent.mkdir(parents=True, exist_ok=True)
     a.output.write_text(json.dumps(report, indent=2) + '\n')
