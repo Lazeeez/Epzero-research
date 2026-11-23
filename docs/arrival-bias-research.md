@@ -164,9 +164,12 @@ and could that distort conclusions about how systems age?
 
 Frozen results: Epzero D = −0.0059 [−0.0129, −0.0006] (inconclusive under the frozen rule), FAISS
 HNSW −0.0007 and IVF −0.0015 (both negligible). The sensitivity analyses (section 17 of
-`HELDOUT_EXPLORATORY.md`) showed FAISS and IVF rule out changes larger than about 0.004, Epzero's D
-comes mostly from one seed and its interval includes 0 once seeds are resampled, and label noise is
-negligible (SD ≤ 0.0007).
+`HELDOUT_EXPLORATORY.md`) showed Epzero's D comes mostly from one seed and its interval includes 0 once
+seeds are resampled, and label noise is negligible (SD ≤ 0.0007). Ten construction seeds (section 18,
+24 November 2026) settle the seed question: D is −0.0034 [−0.0092, +0.0015] for Epzero, −0.0021
+[−0.0060, +0.0015] for FAISS and −0.0009 [−0.0035, +0.0014] for IVF, with queries and seeds
+resampled. The earlier statement that FAISS and IVF rule out changes larger than about 0.004 resampled
+queries only; with seed variation included the bounds are about 0.006 for FAISS and 0.0035 for IVF.
 
 ### 2.2 Why that was not enough
 
