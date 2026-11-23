@@ -1,10 +1,11 @@
-"""Development screen D2: Epzero with guaranteed incoming links at insertion (design:
-docs/screen-d2-min-backlinks.md). Needs an Epzero build that has the `min_backlinks` option.
+"""Development screens D2/D3: Epzero with extra incoming links at insertion (designs:
+docs/screen-d2-min-backlinks.md, docs/screen-d3-extra-backlinks.md). D2 used a `min_backlinks` option
+that measured no effect and was removed; this script now drives `extra_backlinks`.
 
-    python -m research.longeval.backlink_screen SAMPLE OUTPUT_DIR --order appended --min-backlinks 4
+    python -m research.longeval.backlink_screen SAMPLE OUTPUT_DIR --order appended --extra-backlinks 4
 
-Writes OUTPUT_DIR/mb{N}/{order}-{seed}/ with report.json and per-query-ef{w}.npy tables in the
-insertion pilot's format, so `insertion_strata` can read each mb{N} folder as one implementation.
+Writes OUTPUT_DIR/eb{N}/{order}-{seed}/ with report.json and per-query-ef{w}.npy tables in the
+insertion pilot's format, so `insertion_strata` can read each eb{N} folder as one implementation.
 Aggregates only.
 """
 from __future__ import annotations
@@ -27,7 +28,7 @@ def main():
     parser.add_argument('sample', type=Path)
     parser.add_argument('output', type=Path)
     parser.add_argument('--order', choices=('appended', 'shuffled', 'reversed'), required=True)
-    parser.add_argument('--min-backlinks', type=int, required=True)
+    parser.add_argument('--extra-backlinks', type=int, required=True)
     parser.add_argument('--seed', type=int, default=11)
     a = parser.parse_args()
     import epzero
@@ -42,7 +43,7 @@ def main():
     decile = position * 10 // n
     index = epzero.Index(dim=dim, metric='ip', max_elements=n, M=16, ef_construction=100, seed=a.seed,
                          quantization='none', keep_vectors=True, nav_dim=0, fill_links=False, fast_build=False,
-                         half_vectors=False, min_backlinks=a.min_backlinks)
+                         half_vectors=False, extra_backlinks=a.extra_backlinks)
     started = time.perf_counter()
     for start in range(0, n, 1024):
         chunk = sequence[start:start + 1024]
@@ -54,7 +55,7 @@ def main():
     band_of = np.zeros(101, dtype=np.int64)
     for b, (lo, hi) in enumerate(BANDS):
         band_of[lo:hi + 1] = b
-    out = a.output / f'mb{a.min_backlinks}' / f'{a.order}-{a.seed}'
+    out = a.output / f'eb{a.extra_backlinks}' / f'{a.order}-{a.seed}'
     out.mkdir(parents=True, exist_ok=False)
     widths = {}
     for width in WIDTHS:
@@ -78,11 +79,11 @@ def main():
             'distance_computations_per_query': float(computations), 'ms_per_query': ms}
     np.save(out / 'per-query.npy', np.load(out / 'per-query-ef200.npy'))
     report = {'backend': 'epzero-dev', 'order': a.order, 'seed': a.seed, 'ef': 200, 'M': 16, 'ef_construction': 100,
-              'min_backlinks': a.min_backlinks, 'count': int(n), 'build_seconds': build_seconds,
+              'extra_backlinks': a.extra_backlinks, 'count': int(n), 'build_seconds': build_seconds,
               'indegree_by_insertion_decile': [float(indegree[decile == d].mean()) for d in range(10)],
               'widths': widths}
     (out / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
-    print(json.dumps({k: report[k] for k in ('order', 'min_backlinks', 'build_seconds')} | {'ef200': widths['200']}))
+    print(json.dumps({k: report[k] for k in ('order', 'extra_backlinks', 'build_seconds')} | {'ef200': widths['200']}))
 
 
 if __name__ == '__main__':
