@@ -27,3 +27,25 @@ None is preferred; the screen decides. Refine density is supported if grown with
 clearly smaller excess than grown with refine (2.27), by at least 0.5 points at ef 200. Quantizer
 staleness is supported if rebuilt with stale ranges has a clearly larger excess than the rebuilt
 reference (0.22), by at least 0.5 points at ef 200.
+
+## Result (run 23 November 2026, after the design above was committed)
+
+| Arm | Newest-cohort excess, ef 100 / 200 / 400 (pp) | Miss rate by cohort, ef 200 | Recall@100 / @10, ef 200 |
+| --- | --- | --- | --- |
+| grown, refined bulk build (D7) | 3.29 / 2.27 / 1.07 | 4.06 / 6.80 / 6.96% | 0.9476 / 0.9793 |
+| grown, no refine | 2.39 / 1.36 / 0.62 | 4.76 / 6.71 / 6.88% | 0.9439 / 0.9766 |
+| rebuilt (D7) | 0.11 / 0.22 / 0.20 | 4.42 / 5.21 / 5.39% | 0.9522 / 0.9777 |
+| rebuilt, 8-bit ranges from snapshot 1 | 0.15 / 0.49 / 0.23 | 4.33 / 5.32 / 5.50% | 0.9522 / 0.9766 |
+
+**Refine density is supported:** without the refine pass the grown excess is 0.91 points smaller at
+ef 200 (bar: 0.5). The refine pass improves the bulk-built documents (snapshot-1 miss rate 4.76% →
+4.06%) but documents inserted afterwards are never refined, so the gap between them widens.
+
+**Quantizer staleness is not supported:** 8-bit ranges trained on snapshot 1 only raise the rebuilt
+excess by 0.27 points at ef 200 (bar: 0.5), and less at ef 100 and 400. On this organically growing
+collection, stale code ranges matter little, as the literature review expected without drift.
+
+**Consequence for the engine:** in the product path, the refine pass is itself a source of arrival
+bias, because it treats only the documents present at the bulk build. Refining the documents
+inserted since the last refine (for example at each checkpoint) would treat every document once.
+That is the next design to screen (D9), against and together with `extra_backlinks`.
