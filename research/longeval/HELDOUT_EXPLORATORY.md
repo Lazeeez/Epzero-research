@@ -1227,3 +1227,44 @@ section 14 is therefore a weighted average over these groups, not one common rat
 A first version of this split grouped queries by the miss rate of their snapshot-1 neighbours,
 which is the ratio's own denominator; it inflated the ratio of the easiest group (about 3 even in
 shuffled builds) and was replaced before any result was used.
+
+## 18. Ten construction seeds
+
+Seven further seeds (101, 211, 307, 401, 503, 601, 701; jobs 7249906–7249912, all passed and
+verified) were added to the frozen three for the three primary arms, through the frozen code. Design
+and prediction were recorded before submission (`scripts/pace/LONGEVAL_HELDOUT_SEEDS.md`); analysis
+`seeds_analysis.py`, aggregates `heldout-seeds-ten.json`. The three frozen seeds reproduce the frozen
+D exactly (Epzero −0.0059379, FAISS −0.0007, IVF −0.0015). D is the change from snapshot 1 to 3 in the
+ANN-minus-exact nDCG@10 gap (GPT-OSS-120B labels, 374-query panel); intervals resample queries and
+seeds (10,000 draws).
+
+| Arm | D, three frozen seeds | **D, ten seeds** | 95% interval (queries and seeds) | SD across seeds |
+| --- | --- | --- | --- | --- |
+| Epzero HNSW | −0.0059 | **−0.0034** | [−0.0092, +0.0015] | 0.0033 |
+| FAISS HNSW | −0.0007 | **−0.0021** | [−0.0060, +0.0015] | 0.0027 |
+| IVF, frozen training | −0.0015 | **−0.0009** | [−0.0035, +0.0014] | 0.0023 |
+
+Per seed, Epzero ranges from −0.0110 (seed 29) to +0.0007; the other nine seeds lie between −0.0047
+and +0.0007. The frozen three-seed value was pulled down by seed 29.
+
+**Prediction:** Epzero's ten-seed D is smaller in magnitude than −0.0059 — **held** (−0.0034). FAISS
+and IVF stay within ±0.004 — **held for the point estimates** (−0.0021, −0.0009) and for IVF's
+interval, but **not for FAISS's interval**, whose lower end is −0.0060 once seed-to-seed variation is
+included. Section 17's statement that FAISS rules out changes larger than about 0.004 rested on
+resampling queries only; with ten seeds the defensible bound for FAISS is about 0.006, and for IVF
+about 0.0035.
+
+**Calibration.** Epzero's calibration stayed at ef 200 on nine seeds (seed 701 moved to 400 at
+snapshot 3). FAISS's moved to ef 400 on six of ten seeds (by snapshot 2 on five of them): D is −0.0005
+on those six and −0.0045 on the four that stayed at 200, so widening the search as the collection grew
+absorbed most of the gap's growth. IVF never needed more probes at snapshot 3 than at snapshot 1.
+
+**Calibration queries against test queries** (the seven further seeds, which recorded each
+calibration query's recall): at the calibrated width, the 50 calibration queries reach 0.012 to 0.017
+higher recall than the 381 test queries for Epzero (snapshots 1 to 3) and 0.009 to 0.012 higher for
+FAISS, and the difference grows as the collection grows. Calibration on the training queries is
+optimistic, increasingly so over time: a measured instance of search-width calibration depending on
+history. The per-query spread of calibration recall is large (SD about 0.06–0.07).
+
+Not yet done from the design: the calibration-size study of section 8 redone by resampling the
+calibration queries.
