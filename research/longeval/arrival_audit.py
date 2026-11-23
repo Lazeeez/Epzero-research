@@ -65,12 +65,17 @@ def _key(seed, *parts):
     return hashlib.sha256(':'.join(['arrival-audit-v1', str(seed), *map(str, parts)]).encode()).digest()
 
 
-def select(dropped, replacements, both, *, per_group=PER_GROUP, overlap=OVERLAP_PER_GROUP, seed=SEED):
+def select(dropped, replacements, both, *, per_group=PER_GROUP, overlap=OVERLAP_PER_GROUP, seed=SEED, census=False):
     """`per_group` dropped pairs per arrival group and one replacement for each, by keyed hashes."""
     chosen, counts, used = [], {'both_roles_excluded': len(both)}, set()
+    eligible = {group: sorted((_key(seed, query, doc), query, doc) for (query, doc), item in dropped.items()
+                              if item['group'] == group and (query, doc) not in both) for group in (3, 1)}
+    if census and min(len(m) for m in eligible.values()) < per_group:
+        # Amendment 2: a balanced census at the smaller count when a group has fewer than per_group.
+        per_group = min(len(m) for m in eligible.values())
+        counts['balanced_census'] = per_group
     for group in (3, 1):
-        members = sorted((_key(seed, query, doc), query, doc) for (query, doc), item in dropped.items()
-                         if item['group'] == group and (query, doc) not in both)
+        members = eligible[group]
         counts[f'dropped_group_{group}'] = len(members)
         if len(members) < per_group:
             raise ValueError(f'only {len(members)} dropped pairs in arrival group {group}')
@@ -125,14 +130,14 @@ def prepare(jobs, inputs, release, output, *, per_group=PER_GROUP, overlap=OVERL
     qrels, identity = load_test_qrels(release / 'files')
     population = panel(qrels[FAMILY], query_ids)
     dropped, replacements, both = build_roles(builds, exact, cohort, doc_ids, query_ids, population)
-    chosen, counts = select(dropped, replacements, both, per_group=per_group, overlap=overlap, seed=seed)
+    chosen, counts = select(dropped, replacements, both, per_group=per_group, overlap=overlap, seed=seed, census=True)
     official = {pair: grade for pair, (grade, _) in official_pairs(qrels[FAMILY]).items()}
     queries = read_queries(release / 'files' / TEST_FILE)
     texts = document_texts(release / 'documents', {item['doc_id'] for item in chosen})
     return write_kit(output, chosen, queries, texts, official, {
         'design': 'arrival-order audit, analysis D of LONGEVAL_INSERTION_ORDER_IDS.md', 'builds': sorted(builds),
         'ef': 200, 'snapshot': 3, 'depth': DEPTH, 'per_group': per_group, 'panel_queries': len(population),
-        'eligible': counts, 'judgment_sha256': {f'{FAMILY}/snapshot-3': identity[f'{FAMILY}/snapshot-3']}}, seed=seed)
+        'eligible': counts, 'amendments': [1, 2], 'judgment_sha256': {f'{FAMILY}/snapshot-3': identity[f'{FAMILY}/snapshot-3']}}, seed=seed)
 
 
 def main():
