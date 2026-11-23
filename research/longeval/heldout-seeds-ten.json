@@ -1,0 +1,361 @@
+{
+  "kind": "EXPLORATORY ten construction seeds for the held-out primary arms (aggregates only)",
+  "design": "scripts/pace/LONGEVAL_HELDOUT_SEEDS.md",
+  "source_sha256": "1b933f42223e8251b2f76422f55cffe8c763cb7fc1f1b68507a316242855a682",
+  "inputs": {
+    "training_query_inputs_sha256": "865241f15f14002d9b01b00cfd6fa435846b298328c98a4892b2622a73407fdd",
+    "training_query_encoding_sha256": "d192a7b82b7b8cc153c7361b269b6b4ce3c636197cee8dac7ffbe08f0b5d40b9",
+    "test_inputs_sha256": "2eaf53545c65dcc23662ea8059effc8f882807d4acb1b4d779088ae3ffc1c73d",
+    "test_encoding_sha256": "d2215dfeee6d8591bcb66a26334e02ca8cf83ff67530c239290e6d83961c425a",
+    "calibration_count": 50,
+    "evaluation_count": 381,
+    "exact_references": [
+      {
+        "snapshot": 1,
+        "vector_sha256": "575dbdbb8c07a2e9aa14d87070a913d7e7b3f360e7a29dea5e9ab464e71db62b",
+        "development_report_sha256": "1a21cc85fd03ee027f41673180c677cbb290e239fe5aa5cbe5aba587dd91f6ce",
+        "heldout_report_sha256": "998e097d8df6cc6f02c7df771ffe9179666ecc56ef9e9804b29824af040a55c2"
+      },
+      {
+        "snapshot": 2,
+        "vector_sha256": "cd60f634b81fb71384aae53e9c7b0ee086f941cb776edab0393240675533f5b3",
+        "development_report_sha256": "7dd52dbad1b19e16aa3e7d26b18a9aa387df0181e5beb8d71cb63e6dbfe06862",
+        "heldout_report_sha256": "eb87d0f46bc0d6867c393336a74da602e7f1f7566f5f8b8051d5f576005e8d61"
+      },
+      {
+        "snapshot": 3,
+        "vector_sha256": "12b9e4d8dec53aeaf32174ebdc0c4a9e1f2e24fa6cb19de2de60f538845c6c89",
+        "development_report_sha256": "8f09f219c5b0cf4765a1b71d8e9d20f97b34873da5e3baca3510140c51cd8be9",
+        "heldout_report_sha256": "0f71fb494bb7e6deecb48ea09944372b78b2e8cda67518f308d44bc0a182438e"
+      }
+    ]
+  },
+  "judgment_sha256": {
+    "raw/snapshot-1": "536f77b050e9554e0e1f15bcd3dd5b6259d55b1b6b651db32ab835785fa6989d",
+    "raw/snapshot-2": "7d5fee293a53e98e32e9ae3cfa3c963f16a18acea6a61c7addbbb9b22a8a0436",
+    "raw/snapshot-3": "42893a089e8745626f8f44902335424d85e2db373c62b2290724bb9ec3a8225d",
+    "dctr/snapshot-1": "67b30682bb4bdf502eca8431d8bb30a8bf5e6a375f0a7283a3c5e761eede70cf",
+    "dctr/snapshot-2": "d229d196c2a90f31724319dab68ea0abc0f69fade5fc86c7190c2729aaaf2590",
+    "dctr/snapshot-3": "de56ab28879f8bcefefd6825279d8eac6d06eef09f7c463072313f8ea7113faf",
+    "human/snapshot-3": "31ca114ca3c49fbbb332a0b899332c97b29c7443e646278490093e9ceceb092a",
+    "gpt-oss-120b/snapshot-1": "305a66752c169f846ca7e647b50dc92c18fa8b7c9c6ad0d0a11af3ecac4e65cc",
+    "gpt-oss-120b/snapshot-2": "cc697be1c435aa1e79407c042866660110cf05b84e3d61a792eb689c11a7ad73",
+    "gpt-oss-120b/snapshot-3": "aa3f2ef186037fd1c4b95a04763e16faaa6e548ce73049e72fc1e6e483a4e814",
+    "gpt-oss-20b/snapshot-1": "a08ba10eb68f34f8d47305867a677378b511210aee0eba0da79ca6d7cc49e076",
+    "gpt-oss-20b/snapshot-2": "1e05ae55a2a497983906c231b64714fcd73b33cd7c055f4ed6b346822f3068a5",
+    "gpt-oss-20b/snapshot-3": "4985fe255ed4f1240da9d88248ec9ea3c4b32de5fc8e127cd6da63e662fcc59e"
+  },
+  "family": "gpt-oss-120b",
+  "panel": 374,
+  "seeds": [
+    11,
+    29,
+    47,
+    101,
+    211,
+    307,
+    401,
+    503,
+    601,
+    701
+  ],
+  "excluded_reports": [],
+  "bootstrap": {
+    "draws": 10000,
+    "seed": 20261124,
+    "unit": "queries and seeds"
+  },
+  "arms": {
+    "epzero_hnsw": {
+      "D_ten_seeds": -0.0033509971807357056,
+      "interval_95_queries_and_seeds": [
+        -0.009217359318362362,
+        0.0014973728885992348
+      ],
+      "D_frozen_three_seeds": -0.005937861255448931,
+      "D_by_seed": {
+        "11": -0.00334,
+        "29": -0.01096,
+        "47": -0.00351,
+        "101": -0.00148,
+        "211": -0.00465,
+        "307": -0.00341,
+        "401": 0.00052,
+        "503": -0.00462,
+        "601": 0.00071,
+        "701": -0.00276
+      },
+      "sd_across_seeds": 0.0032769651840950237,
+      "calibrated_widths_by_seed": {
+        "11": [
+          200,
+          200,
+          200
+        ],
+        "29": [
+          200,
+          200,
+          200
+        ],
+        "47": [
+          200,
+          200,
+          200
+        ],
+        "101": [
+          200,
+          200,
+          200
+        ],
+        "211": [
+          200,
+          200,
+          200
+        ],
+        "307": [
+          200,
+          200,
+          200
+        ],
+        "401": [
+          200,
+          200,
+          200
+        ],
+        "503": [
+          200,
+          200,
+          200
+        ],
+        "601": [
+          200,
+          200,
+          200
+        ],
+        "701": [
+          200,
+          200,
+          400
+        ]
+      },
+      "seeds_widened": [
+        701
+      ],
+      "D_seeds_widened": -0.0027641247892982762,
+      "D_seeds_not_widened": -0.003416205224228753,
+      "calibration_against_test": {
+        "1": {
+          "seeds": 7,
+          "calibration_recall": 0.9552285714285713,
+          "test_recall": 0.9434833145856768,
+          "calibration_minus_test": 0.011745256842894514,
+          "calibration_query_sd": 0.06663426017416196
+        },
+        "2": {
+          "seeds": 7,
+          "calibration_recall": 0.9555714285714286,
+          "test_recall": 0.9399887514060742,
+          "calibration_minus_test": 0.015582677165354442,
+          "calibration_query_sd": 0.06253381029723362
+        },
+        "3": {
+          "seeds": 7,
+          "calibration_recall": 0.9554857142857143,
+          "test_recall": 0.9388901387326584,
+          "calibration_minus_test": 0.016595575553055908,
+          "calibration_query_sd": 0.06475075631253574
+        }
+      }
+    },
+    "faiss_hnsw": {
+      "D_ten_seeds": -0.0020921920773022762,
+      "interval_95_queries_and_seeds": [
+        -0.005977607086676804,
+        0.0014742707761483383
+      ],
+      "D_frozen_three_seeds": -0.0007075744271236267,
+      "D_by_seed": {
+        "11": -0.00263,
+        "29": 0.00174,
+        "47": -0.00124,
+        "101": -0.00492,
+        "211": -0.00354,
+        "307": -0.00094,
+        "401": -0.00131,
+        "503": -0.00411,
+        "601": 0.00223,
+        "701": -0.00621
+      },
+      "sd_across_seeds": 0.00273806489069291,
+      "calibrated_widths_by_seed": {
+        "11": [
+          200,
+          200,
+          200
+        ],
+        "29": [
+          200,
+          400,
+          400
+        ],
+        "47": [
+          200,
+          400,
+          400
+        ],
+        "101": [
+          200,
+          200,
+          200
+        ],
+        "211": [
+          200,
+          200,
+          400
+        ],
+        "307": [
+          200,
+          400,
+          400
+        ],
+        "401": [
+          200,
+          400,
+          400
+        ],
+        "503": [
+          200,
+          200,
+          200
+        ],
+        "601": [
+          200,
+          400,
+          400
+        ],
+        "701": [
+          200,
+          200,
+          200
+        ]
+      },
+      "seeds_widened": [
+        29,
+        47,
+        211,
+        307,
+        401,
+        601
+      ],
+      "D_seeds_widened": -0.0005096930999043832,
+      "D_seeds_not_widened": -0.0044659405433991155,
+      "calibration_against_test": {
+        "1": {
+          "seeds": 7,
+          "calibration_recall": 0.9539428571428571,
+          "test_recall": 0.9446531683539557,
+          "calibration_minus_test": 0.009289688788901351,
+          "calibration_query_sd": 0.07198886170787049
+        },
+        "2": {
+          "seeds": 7,
+          "calibration_recall": 0.9622857142857141,
+          "test_recall": 0.9517322834645671,
+          "calibration_minus_test": 0.010553430821147014,
+          "calibration_query_sd": 0.06068235435270329
+        },
+        "3": {
+          "seeds": 7,
+          "calibration_recall": 0.9634285714285714,
+          "test_recall": 0.9509973753280839,
+          "calibration_minus_test": 0.012431196100487485,
+          "calibration_query_sd": 0.06422873265886789
+        }
+      }
+    },
+    "ivf_frozen": {
+      "D_ten_seeds": -0.0009418310375042293,
+      "interval_95_queries_and_seeds": [
+        -0.003522731395046731,
+        0.0014334012748508462
+      ],
+      "D_frozen_three_seeds": -0.0015482715418061964,
+      "D_by_seed": {
+        "11": -0.00129,
+        "29": -0.00354,
+        "47": 0.00018,
+        "101": -5e-05,
+        "211": 0.00117,
+        "307": 0.00113,
+        "401": -0.00104,
+        "503": 6e-05,
+        "601": -0.00633,
+        "701": 0.00028
+      },
+      "sd_across_seeds": 0.0023385970310176494,
+      "calibrated_widths_by_seed": {
+        "11": [
+          128,
+          128,
+          128
+        ],
+        "29": [
+          256,
+          128,
+          128
+        ],
+        "47": [
+          128,
+          128,
+          128
+        ],
+        "101": [
+          128,
+          128,
+          128
+        ],
+        "211": [
+          128,
+          128,
+          128
+        ],
+        "307": [
+          128,
+          128,
+          128
+        ],
+        "401": [
+          128,
+          128,
+          128
+        ],
+        "503": [
+          128,
+          128,
+          128
+        ],
+        "601": [
+          256,
+          128,
+          128
+        ],
+        "701": [
+          128,
+          128,
+          128
+        ]
+      },
+      "seeds_widened": [],
+      "D_seeds_widened": null,
+      "D_seeds_not_widened": -0.000941831037504229
+    }
+  },
+  "prediction": {
+    "statement": "FAISS and IVF stay within \u00b10.004 over ten seeds; Epzero's ten-seed D is smaller in magnitude than its three-seed -0.0059",
+    "faiss_point_within_0.004": true,
+    "faiss_interval_within_0.004": false,
+    "ivf_point_within_0.004": true,
+    "ivf_interval_within_0.004": true,
+    "epzero_ten_seed_magnitude_below_three_seed": true
+  }
+}
