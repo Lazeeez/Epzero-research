@@ -23,7 +23,7 @@ from rebuilding it.
   jobs; section 15 of the exploratory record), and timing at ef 100, 400, 800 and 1,600 (3 jobs;
   section 16).
 - **Waiting on the advisor:** six open decisions in the
-  [extension protocol draft](docs/protocol/EXTENSION_PROTOCOL_DRAFT.md). After them come the
+  [extension protocol](docs/protocol/EXTENSION_PROTOCOL_V1.md). After them come the
   freeze of the follow-up protocol, grading of the judging pool and the coverage analysis.
 - **Manuscript:** restructured around the findings and cut to about 3,950 words for CLEF's 12-page
   limit ([paper/](paper/)); the longer draft is kept in `docs/history/`. LNCS conversion remains.
@@ -123,7 +123,7 @@ work ([docs/repair/](docs/repair/)).
 | Exact search and evaluation | `oracle.py`, `evaluation.py`, `paired_inference.py`, `relevance_analysis.py`, `development_relevance.py` |
 | Index trajectories | `backends.py`, `trajectory.py`, `ivf_trajectory.py`, `ivf_verification.py`, `runner.py` |
 | Held-out protocol | `heldout.py`, `heldout_analysis.py`, `freeze_protocol.py` |
-| Follow-up protocol | `freeze_extension.py` ([draft](docs/protocol/EXTENSION_PROTOCOL_DRAFT.md)) |
+| Follow-up protocol | `freeze_extension.py` ([version 1](docs/protocol/EXTENSION_PROTOCOL_V1.md)) |
 | Post-freeze work | `heldout_cost.py`, `heldout_extension.py`, `heldout_exploratory.py`, `heldout_robustness.py`, `heldout_pool.py`, `heldout_sensitivity.py`, `insertion_pilot.py`, `insertion_strata.py` |
 | Follow-up: human audit | `audit.py` (blinded annotation pages for dropped and replacement documents, and the analysis of returned grades) |
 | Follow-up: local relevance judge | `judge.py`, `judge-requirements.txt`, `judge-kernels.txt`, `judge-model.json`; `coverage.py` for the validation sample, the three validation measures and the coverage estimate ([runbook](../../scripts/pace/LONGEVAL_JUDGE_PILOT.md), [thresholds](docs/protocol/JUDGE_VALIDATION_THRESHOLDS.md)) |
