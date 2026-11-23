@@ -29,6 +29,8 @@ def main():
     parser.add_argument('--extra-backlinks', type=int, required=True)
     parser.add_argument('--seed', type=int, default=11)
     parser.add_argument('--exact-build', action='store_true', help='fast_build off: build the graph on full vectors')
+    parser.add_argument('--no-refine', action='store_true', help='skip the refine pass after the bulk build')
+    parser.add_argument('--train-on-first', action='store_true', help='train the 8-bit ranges on snapshot 1 only')
     a = parser.parse_args()
     import epzero
     vectors = np.load(a.sample / 'vectors.npy', mmap_mode='r')
@@ -45,9 +47,10 @@ def main():
     later = sequence[cohort[sequence] != 1] if a.mode == 'grown' else sequence[:0]
     started = time.perf_counter()
     bulk = np.ascontiguousarray(vectors[np.sort(first)])
-    index.train(bulk)
+    index.train(np.ascontiguousarray(vectors[np.sort(sequence[cohort[sequence] == 1])]) if a.train_on_first else bulk)
     index.add(bulk, labels=np.sort(first).astype(np.int64), threads=0)
-    index.refine_links(threads=0, ef=50)               # what epzero.build() does after the bulk build (ef = max(efC/2, 2M))
+    if not a.no_refine:
+        index.refine_links(threads=0, ef=50)           # what epzero.build() does after the bulk build (ef = max(efC/2, 2M))
     bulk_seconds = time.perf_counter() - started
     started = time.perf_counter()
     for start in range(0, len(later), 1024):
@@ -76,7 +79,8 @@ def main():
             'miss_rate_pct': {str(c): 100 * float(table[:, c - 1, :, 1].sum() / table[:, c - 1, :, 0].sum()) for c in (1, 2, 3)},
             'recall_at_100': float(1 - table[..., 1].sum() / table[..., 0].sum()), 'recall_at_10': recall10,
             'distance_computations_per_query': float(work)}
-    report = {'kind': 'EXPLORATORY development screen D7 (aggregates only)', 'mode': a.mode, 'fast_build': not a.exact_build,
+    report = {'kind': 'EXPLORATORY development screen D7 (aggregates only)', 'mode': a.mode, 'fast_build': not a.exact_build, 'refine': not a.no_refine,
+              'ranges_trained_on': 'snapshot 1' if a.train_on_first or a.mode == 'grown' else 'all',
               'extra_backlinks': a.extra_backlinks, 'seed': a.seed, 'metric': metric,
               'bulk_seconds': bulk_seconds, 'insert_seconds': insert_seconds, 'later_documents': int(len(later)),
               'widths': widths}
