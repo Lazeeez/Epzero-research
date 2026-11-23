@@ -850,6 +850,24 @@ taken, scores and ties agree, and the final merge preserves it; once sealed it i
 errors. Probe immediately before and after sealing and compaction, and count query fan-out, dual
 versions, rebuild bytes and backlog.
 
+### 8.2b Development screens so far (23 November 2026)
+
+Each design and prediction was committed before the run; the full records are `docs/screen-d1-*.md`
+to `docs/screen-d5-*.md`.
+
+| Screen | What | Result |
+| --- | --- | --- |
+| D1 | Post-hoc: +4 incoming links to every newest-cohort document, donors closest / random / best-connected (FAISS) | Excess at ef 200 1.36 → 0.35–0.42 pp; donor choice made no difference (prediction against); oldest cohort unharmed |
+| D2 | Online floor `min_backlinks` 2 / 4 / 8 (Epzero) | No effect (prediction against): new nodes already get ~12.5 incoming links at insertion; the gradient is **passive accumulation** (section 4.4). Option removed |
+| D3 | Online `extra_backlinks` 4 / 8: the closest construction candidates a new node did not choose link to it | Excess 1.62 → 0.78 / 0.41 pp; as arrived minus reversed halved; oldest +0.08 / +0.16 pp; recall +0.18 / +0.25 pp; work +0.4 / +0.9%; build +2 / +4% |
+| D4 | `extra_backlinks` 8 on SIFT, GloVe and two more LongEval seeds | Excess cut 67–87% everywhere; oldest +0.05 to +0.21 pp; recall +0.25 to +0.75 pp; work +0.6% to +5.2% (SIFT just above the predicted 5%) |
+| D5 | Recall against work over the whole width range | Not a uniform speed-up: 1–5% more work at low recall, 6–21% less at recall@10 ≥ 0.98; neutral to slightly positive overall |
+
+`extra_backlinks` (design A in its online form: a stand-in for the later arrivals a new node has not
+had) is the lead candidate. It is on the Epzero branch `min-backlinks`, off by default. Before any
+claim: a clean timing run, three seeds per arm, then the confirmation readings (BGE vectors, a public
+streaming workload) and the margins of decision 3.
+
 ### 8.3 Baselines every design must beat
 
 Plain HNSW (Epzero, FAISS, hnswlib) at several search widths; a second entry point; the GRAB-ANNS
