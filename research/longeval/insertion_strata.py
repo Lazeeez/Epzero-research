@@ -54,13 +54,25 @@ def risk_difference(table, target, reference=1):
     return float(((a * n0 - c * n1) / total).sum() / weight) if weight else float('nan')
 
 
-def tables(folder, ef=None):
-    """{(order, seed): per-query table} for the builds of one implementation."""
+def tables(folder, ef=None, prefix=''):
+    """{(order, seed): per-query table} for the builds of one implementation.
+
+    `prefix='confirm-'` reads the confirmation queries' tables, which exist only per width."""
+    if prefix and ef is None:
+        raise ValueError('a prefixed table needs an explicit search width')
     out = {}
     for path in sorted(Path(folder).glob('*/report.json')):
         report = json.loads(path.read_text())
-        named = path.parent / f'per-query-ef{ef}.npy'
-        out[(report['order'], report['seed'])] = np.load(named if ef is not None and named.exists() else path.parent / 'per-query.npy')
+        named = path.parent / f'{prefix}per-query-ef{ef}.npy'
+        if prefix and not named.exists():
+            raise ValueError(f'{path.parent}: no {prefix}per-query table at ef {ef}')
+        if ef is not None and named.exists():
+            chosen = named
+        elif ef is None or ef == report['ef']:
+            chosen = path.parent / 'per-query.npy'          # the build's own search width
+        else:
+            raise ValueError(f'{path.parent}: no per-query table at ef {ef} (build searched at ef {report["ef"]})')
+        out[(report['order'], report['seed'])] = np.load(chosen)
     if not out:
         raise ValueError(f'no build in {folder}')
     return out
@@ -77,9 +89,9 @@ def _seed_mean(builds, order, statistic, rows):
     return point, boot
 
 
-def orders(folder, *, ef=None, draws=5000, seed=20261120):
+def orders(folder, *, ef=None, draws=5000, seed=20261120, prefix=''):
     """Pooled and within-query ratios of each insertion order, as the mean over seeds with a paired query bootstrap."""
-    builds = tables(folder, ef)
+    builds = tables(folder, ef, prefix)
     rows = _draws(len(next(iter(builds.values()))), draws, seed)
     out = {}
     for name, target in TARGETS:
@@ -96,14 +108,14 @@ def orders(folder, *, ef=None, draws=5000, seed=20261120):
     return out
 
 
-def difficulty(folder, *, order='shuffled', ef=None):
+def difficulty(folder, *, order='shuffled', ef=None, prefix=''):
     """Are the queries with many later neighbours harder in themselves?
 
     Queries are split into thirds by the share of their exact neighbours that arrived after
     snapshot 1; the miss rate of each arrival group is given for each third, in the builds of one
     order (shuffled by default, where position is independent of the document).
     """
-    total = sum(table for (o, _), table in tables(folder, ef).items() if o == order)
+    total = sum(table for (o, _), table in tables(folder, ef, prefix).items() if o == order)
     share = total[:, 1:, :, 0].sum(axis=(1, 2)) / total[..., 0].sum(axis=(1, 2))
     reference = total[:, 0, :, 1].sum(axis=1) / np.maximum(total[:, 0, :, 0].sum(axis=1), 1)
     thirds = []
@@ -212,7 +224,7 @@ def heterogeneity(folder, *, ef=None, target=3, draws=2000, seed=20261124):
     return out
 
 
-def analyze(collections, output, *, ef=200, compare=None):
+def analyze(collections, output, *, ef=200, compare=None, prefix=''):
     """One aggregate file: {collection: {implementation: orders, difficulty}}, and the comparison across sizes."""
     out = {'kind': 'EXPLORATORY within-query miss ratios by insertion order (aggregates only)', 'ef': ef,
            'strata': 'query x exact-rank band', 'bands': [f'{lo}-{hi}' for lo, hi in BANDS],
@@ -221,7 +233,8 @@ def analyze(collections, output, *, ef=200, compare=None):
         sample = json.loads((Path(root) / 'sample' / 'sample.json').read_text()) if (Path(root) / 'sample' / 'sample.json').exists() else None
         block = {'documents': sample and sample['count'], 'implementations': {}}
         for folder in sorted(p for p in Path(root).iterdir() if p.is_dir() and any(p.glob('*/report.json'))):
-            block['implementations'][folder.name] = {'ratios': orders(folder, ef=ef), 'query_difficulty': difficulty(folder, ef=ef)}
+            block['implementations'][folder.name] = {'ratios': orders(folder, ef=ef, prefix=prefix),
+                                                    'query_difficulty': difficulty(folder, ef=ef, prefix=prefix)}
         out['collections'][name] = block
     if compare:
         first, second = compare
@@ -241,6 +254,7 @@ def main():
     p.add_argument('collections', nargs='+', help='NAME=FOLDER, a folder holding one sub-folder of builds per implementation')
     p.add_argument('--ef', type=int, default=200)
     p.add_argument('--compare', nargs='+', help='FIRST SECOND [SECOND ...]: FIRST minus the mean of the others, paired by query')
+    p.add_argument('--confirm', action='store_true', help='the confirmation queries (confirm- tables) instead of the test queries')
     p = sub.add_parser('heterogeneity', help='the within-query ratio by rank band and by query difficulty')
     p.add_argument('folder', type=Path, help='the builds of one implementation')
     p.add_argument('output', type=Path)
@@ -252,7 +266,8 @@ def main():
     a = parser.parse_args()
     if a.command == 'analyze':
         collections = dict(item.split('=', 1) for item in a.collections)
-        r = analyze(collections, a.output, ef=a.ef, compare=(a.compare[0], a.compare[1:]) if a.compare else None)
+        r = analyze(collections, a.output, ef=a.ef, compare=(a.compare[0], a.compare[1:]) if a.compare else None,
+                    prefix='confirm-' if a.confirm else '')
         print(json.dumps({name: list(block['implementations']) for name, block in r['collections'].items()}, indent=2))
     elif a.command == 'heterogeneity':
         r = {'kind': 'EXPLORATORY heterogeneity of the within-query ratio (aggregates only)', 'ef': a.ef,
