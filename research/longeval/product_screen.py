@@ -28,6 +28,7 @@ def main():
     parser.add_argument('--mode', choices=('grown', 'rebuilt'), required=True)
     parser.add_argument('--extra-backlinks', type=int, required=True)
     parser.add_argument('--seed', type=int, default=11)
+    parser.add_argument('--exact-build', action='store_true', help='fast_build off: build the graph on full vectors')
     a = parser.parse_args()
     import epzero
     vectors = np.load(a.sample / 'vectors.npy', mmap_mode='r')
@@ -38,7 +39,7 @@ def main():
     n, dim = vectors.shape
     sequence = insertion_order(np.load(a.sample / 'lexical-rank.npy'), cohort, 'appended', a.seed)
     index = epzero.Index(dim=dim, metric=metric, max_elements=n, M=16, ef_construction=100, seed=a.seed,
-                         quantization='sq8', keep_vectors=True, nav_dim=0, fill_links=False, fast_build=True,
+                         quantization='sq8', keep_vectors=True, nav_dim=0, fill_links=False, fast_build=not a.exact_build,
                          half_vectors=False, extra_backlinks=a.extra_backlinks)
     first = sequence[cohort[sequence] == 1] if a.mode == 'grown' else sequence
     later = sequence[cohort[sequence] != 1] if a.mode == 'grown' else sequence[:0]
@@ -75,7 +76,7 @@ def main():
             'miss_rate_pct': {str(c): 100 * float(table[:, c - 1, :, 1].sum() / table[:, c - 1, :, 0].sum()) for c in (1, 2, 3)},
             'recall_at_100': float(1 - table[..., 1].sum() / table[..., 0].sum()), 'recall_at_10': recall10,
             'distance_computations_per_query': float(work)}
-    report = {'kind': 'EXPLORATORY development screen D7 (aggregates only)', 'mode': a.mode,
+    report = {'kind': 'EXPLORATORY development screen D7 (aggregates only)', 'mode': a.mode, 'fast_build': not a.exact_build,
               'extra_backlinks': a.extra_backlinks, 'seed': a.seed, 'metric': metric,
               'bulk_seconds': bulk_seconds, 'insert_seconds': insert_seconds, 'later_documents': int(len(later)),
               'widths': widths}
