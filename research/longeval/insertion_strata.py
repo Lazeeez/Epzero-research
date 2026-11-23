@@ -166,6 +166,52 @@ def heldout(inputs, evidence, dense, *, step=3, draws=5000, seed=20261120):
     return {'snapshot': step, 'queries': len(ids), 'later_group': 'snapshots 2 and 3 together', 'arms': out}
 
 
+def heterogeneity(folder, *, ef=None, target=3, draws=2000, seed=20261124):
+    """Is the within-query ratio one common ratio? The ratio of `target` arrivals against snapshot-1
+    arrivals, per order, computed separately (a) within each exact-rank band and (b) within thirds of
+    the queries by the share of their exact neighbours that arrived after snapshot 1, with the paired
+    spread between subgroups (largest minus smallest) and its interval.
+
+    The query split uses only the exact neighbours, never the misses: splitting by the snapshot-1
+    arrivals' own miss rate selects on the ratio's denominator and inflates the ratio where that rate
+    is low (seen: ratios of 3 in shuffled builds, where 1 is expected)."""
+    builds = tables(folder, ef)
+    n = len(next(iter(builds.values())))
+    rows = _draws(n, draws, seed)
+    neighbours = next(iter(builds.values()))[..., 0].sum(axis=2)       # [query, cohort]: the same in every build
+    later = neighbours[:, 1:].sum(axis=1) / np.maximum(neighbours.sum(axis=1), 1)
+    thirds = np.array_split(np.argsort(later, kind='stable'), 3)        # fewest later neighbours first
+
+    def band_view(table, b):
+        out = np.zeros_like(table)
+        out[:, :, b] = table[:, :, b]
+        return out
+
+    groups = {f'band {lo}-{hi}': (lambda t, b=b: band_view(t, b)) for b, (lo, hi) in enumerate(BANDS)}
+    for i, label in enumerate(('third with fewest later neighbours', 'middle third', 'third with most later neighbours')):
+        mask = np.zeros(n, dtype=bool)
+        mask[thirds[i]] = True
+        groups[label] = (lambda t, m=mask: t * m[:, None, None, None])
+    out = {}
+    for order in ORDERS:
+        mine = [t for (o, _), t in sorted(builds.items()) if o == order]
+        if not mine:
+            continue
+        values, samples = {}, {}
+        for label, view in groups.items():
+            values[label] = float(np.mean([mantel_haenszel(view(t), target) for t in mine]))
+            samples[label] = np.array([np.mean([mantel_haenszel(view(t)[r], target) for t in mine]) for r in rows])
+        block = {label: _item(values[label], samples[label]) for label in groups}
+        for family, labels in (('bands', [g for g in groups if g.startswith('band')]),
+                               ('query thirds', [g for g in groups if 'third' in g])):
+            stacked = np.stack([samples[g] for g in labels])
+            spread = np.nanmax(stacked, axis=0) - np.nanmin(stacked, axis=0)
+            point = max(values[g] for g in labels) - min(values[g] for g in labels)
+            block[f'spread across {family}'] = _item(point, spread)
+        out[order] = block
+    return out
+
+
 def analyze(collections, output, *, ef=200, compare=None):
     """One aggregate file: {collection: {implementation: orders, difficulty}}, and the comparison across sizes."""
     out = {'kind': 'EXPLORATORY within-query miss ratios by insertion order (aggregates only)', 'ef': ef,
@@ -195,6 +241,10 @@ def main():
     p.add_argument('collections', nargs='+', help='NAME=FOLDER, a folder holding one sub-folder of builds per implementation')
     p.add_argument('--ef', type=int, default=200)
     p.add_argument('--compare', nargs='+', help='FIRST SECOND [SECOND ...]: FIRST minus the mean of the others, paired by query')
+    p = sub.add_parser('heterogeneity', help='the within-query ratio by rank band and by query difficulty')
+    p.add_argument('folder', type=Path, help='the builds of one implementation')
+    p.add_argument('output', type=Path)
+    p.add_argument('--ef', type=int, default=200)
     p = sub.add_parser('heldout', help='the held-out arms at one snapshot')
     for name in ('inputs', 'evidence', 'dense', 'output'):
         p.add_argument(name, type=Path)
@@ -204,6 +254,11 @@ def main():
         collections = dict(item.split('=', 1) for item in a.collections)
         r = analyze(collections, a.output, ef=a.ef, compare=(a.compare[0], a.compare[1:]) if a.compare else None)
         print(json.dumps({name: list(block['implementations']) for name, block in r['collections'].items()}, indent=2))
+    elif a.command == 'heterogeneity':
+        r = {'kind': 'EXPLORATORY heterogeneity of the within-query ratio (aggregates only)', 'ef': a.ef,
+             'orders': heterogeneity(a.folder, ef=a.ef)}
+        a.output.write_text(json.dumps(r, indent=2) + '\n')
+        print(json.dumps({o: {k: round(v['value'], 3) for k, v in b.items()} for o, b in r['orders'].items()}, indent=2))
     else:
         r = heldout(a.inputs, a.evidence, a.dense, step=a.snapshot)
         r['kind'] = 'EXPLORATORY within-query miss ratios of the held-out arms (aggregates only)'
