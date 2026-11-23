@@ -145,8 +145,15 @@ snapshot, under both the LLM and the click-derived DCTR labels.
 | FAISS HNSW | −0.0048 | −0.0049 | −0.0055 | −0.0007 | [−0.0038, +0.0027] | 0.687 | negligible |
 | IVF, frozen training | −0.0065 | −0.0079 | −0.0080 | −0.0015 | [−0.0037, +0.0005] | 0.291 | negligible |
 
-The gap stays below 0.012 at every snapshot, in line with the static estimates [1, 2]. GPT-OSS-20B
-labels give the same picture (D of −0.0074, −0.0017 and −0.0014). *(Exploratory.)* Exact search's
+The gap stays below 0.012 at every snapshot, in line with the static estimates [1, 2]. For FAISS and
+IVF the intervals are much narrower than the margin: they rule out a change larger than about 0.004
+(two one-sided tests at ±0.004 pass), although in relative terms the gap could still have grown by
+60-80%. *(Exploratory.)* The pattern holds under GPT-OSS-20B labels (D of −0.0074, −0.0017 and
+−0.0014), when only grade 2 or any positive grade counts as relevant, and when every grade is
+redrawn with the repeat behaviour of an LLM assessor (D moves by a standard deviation of at most
+0.0007). Construction randomness matters more: Epzero's change comes mostly from one of its three
+seeds (−0.011 against −0.003 and −0.004), and with seeds resampled as well as queries its interval
+is [−0.0146, +0.0011]. *(Exploratory.)* Exact search's
 own nDCG@10 changes by +0.0070 [−0.0000, +0.0139] over the same snapshots, so the ±0.01 margin is as
 large as the trend it protects: the collection can show that the loss to approximation did not move
 by more than the margin, not that a longitudinal trend is preserved. The loss is also concentrated:
@@ -259,9 +266,16 @@ have no incoming link. On GloVe and SIFT, with arrival groups assigned at random
 gives shuffled ratios of 0.92–1.03, reversed ratios whose intervals lie below 1, and the same decile
 curves (Figure 4b, c): the effect belongs to building an HNSW graph by insertion.
 
+**Where it lands matters.** The within-query ratio is not one common ratio. Across rank bands it
+agrees, but across queries it does not: a late arrival is missed 2.0–2.7 times as often as first
+arrivals when it lands among mostly older neighbours, and only 1.06–1.33 times when its
+neighbourhood is itself mostly new (in shuffled builds all groups are near 1).
+
 **Effect on effectiveness.** On the 77 queries whose exact top 10 is at least half new content,
 Epzero's calibrated arm, which stayed at ef 200, loses 0.026 nDCG@10 [0.006, 0.055], against 0.008
-on the other 297; FAISS, whose search widened, loses 0.008 and 0.005. Rebuilding in a random order
+on the other 297; FAISS, whose search widened, loses 0.008 and 0.005. These queries were already
+harder at snapshot 1, before any new content existed, and within strata of that difficulty the extra
+loss is −0.017 [−0.045, +0.004] for Epzero and −0.003 for FAISS: most of it is query difficulty. Rebuilding in a random order
 does not help: it spreads the misses across document ages without reducing them (snapshot-3 recall
 0.933 against 0.936), does not reduce the fresh-content loss (Epzero −0.026 to −0.024, FAISS −0.009
 to −0.017) and makes the other queries worse. The remedy is a wider search, not a reordered rebuild.
@@ -319,8 +333,8 @@ result does not cover deletions or rewritten documents; only the insertion-posit
 reproduced elsewhere. The effectiveness results rest on lenient LLM labels whose pool leaves most
 substitutes ungraded; human grades cover 29 queries at one snapshot. The test queries were used
 once for the frozen analysis, and every exploratory analysis reuses them. The within-query ratio was
-chosen after the pooled result was seen and assumes one ratio common to all queries; we did not
-examine why queries about recent documents are harder. Calibration used 50 queries and a coarse
+chosen after the pooled result was seen and averages over query groups whose ratios differ. Three
+construction seeds are too few to separate seed variation from Epzero's change. Calibration used 50 queries and a coarse
 grid, a design choice that separates the two HNSW arms. The repair results come from development
 screens.
 
