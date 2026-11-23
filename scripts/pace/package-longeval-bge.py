@@ -16,7 +16,7 @@ import sys
 import tarfile
 
 ROOT = Path(__file__).resolve().parents[2]
-NAME = 'longeval-bge-01'
+NAME = 'longeval-bge-02'
 EXTRA = ('research/__init__.py', 'research/longeval/encoder-requirements.txt', 'research/longeval/FINAL_PROTOCOL_V1_FREEZE.json',
          'research/longeval/EXTENSION_PROTOCOL_V1_FREEZE.json', 'research/longeval/docs/protocol/E4_SECOND_ENCODER.md',
          'research/longeval/tests/test_bge_encoder.py', 'scripts/pace/longeval-node-env.sh', 'scripts/pace/longeval-bge.sbatch',
