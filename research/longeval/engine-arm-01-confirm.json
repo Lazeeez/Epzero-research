@@ -1,0 +1,115 @@
+{
+  "kind": "repaired-Epzero arm, pre-registered contrasts (aggregates only)",
+  "ef": 200,
+  "queries": "confirmation (100 training queries)",
+  "query_count": 100,
+  "seeds": [
+    11,
+    29,
+    47
+  ],
+  "bootstrap": {
+    "draws": 10000,
+    "seed": 20261124,
+    "unit": "query, seeds averaged within query"
+  },
+  "margins_pp": {
+    "effect_max": 1.0,
+    "oldest": 0.75,
+    "recall": 0.5
+  },
+  "arms": {
+    "grown": {
+      "newest_excess": 1.459800278144195,
+      "oldest_miss": 3.413161395967659,
+      "recall_at_100": 95.75666666666666
+    },
+    "repaired": {
+      "newest_excess": -0.317327092947314,
+      "oldest_miss": 3.6894893050864805,
+      "recall_at_100": 95.84
+    },
+    "rebuilt": {
+      "newest_excess": -0.800115666109354,
+      "oldest_miss": 4.139801453280115,
+      "recall_at_100": 95.69333333333333
+    }
+  },
+  "contrasts": {
+    "repaired_minus_grown": {
+      "newest_excess": {
+        "value": -1.777127371091509,
+        "interval_95": [
+          -3.0579002124047787,
+          -0.7565745901731994
+        ]
+      },
+      "oldest_miss": {
+        "value": 0.2763279091188213,
+        "interval_95": [
+          -0.1325921926379553,
+          0.867062407688615
+        ]
+      },
+      "recall_at_100": {
+        "value": 0.08333333333334281,
+        "interval_95": [
+          -0.4166666666666652,
+          0.4533333333333278
+        ]
+      }
+    },
+    "rebuilt_minus_grown": {
+      "newest_excess": {
+        "value": -2.259915944253549,
+        "interval_95": [
+          -3.4499318175174953,
+          -1.1396608252607667
+        ]
+      },
+      "oldest_miss": {
+        "value": 0.7266400573124558,
+        "interval_95": [
+          0.24051157835922818,
+          1.2329101308243333
+        ]
+      },
+      "recall_at_100": {
+        "value": -0.06333333333333258,
+        "interval_95": [
+          -0.5066666666666664,
+          0.3633333333333377
+        ]
+      }
+    },
+    "repaired_minus_rebuilt": {
+      "newest_excess": {
+        "value": 0.48278857316204005,
+        "interval_95": [
+          -0.4272462875613119,
+          1.388346002248951
+        ]
+      },
+      "oldest_miss": {
+        "value": -0.4503121481936345,
+        "interval_95": [
+          -0.9048877420370599,
+          0.025594296873167145
+        ]
+      },
+      "recall_at_100": {
+        "value": 0.14666666666667538,
+        "interval_95": [
+          -0.2866666666666684,
+          0.56666666666666
+        ]
+      }
+    }
+  },
+  "decision": {
+    "effect": true,
+    "oldest_no_harm": false,
+    "recall_no_harm": true,
+    "passed": true
+  }
+}
