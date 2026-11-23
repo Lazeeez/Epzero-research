@@ -1,0 +1,115 @@
+{
+  "kind": "repaired-Epzero arm, pre-registered contrasts (aggregates only)",
+  "ef": 200,
+  "queries": "test (381)",
+  "query_count": 381,
+  "seeds": [
+    11,
+    29,
+    47
+  ],
+  "bootstrap": {
+    "draws": 10000,
+    "seed": 20261124,
+    "unit": "query, seeds averaged within query"
+  },
+  "margins_pp": {
+    "effect_max": 1.0,
+    "oldest": 0.75,
+    "recall": 0.5
+  },
+  "arms": {
+    "grown": {
+      "newest_excess": 3.408524472733993,
+      "oldest_miss": 4.848484848484849,
+      "recall_at_100": 93.61067366579178
+    },
+    "repaired": {
+      "newest_excess": 1.535701231122952,
+      "oldest_miss": 4.89226349271496,
+      "recall_at_100": 94.10498687664042
+    },
+    "rebuilt": {
+      "newest_excess": 0.42626372917336575,
+      "oldest_miss": 5.185033176003831,
+      "recall_at_100": 94.18810148731409
+    }
+  },
+  "contrasts": {
+    "repaired_minus_grown": {
+      "newest_excess": {
+        "value": -1.872823241611041,
+        "interval_95": [
+          -2.4110353335709136,
+          -1.3636350027299857
+        ]
+      },
+      "oldest_miss": {
+        "value": 0.043778644230111574,
+        "interval_95": [
+          -0.18388192809932494,
+          0.2493634187039053
+        ]
+      },
+      "recall_at_100": {
+        "value": 0.4943132108486452,
+        "interval_95": [
+          0.2677165354330713,
+          0.7506780402449797
+        ]
+      }
+    },
+    "rebuilt_minus_grown": {
+      "newest_excess": {
+        "value": -2.9822607435606274,
+        "interval_95": [
+          -3.7625030313641665,
+          -2.271243911907197
+        ]
+      },
+      "oldest_miss": {
+        "value": 0.3365483275189822,
+        "interval_95": [
+          0.03124518378206477,
+          0.6418456115200133
+        ]
+      },
+      "recall_at_100": {
+        "value": 0.5774278215223063,
+        "interval_95": [
+          0.27119422572178087,
+          0.8958880139982583
+        ]
+      }
+    },
+    "repaired_minus_rebuilt": {
+      "newest_excess": {
+        "value": 1.1094375019495863,
+        "interval_95": [
+          0.47509051420836584,
+          1.7889006694806722
+        ]
+      },
+      "oldest_miss": {
+        "value": -0.29276968328887065,
+        "interval_95": [
+          -0.5635301694061411,
+          -0.020357194448381587
+        ]
+      },
+      "recall_at_100": {
+        "value": -0.0831146106736611,
+        "interval_95": [
+          -0.3604549431321047,
+          0.20559930008748895
+        ]
+      }
+    }
+  },
+  "decision": {
+    "effect": false,
+    "oldest_no_harm": true,
+    "recall_no_harm": true,
+    "passed": false
+  }
+}
