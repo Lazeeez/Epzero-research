@@ -8,7 +8,7 @@ separate jobs.
 
 ## What the job does
 
-On one GPU node (at least 15 GB of GPU memory): checks the package; runs the encoder's unit tests;
+On one NVIDIA H200 node (package -02; package -01 asked for any GPU, and job 7254797 landed on a node without NVIDIA tools): checks the package; runs the encoder's unit tests;
 builds a CUDA environment (PyTorch 2.9.0, the pinned `encoder-requirements.txt`); downloads the pinned
 document archives and the pinned model (every file checked against its size and hash); encodes the
 1,661,900 snapshot-3 documents (title, then abstract; CLS pooling, float32, L2-normalised, 512 tokens,
@@ -20,14 +20,14 @@ folder.
 ## Submit
 
 Build the package locally (`python scripts/pace/package-longeval-bge.py BUILD_DIR`), copy
-`longeval-bge-01.tar.gz` to the PACE LongEval checkout, compare its SHA-256 with
-`longeval-bge-01-receipt.json`, then:
+`longeval-bge-02.tar.gz` to the PACE LongEval checkout, compare its SHA-256 with
+`longeval-bge-02-receipt.json`, then:
 
 ```bash
-sha256sum longeval-bge-01.tar.gz
-tar -xzf longeval-bge-01.tar.gz
-(cd longeval-bge-01 && sha256sum --check --quiet --strict SHA256SUMS && echo package OK)
-sbatch longeval-bge-01/scripts/pace/longeval-bge.sbatch
+sha256sum longeval-bge-02.tar.gz
+tar -xzf longeval-bge-02.tar.gz
+(cd longeval-bge-02 && sha256sum --check --quiet --strict SHA256SUMS && echo package OK)
+sbatch longeval-bge-02/scripts/pace/longeval-bge.sbatch
 ```
 
 ## After completion
@@ -35,8 +35,8 @@ sbatch longeval-bge-01/scripts/pace/longeval-bge.sbatch
 ```bash
 sacct -X --name=longeval-bge -S 2026-11-24 --format=JobID,State,ExitCode,Elapsed
 grep -H '^PASS\|^exit_code' longeval-bge-*.log
-tar -czf longeval-bge-01-evidence.tar.gz build/pace-longeval-bge/jobs longeval-bge-*.log
-sha256sum longeval-bge-01-evidence.tar.gz
+tar -czf longeval-bge-02-evidence.tar.gz build/pace-longeval-bge/jobs longeval-bge-*.log
+sha256sum longeval-bge-02-evidence.tar.gz
 ```
 
 The archive holds document and query vectors derived from LongEval data (about 5 GB): copy it to the
