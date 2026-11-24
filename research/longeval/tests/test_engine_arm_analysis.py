@@ -70,3 +70,10 @@ def test_the_eight_link_arm_is_tested_against_grown_and_other_arms_are_ignored(t
         engine_arm_analysis.analyze(tmp_path, draws=10)                   # repaired lacks seeds 29 and 47
     with pytest.raises(ValueError):
         engine_arm_analysis.analyze(tmp_path, draws=10, arm='grown')
+
+
+def test_the_wide_refine_arm_is_a_repair_and_builds_with_its_own_width():
+    assert 'repaired8w' in engine_arm_analysis.REPAIRS
+    from research.longeval import engine_arm
+    assert engine_arm.ARMS['repaired8w']['refine_recent_ef'] == 100 and engine_arm.ARMS['repaired8w']['extra_backlinks'] == 8
+    assert all('refine_recent_ef' not in engine_arm.ARMS[arm] for arm in ('grown', 'repaired', 'repaired8', 'rebuilt'))
