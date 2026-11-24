@@ -942,9 +942,16 @@ under 1.0; non-harm reported with its interval, whose upper end +0.87 exceeds 0.
 The development reading **fails** the absolute target (1.54 > 1.0) while halving the excess with no
 harm; the prediction "passes on both" therefore failed. Cost: later insertions +4% (702 → 733 s),
 30 s of refine on all cores, 2.5% more distance computations. The rebuild reaches a lower excess but
-raises the oldest cohort's miss rate (+0.34 to +0.73 points) and needs a 182 s bulk build. Next: a
-stronger setting (8 links, which cut more on the development sample in D7b, with the oldest cohort
-watched), then the BGE and public streaming confirmation readings before 1 March 2027.
+raises the oldest cohort's miss rate (+0.34 to +0.73 points) and needs a 182 s bulk build.
+
+**Second full-scale run, 8 links** (screen D13 sent it; jobs 7265455–57): development excess 3.43 →
+**1.17 points** (−2.26 [−2.80, −1.75]), oldest +0.27 [+0.04, +0.48], recall +0.32 [+0.10, +0.57];
+confirmation 1.52 → −0.36 (−1.87 [−3.00, −0.86]), with oldest and recall inside the margins. The
+confirmation reading passes again; the development reading again misses the 1.0 target, now narrowly.
+It closes 75% of the gap between grown and rebuilt (4 links: 62%), at 1.06× insertion time, 30 s of
+refine on all cores and 2.5% more search work. More links give diminishing returns; what remains needs
+another idea, and the paper's remaining confirmation readings (BGE vectors, a public streaming workload)
+decide whether the repair is presented by 1 March 2027.
 
 ### 8.3 Baselines every design must beat
 
@@ -1071,7 +1078,7 @@ public streaming workloads. Kept separate so the two do not double-publish.
 
 - **Further construction seeds**: done (ten seeds, sections 2.1 and 4.7b).
 - **Order rerun with returned IDs**: done (confirmation, reproduction and paired analysis, section 1).
-- **Full-scale engine arm**: done (section 8.2b); a stronger setting is next.
+- **Full-scale engine arms**: done, with 4 and 8 links (section 8.2b).
 - **Second encoder**: BGE-base-en-v1.5 (revision and predictions recorded in
   `research/longeval/docs/protocol/E4_SECOND_ENCODER.md`); the encoding job is queued on PACE.
 - **Engine performance**: round 10 kernels and the VIBE runs are recorded in Epzero's
