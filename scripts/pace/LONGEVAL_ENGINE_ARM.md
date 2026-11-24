@@ -267,3 +267,60 @@ done
 
 **After completion**, as before (`sacct -X --name=longeval-engine-arm -S 2026-11-24 ...`), into
 `longeval-engine-arm-03-evidence.tar.gz` (never committed).
+
+### Result of the third run (jobs 7273883–7273885, 24 November 2026)
+
+All three jobs passed, and every evidence file verified against its job's checksums. The manifests
+match package -03 (engine commit `2d279c0e`). The prepared sample is byte-identical to the second
+run's, and the exact neighbours of both query sets matched the study's references. All 21 tests passed
+in each job. Evidence: `Oryx/build/longeval-engine-arm-03-evidence.tar.gz` (SHA-256 `35e2e007…f48f`),
+never committed. Aggregates: `research/longeval/engine-arm-03-test.json` and
+`engine-arm-03-confirm.json` (third run's `grown` and `repaired8w`, first run's `rebuilt`). Ef 200,
+seeds 11, 29, 47 averaged within query, 10,000 bootstrap draws.
+
+| Reading | Arm | Newest-cohort excess | Oldest-cohort miss | Recall@100 |
+| --- | --- | --- | --- | --- |
+| Confirmation (100) | grown | 1.12 pp | 3.93% | 95.29% |
+| | **repaired8w** | **−0.37 pp** | 3.54% | 96.15% |
+| | rebuilt (first run) | −0.80 pp | 4.14% | 95.69% |
+| Development (381) | grown | 3.36 pp | 4.78% | 93.71% |
+| | **repaired8w** | **0.57 pp** | 4.98% | 94.27% |
+| | rebuilt (first run) | 0.43 pp | 5.19% | 94.19% |
+
+repaired8w minus grown, with 95% intervals:
+
+- **Development:** excess −2.79 [−3.41, −2.21]; oldest +0.20 [−0.02, +0.42]; recall +0.56 [+0.33, +0.81].
+- **Confirmation:** excess −1.49 [−2.61, −0.39]; oldest −0.39 [−1.32, +0.22]; recall +0.86 [+0.27, +1.67].
+
+repaired8w minus rebuilt: development excess +0.14 [−0.48, +0.79], oldest −0.20 [−0.49, +0.08], recall
++0.08 [−0.20, +0.38]; confirmation excess +0.43 [−0.64, +1.48], oldest −0.60 [−1.10, −0.11], recall
++0.45 [+0.02, +0.90].
+
+**Decision under the rules fixed beforehand:** both readings **pass**. On the development queries the
+excess falls by 83%, with an interval excluding 0, to 0.57 points, under the 1.0-point target. The
+oldest cohort's upper bound (+0.42) is inside the 0.75 margin, and recall rises. On the confirmation
+queries the effect holds, with an interval excluding 0.
+
+**Predictions:** "passes both readings": **held**. "Oldest cohort's rise at most the rebuild's (+0.34)
+plus 0.25": **held** (+0.20). "Search work at ef 200 within 5% of repaired8's (3,016)": **held** (3,092,
++2.5%). "Refine of later snapshots at most 2.5× 30 s": **held** (54 s on all cores, 1.8×).
+
+**Against a rebuild:** the repaired index is not distinguishable from a full rebuild on any measure.
+The excess differs by +0.14 points on the development queries (interval −0.48 to +0.79). The oldest
+cohort's miss rate is lower than the rebuild's, and recall is the same on the development queries and
+higher on the confirmation queries. This costs 1.09× the single-threaded insertion time (773 against
+706 s) and 54 s of refine on all cores, against a 182 s rebuild on all cores at each checkpoint.
+
+**Against the earlier repairs** (development, different jobs, means only): excess 1.54 (4 links) →
+1.17 (8 links) → 0.57 (8 links, width-100 refine). The width-100 refine removes about half of what
+8 links left, as screen D15 predicted in direction (on the 300K sample it went below zero).
+
+**Reproduction check:** the third run's `grown` agrees with the first two (development excess 3.36
+against 3.43 and 3.41, oldest miss 4.78% against 4.77% and 4.85%, recall 93.71% against 93.69% and
+93.61%). The builds are not bit-identical, because the bulk build runs on all cores.
+
+**Reading:** with `extra_backlinks` 8 and each batch of insertions refined at width 100, a grown
+index's arrival bias at full scale is no larger than a rebuild's, on both query sets. The repair keeps
+the oldest documents' miss rate below a rebuild's and costs a fraction of one. Under decision 2 the
+remaining confirmation readings are the BGE vectors and the public streaming workload; both are
+running.
