@@ -97,7 +97,7 @@ environment (its Epzero release and FAISS, exactly as the LongEval order study);
 Epzero on the node from the `min-backlinks` branch (commit in the manifest), as in the engine arm. The
 download is checked against the sizes and MD5 checksums the track's storage reports for the data,
 queries and ground truth, and the runbook is fetched at commit `ec58203` of `big-ann-benchmarks` and
-checked against its SHA-256 (`b65641b2…`).
+checked against its SHA-256 (`b65641b2â€¦`).
 
 ## Submit
 
