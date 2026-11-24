@@ -36,6 +36,8 @@ def main():
     parser.add_argument('--refine-scope', choices=('new', 'around', 'all'), default='new',
                         help='with --refine-each-snapshot: the new documents, also the older ones they link to '
                              '(screen D14), or every document')
+    parser.add_argument('--refine-ef', type=int, default=50, help='with --refine-each-snapshot: the refine width (D15)')
+    parser.add_argument('--refine-passes', type=int, default=1, help='with --refine-each-snapshot: passes per snapshot (D15)')
     a = parser.parse_args()
     import epzero
     vectors = np.load(a.sample / 'vectors.npy', mmap_mode='r')
@@ -69,12 +71,14 @@ def main():
         insert_seconds += time.perf_counter() - started
         if a.refine_each_snapshot and len(batch):
             started = time.perf_counter()
-            if a.refine_scope == 'new':
-                index.refine_links(threads=0, ef=50, first=position)
-                refined.append(int(len(batch)))
-            else:
-                refined.append(int(index.refine_links(threads=0, ef=50, first=0 if a.refine_scope == 'all' else position,
-                                                      around=a.refine_scope == 'around')))
+            for _ in range(a.refine_passes):
+                if a.refine_scope == 'new':
+                    index.refine_links(threads=0, ef=a.refine_ef, first=position)
+                    refined.append(int(len(batch)))
+                else:
+                    refined.append(int(index.refine_links(threads=0, ef=a.refine_ef,
+                                                          first=0 if a.refine_scope == 'all' else position,
+                                                          around=a.refine_scope == 'around')))
             refine_seconds += time.perf_counter() - started
     band_of = np.zeros(101, dtype=np.int64)
     for b, (lo, hi) in enumerate(BANDS):
@@ -104,6 +108,8 @@ def main():
               'bulk_seconds': bulk_seconds, 'insert_seconds': insert_seconds, 'refine_seconds': refine_seconds,
               'refine_each_snapshot': a.refine_each_snapshot, 'later_documents': int(len(later)),
               'refine_scope': a.refine_scope if a.refine_each_snapshot else None, 'nodes_refined': refined,
+              'refine_ef': a.refine_ef if a.refine_each_snapshot else None,
+              'refine_passes': a.refine_passes if a.refine_each_snapshot else None,
               'widths': widths}
     a.output.parent.mkdir(parents=True, exist_ok=True)
     a.output.write_text(json.dumps(report, indent=2) + '\n')
