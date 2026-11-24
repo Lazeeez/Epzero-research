@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # A public streaming workload: Big-ANN's clustered MSTuring-10M runbook (exploratory; see BIGANN_STREAM.md).
-#   sbatch bigann-stream-01/scripts/pace/bigann-stream.sbatch order BACKEND SEED   (Part A, single-threaded builds)
-#   sbatch bigann-stream-01/scripts/pace/bigann-stream.sbatch engine SEED          (Part B)
+#   sbatch bigann-stream-02/scripts/pace/bigann-stream.sbatch order BACKEND SEED   (Part A, single-threaded builds)
+#   sbatch bigann-stream-02/scripts/pace/bigann-stream.sbatch engine SEED          (Part B, all five arms)
+#   ENGINE_ARMS=repaired8w sbatch bigann-stream-02/scripts/pace/bigann-stream.sbatch engine SEED   (only the arms named)
 # Part A builds the stream in three insertion orders with one implementation (the study's environment);
-# Part B builds Epzero's product path in four arms with the development engine, built on the node.
+# Part B builds Epzero's product path in each engine arm with the development engine, built on the node.
 # The public stream is downloaded to compute-node disk and prepared there; nothing from LongEval is used.
 #SBATCH --job-name=bigann-stream
 #SBATCH --account=coc
@@ -21,14 +22,18 @@
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:?submit from the isolated research checkout}"
 ROOT="$PWD"
-PACKAGE="$ROOT/bigann-stream-01"
+PACKAGE="$ROOT/bigann-stream-02"
 CPU_PYTHON="$ROOT/build/pace-longeval/venv/bin/python"
 UV="$ROOT/build/pace-longeval/tools/bin/uv"
 PART="${1:?part: order or engine}"
 case "$PART" in
     order) BACKEND="${2:?backend}"; SEED="${3:?seed}"
            case "$BACKEND" in epzero|faiss_hnsw) ;; *) echo 'backend must be epzero or faiss_hnsw' >&2; exit 2 ;; esac ;;
-    engine) BACKEND=-; SEED="${2:?seed}" ;;
+    engine) BACKEND=-; SEED="${2:?seed}"
+            ENGINE_ARMS="${ENGINE_ARMS:-grown repaired repaired8 repaired8w rebuilt}"
+            for arm in $ENGINE_ARMS; do
+                case "$arm" in grown|repaired|repaired8|repaired8w|rebuilt) ;; *) echo "unknown engine arm $arm" >&2; exit 2 ;; esac
+            done ;;
     *) echo 'part must be order or engine' >&2; exit 2 ;;
 esac
 case "$SEED" in 11|29|47) ;; *) echo 'seed must be 11, 29 or 47' >&2; exit 2 ;; esac
@@ -51,7 +56,7 @@ finish() {
     exit "$code"
 }
 trap finish EXIT
-printf 'part=%s backend=%s seed=%s\n' "$PART" "$BACKEND" "$SEED" | tee "$OUTPUT/arm.txt"
+printf 'part=%s backend=%s seed=%s arms=%s\n' "$PART" "$BACKEND" "$SEED" "${ENGINE_ARMS:--}" | tee "$OUTPUT/arm.txt"
 
 PHASE=package
 echo "phase=$PHASE"
@@ -146,7 +151,7 @@ index.add(np.random.default_rng(0).standard_normal((10, 4)).astype(np.float32))
 index.refine_links(threads=1, ef=0, first=5)
 print(json.dumps({'epzero': epzero.__file__, 'extra_backlinks': True, 'refine_first': True}))
 PY
-    for arm in grown repaired repaired8 rebuilt; do
+    for arm in $ENGINE_ARMS; do
         (cd "$STAGE" && srun --cpu-bind=cores /usr/bin/time -v -o "$OUTPUT/$arm-resources.txt" \
             "$DEV_PYTHON" -P -m research.longeval.engine_arm "$STAGE/sample" "$OUTPUT/builds/engine" --arm "$arm" --seed "$SEED") \
             > "$OUTPUT/$arm-summary.json"
