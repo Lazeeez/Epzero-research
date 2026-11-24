@@ -46,6 +46,21 @@ FILES = {
 }
 VERIFY_SAMPLE = 1000
 VERIFY_MIN_COSINE = 0.9999
+# Job 7254809 spent its 4 hours in the encode phase without finishing the first 50,000 documents
+# and without saying why. On an H200 the model encodes thousands of documents per second, so a
+# GPU run slower than this after the probe is not running as designed and stops early.
+MIN_GPU_DOCUMENTS_PER_SECOND = 200
+PROBE_DOCUMENTS = 5_000
+PROGRESS_SECONDS = 60
+
+
+def throughput_check(device, done, seconds):
+    """The documents-per-second rate so far; refuses a GPU run that is far too slow after the probe."""
+    rate = done / max(seconds, 1e-9)
+    if device == 'cuda' and done >= PROBE_DOCUMENTS and rate < MIN_GPU_DOCUMENTS_PER_SECOND:
+        raise ValueError(f'{rate:.0f} documents per second after {done} documents on the GPU, below '
+                         f'{MIN_GPU_DOCUMENTS_PER_SECOND}: the model is not running on the GPU as expected')
+    return rate
 
 
 def git_blob_hash(raw):
@@ -112,8 +127,9 @@ class Encoder:
     def token_counts(self, texts):
         return np.array([len(ids) for ids in self.tokenizer(list(texts), truncation=False, add_special_tokens=True)['input_ids']])
 
-    def encode(self, texts, batch_size=128):
-        """Vectors in the order of `texts`; batches are formed by length to limit padding."""
+    def encode(self, texts, batch_size=128, progress=None):
+        """Vectors in the order of `texts`; batches are formed by length to limit padding.
+        `progress(done)` is called after each batch with the number of texts encoded so far."""
         texts = list(texts)
         order = np.argsort([len(t) for t in texts], kind='stable')
         out = np.empty((len(texts), DIM), dtype=np.float32)
@@ -127,6 +143,8 @@ class Encoder:
                 if not np.isfinite(vectors).all():
                     raise ValueError('non-finite embedding')
                 out[rows] = vectors
+                if progress is not None:
+                    progress(min(start + batch_size, len(texts)))
         return out
 
 
@@ -181,10 +199,18 @@ def encode_collection(model_folder, ids_path, documents, release, output, *, dev
         del found
         report['documents'] = len(ids)
         report['text_seconds'] = time.perf_counter() - started
+        atomic_json(output / 'report.json', report)
+        print(json.dumps({'stage': 'texts', 'documents': len(ids), 'seconds': round(report['text_seconds'], 1)}), flush=True)
         encoder = Encoder(model_folder, device)
+        report['model_device'] = str(next(encoder.model.parameters()).device)
+        report['torch_threads'] = encoder.torch.get_num_threads()
         if device == 'cuda':
             report['gpu'] = encoder.torch.cuda.get_device_name(0)
+        atomic_json(output / 'report.json', report)
+        print(json.dumps({'stage': 'model', 'device': report['model_device'], 'gpu': report.get('gpu')}), flush=True)
+        started = time.perf_counter()
         counts = encoder.token_counts(texts)
+        report['token_seconds'] = time.perf_counter() - started
         report['tokens'] = {'mean': float(counts.mean()), 'p50': float(np.median(counts)), 'p99': float(np.quantile(counts, .99)),
                             'max': int(counts.max()), 'truncated': int((counts > MAX_LENGTH).sum()),
                             'truncated_share': float((counts > MAX_LENGTH).mean())}
@@ -193,8 +219,18 @@ def encode_collection(model_folder, ids_path, documents, release, output, *, dev
         vectors = np.lib.format.open_memmap(output / 'documents-snapshot-3.npy', mode='w+', dtype=np.float32,
                                             shape=(len(ids), DIM))
         step = 50_000
+        shown = [0.0]
+
+        def progress(done):
+            elapsed = time.perf_counter() - started
+            rate = throughput_check(device, done, elapsed)
+            if elapsed - shown[0] >= PROGRESS_SECONDS:
+                shown[0] = elapsed
+                print(json.dumps({'encoding': done, 'of': len(ids), 'seconds': round(elapsed, 1),
+                                  'documents_per_second': round(rate, 1)}), flush=True)
         for start in range(0, len(ids), step):
-            vectors[start:start + step] = encoder.encode(texts[start:start + step], batch_size)
+            vectors[start:start + step] = encoder.encode(texts[start:start + step], batch_size,
+                                                         progress=lambda done, base=start: progress(base + done))
             print(json.dumps({'encoded': min(start + step, len(ids)), 'of': len(ids)}), flush=True)
         vectors.flush()
         report['document_seconds'] = time.perf_counter() - started
