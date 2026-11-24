@@ -17,7 +17,7 @@ import sys
 import tarfile
 
 ROOT = Path(__file__).resolve().parents[2]
-NAME = 'bigann-stream-01'
+NAME = 'bigann-stream-02'                  # -01 had four engine arms; -02 adds repaired8w (screen D15)
 BRANCH = 'min-backlinks'
 EXTRA = ('research/__init__.py', 'research/longeval/requirements.txt', 'research/longeval/tests/test_bigann_stream.py',
          'research/longeval/tests/test_order_pairs.py',
@@ -59,7 +59,7 @@ def main():
     manifest = {'package': NAME, 'purpose': 'public streaming workload (Big-ANN clustered MSTuring-10M); post-freeze; no LongEval data',
                 'engine': {'repository': 'Epzero', 'branch': BRANCH, 'commit': commit, 'files': len(engine)},
                 'parts': {'order': {'backends': ['epzero', 'faiss_hnsw'], 'orders': ['appended', 'reversed', 'shuffled']},
-                          'engine': {'arms': ['grown', 'repaired', 'repaired8', 'rebuilt']}},
+                          'engine': {'arms': ['grown', 'repaired', 'repaired8', 'repaired8w', 'rebuilt']}},
                 'seeds': [11, 29, 47], 'files': {n: sha(r) for n, r in sorted(payload.items())}}
     payload['manifest.json'] = (json.dumps(manifest, indent=2, sort_keys=True) + '\n').encode()
     payload['SHA256SUMS'] = ''.join(f'{sha(r)}  {n}\n' for n, r in sorted(payload.items())).encode()
