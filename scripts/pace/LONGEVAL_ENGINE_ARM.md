@@ -307,8 +307,8 @@ plus 0.25": **held** (+0.20). "Search work at ef 200 within 5% of repaired8's (3
 
 **Against a rebuild:** the repaired index is not distinguishable from a full rebuild on any measure.
 The excess differs by +0.14 points on the development queries (interval −0.48 to +0.79). The oldest
-cohort's miss rate is lower than the rebuild's, and recall is the same on the development queries and
-higher on the confirmation queries. This costs 1.09× the single-threaded insertion time (773 against
+cohort's miss rate is no higher than the rebuild's (lower on the confirmation queries, with an interval
+excluding 0), and recall is the same on the development queries and higher on the confirmation queries. This costs 1.09× the single-threaded insertion time (773 against
 706 s) and 54 s of refine on all cores, against a 182 s rebuild on all cores at each checkpoint.
 
 **Against the earlier repairs** (development, different jobs, means only): excess 1.54 (4 links) →
@@ -321,6 +321,6 @@ against 3.43 and 3.41, oldest miss 4.78% against 4.77% and 4.85%, recall 93.71% 
 
 **Reading:** with `extra_backlinks` 8 and each batch of insertions refined at width 100, a grown
 index's arrival bias at full scale is no larger than a rebuild's, on both query sets. The repair keeps
-the oldest documents' miss rate below a rebuild's and costs a fraction of one. Under decision 2 the
+the oldest documents' miss rate no higher than a rebuild's and costs a fraction of one. Under decision 2 the
 remaining confirmation readings are the BGE vectors and the public streaming workload; both are
 running.
