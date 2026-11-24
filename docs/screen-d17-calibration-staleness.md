@@ -87,10 +87,14 @@ At snapshot 2 the newest cohort is snapshot 2, against snapshot 1. At snapshot 3
 4. "repaired8w, fixed width: smaller recall shortfall and smaller excess than grown": **held** (recall
    0.9535 against 0.9502; excess 0.20 against 2.05).
 
-**Reading:** keeping the snapshot-1 width costs 1.1 points of recall by snapshot 3, and two thirds of
-the misses that drift adds fall on documents that arrived later. The snapshot-1 cohort's miss rate
-does not rise (3.89 → 3.82%), while the later cohorts' is 6.5–6.6%. Recalibrating restores the
-average (0.9594 at width 250) but leaves 1.68 of the 2.05 points of excess. This is the same
+**Reading:** under the rule fixed beforehand, prediction 1 failed, so the calibration leg as defined
+(recall falling below its target) is **not shown** on this sample at this scale. The width
+calibrated once still meets the target at snapshot 3, though only because of its starting margin.
+
+What the screen does show is who bears the drift. Keeping the snapshot-1 width costs 1.1 points of
+recall by snapshot 3, and the loss is in the documents that arrived later: the snapshot-1 cohort's
+miss rate does not rise (3.89 → 3.82%), while the later cohorts' is 6.5–6.6%. Recalibrating restores
+the average (0.9594 at width 250) but leaves 1.68 of the 2.05 points of excess. This is the same
 conclusion as section 4.7b with the frozen study's own recalibration, now with a fixed width beside it:
 calibration on mean recall sees the drift and not who bears it. With the repair, the snapshot-1 width
 still meets the target at snapshot 2, and the excess at the fixed width is 0.20 points. One sample,
