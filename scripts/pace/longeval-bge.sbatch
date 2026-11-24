@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # E4 (second encoder): encode the LongEval-Sci collection and queries with BGE-base-en-v1.5.
 # Design, pinned revision and predictions: research/longeval/docs/protocol/E4_SECOND_ENCODER.md.
-#   sbatch longeval-bge-02/scripts/pace/longeval-bge.sbatch
+#   sbatch longeval-bge-03/scripts/pace/longeval-bge.sbatch
 # Downloads (document archives, model) and the environment stay on compute-node disk; the vectors are
 # copied to the scratch build folder. They are derived from LongEval data and are never committed.
 #SBATCH --job-name=longeval-bge
@@ -14,12 +14,12 @@
 #SBATCH --gres=gpu:h200:1
 #SBATCH --mem=96G
 #SBATCH --tmp=60G
-#SBATCH --time=04:00:00
+#SBATCH --time=06:00:00
 #SBATCH --output=longeval-bge-%j.log
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:?submit from the isolated research checkout}"
 ROOT="$PWD"
-PACKAGE="$ROOT/longeval-bge-02"
+PACKAGE="$ROOT/longeval-bge-03"
 CPU_PYTHON="$ROOT/build/pace-longeval/venv/bin/python"
 UV="$ROOT/build/pace-longeval/tools/bin/uv"
 OUTPUT="$ROOT/build/pace-longeval-bge/jobs/${SLURM_JOB_ID:?requires a Slurm job}"
@@ -106,9 +106,17 @@ echo "phase=$PHASE"
 
 PHASE=encode
 echo "phase=$PHASE"
-(cd /tmp && srun /usr/bin/time -v -o "$OUTPUT/encode-resources.txt" "$GPU_PYTHON" -P -m research.longeval.bge_encoder encode \
+date -u +%FT%TZ
+# Job 7254809 (package -02) spent its 4 hours here under `srun` with no progress line. The encoder now
+# runs in the batch step, where the GPU check above ran, reports each stage and its rate, and stops
+# early if the GPU is far too slow. GPU use is logged every minute while it runs.
+nvidia-smi --query-gpu=timestamp,utilization.gpu,memory.used --format=csv -l 60 > "$OUTPUT/gpu-usage.csv" &
+SMI_PID=$!
+(cd /tmp && /usr/bin/time -v -o "$OUTPUT/encode-resources.txt" "$GPU_PYTHON" -P -m research.longeval.bge_encoder encode \
     "$STAGE/model" "$PACKAGE/inputs/bge-ids-snapshot-3.json.gz" "$STAGE/documents" "$PACKAGE/release" \
     "$STAGE/bge" --device cuda --batch-size 256)
+kill "$SMI_PID" 2>/dev/null || true
+date -u +%FT%TZ
 
 PHASE=copy
 echo "phase=$PHASE"
