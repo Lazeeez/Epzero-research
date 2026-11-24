@@ -958,6 +958,15 @@ another idea (refining the older side does not supply it: screen D14 widens the 
 batch removes the 300K sample's excess, screen D15, and is the third full-scale run), and the paper's remaining confirmation readings (BGE vectors, a public streaming workload)
 decide whether the repair is presented by 1 March 2027.
 
+**Third full-scale run, width-100 refine** (screen D15 sent it; jobs 7273883–85): 8 links with each
+batch of insertions refined at width 100 instead of 50. Development excess 3.36 → **0.57 points**
+(−2.79 [−3.41, −2.21]), under the 1.0 target; oldest +0.20 [−0.02, +0.42]; recall +0.56 [+0.33,
++0.81]. Confirmation 1.12 → −0.37 (−1.49 [−2.61, −0.39]). **Both readings pass**, and every recorded
+prediction held. Against a full rebuild the repaired index is indistinguishable: excess +0.14 [−0.48,
++0.79], oldest no higher, recall the same or higher. Cost: 1.09× single-threaded insertion time and 54 s
+of refine on all cores per checkpoint, against a 182 s rebuild; search work +2.5% against 8 links
+alone. The remaining confirmation readings (BGE vectors, the public streaming workload) are running.
+
 ### 8.3 Baselines every design must beat
 
 Plain HNSW (Epzero, FAISS, hnswlib) at several search widths; a second entry point; the GRAB-ANNS
@@ -1083,7 +1092,8 @@ public streaming workloads. Kept separate so the two do not double-publish.
 
 - **Further construction seeds**: done (ten seeds, sections 2.1 and 4.7b).
 - **Order rerun with returned IDs**: done (confirmation, reproduction and paired analysis, section 1).
-- **Full-scale engine arms**: done, with 4 and 8 links (section 8.2b).
+- **Full-scale engine arms**: done, with 4 and 8 links and with the width-100 refine, which passes both
+  readings (section 8.2b).
 - **Second encoder**: BGE-base-en-v1.5 (revision and predictions recorded in
   `research/longeval/docs/protocol/E4_SECOND_ENCODER.md`); the encoding job is queued on PACE.
 - **Engine performance**: round 10 kernels and the VIBE runs are recorded in Epzero's
