@@ -1,5 +1,6 @@
 """Package the repaired-Epzero arm at full scale (exploratory follow-up; LONGEVAL_ENGINE_ARM.md).
-Package -01 held grown, repaired and rebuilt; -02 holds grown and repaired8 (8 links, screen D13).
+Package -01 held grown, repaired and rebuilt; -02 held grown and repaired8 (8 links, screen D13);
+-03 holds grown and repaired8w (refine width 100, screen D15).
 
 Usage, from the repository root:
     python scripts/pace/package-longeval-engine-arm.py BUILD_DIR ORYX_DIR
@@ -19,8 +20,8 @@ import sys
 import tarfile
 
 ROOT = Path(__file__).resolve().parents[2]
-NAME = 'longeval-engine-arm-02'
-ARMS = ['grown', 'repaired8']
+NAME = 'longeval-engine-arm-03'
+ARMS = ['grown', 'repaired8w']
 BRANCH = 'min-backlinks'
 EXTRA = ('research/__init__.py', 'research/longeval/requirements.txt', 'research/longeval/FINAL_PROTOCOL_V1_FREEZE.json',
          'research/longeval/EXTENSION_PROTOCOL_V1_FREEZE.json', 'research/longeval/tests/test_engine_arm_analysis.py',
