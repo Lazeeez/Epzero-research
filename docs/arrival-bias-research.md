@@ -900,7 +900,7 @@ versions, rebuild bytes and backlog.
 ### 8.2b Development screens so far (24 November 2026)
 
 Each design and prediction was committed before the run; the full records are `docs/screen-d1-*.md`
-to `docs/screen-d15-*.md` (D12 is speed work, section 12).
+to `docs/screen-d16-*.md` (D12 and D16 are speed work, section 12).
 
 | Screen | What | Result |
 | --- | --- | --- |
@@ -1087,7 +1087,9 @@ public streaming workloads. Kept separate so the two do not double-publish.
   `research/longeval/docs/protocol/E4_SECOND_ENCODER.md`); the encoding job is queued on PACE.
 - **Engine performance**: round 10 kernels and the VIBE runs are recorded in Epzero's
   `docs/performance.md`; the VIBE submission is ready. Screens D11 (extra links and refine as a speed
-  change: no) and D12 (the re-rank ceiling of the principal-direction walk) are the current speed work.
+  change: no), D12 (the re-rank ceiling of the principal-direction walk) and D16 (one refine pass at the
+  full construction width instead of half: up to 18–26% faster at recall@10 0.98 on one seed, for a
+  35–45% longer build; being replicated) are the current speed work.
 - **Arrival-order human audit**: kit built (balanced census, amendment 2); grading and a second
   annotator are pending.
 
