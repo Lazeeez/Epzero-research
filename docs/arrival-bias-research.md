@@ -900,7 +900,7 @@ versions, rebuild bytes and backlog.
 ### 8.2b Development screens so far (24 November 2026)
 
 Each design and prediction was committed before the run; the full records are `docs/screen-d1-*.md`
-to `docs/screen-d11-*.md`.
+to `docs/screen-d14-*.md` (D12 is speed work, section 12).
 
 | Screen | What | Result |
 | --- | --- | --- |
@@ -916,6 +916,8 @@ to `docs/screen-d11-*.md`.
 | D9 | Refine each snapshot's insertions (new `refine_links(first=...)`), alone and with `extra_backlinks` 4 | Alone −31% (prediction against). **Together −77%** (2.27 → 0.53 pp); recall@100 0.9509 against the rebuild's 0.9522; oldest +0.29 pp; 8 s of refine on all cores instead of a 49 s rebuild. **Lead product design** |
 | D10 | D9's combination on two more seeds | Cut 66–77% on every seed (mean 2.22 → 0.63 pp); recall@100 +0.33 to +0.36 points; oldest +0.20 to +0.29. Within 0.5 pp of the rebuild failed narrowly (0.502) |
 | D11 | `extra_backlinks` and the refine pass in the automatic build (`epzero.build`), as a speed change | Not a general speed-up there (predictions against): on top of refine, 4 links are 6–11% slower on SIFT, 4–10% faster on GloVe, neutral on LongEval; without refine, builds are 33–37% faster but search 10–15% slower at recall@10 0.95, and links recover only part of it. **Stays opt-in**, as the repair for growing indexes |
+| D13 | `extra_backlinks` 8 with each snapshot's insertions refined, three seeds | Excess 0.63 → **0.28 pp** (rebuild 0.12); oldest +0.36, the same as the rebuild's; recall 0.9506 against 0.9509 with 4 links (failed narrowly). Sent to full scale |
+| D14 | Also refine the older nodes the new ones link to (`refine_links(around=True)`), or every node, after each snapshot | **Widens the gap** (prediction against): excess 0.28 → 0.58 / 0.55 pp, because the oldest cohort gains most (4.45 → 4.03 / 3.92%; newest 5.45 → 5.33 / 5.19%). Recall@100 0.9541 / 0.9552, above a rebuild's, for 4% more work. Nodes refined more often gain more: D8's asymmetry again. Not sent on |
 
 `extra_backlinks` (design A in its online form: a stand-in for the later arrivals a new node has not
 had) plus refining each batch of new insertions is the lead repair. Both are on the Epzero branch
@@ -950,7 +952,7 @@ confirmation 1.52 → −0.36 (−1.87 [−3.00, −0.86]), with oldest and reca
 confirmation reading passes again; the development reading again misses the 1.0 target, now narrowly.
 It closes 75% of the gap between grown and rebuilt (4 links: 62%), at 1.06× insertion time, 30 s of
 refine on all cores and 2.5% more search work. More links give diminishing returns; what remains needs
-another idea, and the paper's remaining confirmation readings (BGE vectors, a public streaming workload)
+another idea (refining the older side does not supply it: screen D14 widens the gap), and the paper's remaining confirmation readings (BGE vectors, a public streaming workload)
 decide whether the repair is presented by 1 March 2027.
 
 ### 8.3 Baselines every design must beat
