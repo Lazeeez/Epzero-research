@@ -87,8 +87,41 @@ a failure. `repaired8` meets the no-harm margins.
 ## Jobs
 
 One package (`bigann-stream-01`, built locally, nothing derived from LongEval in it), run from the PACE
-LongEval checkout (its Python environment) on Gold 6226 nodes only: per seed one Part A job (six builds)
-and one Part B job (four arms), six jobs in all. Epzero is built on the node from the `min-backlinks`
-branch (commit in the manifest), as in the engine arm; with the repair options off it is the standard
-engine. Every job downloads and prepares the stream itself; the analysis checks that all jobs saw files
-with the same hashes and computed identical cohorts and exact targets.
+LongEval checkout on exclusive Gold 6226 nodes only (`scripts/pace/bigann-stream.sbatch`): Part A one job
+per implementation and seed (three orders each, as in the LongEval order rerun), Part B one job per seed
+(four arms), nine jobs in all. Every job downloads and prepares the stream itself; the analysis checks
+that all jobs saw files with the same hashes and computed identical cohorts and exact targets.
+
+*Changed on 24 November 2026, before any job was submitted:* Part A runs in the study's own Python
+environment (its Epzero release and FAISS, exactly as the LongEval order study); only Part B builds
+Epzero on the node from the `min-backlinks` branch (commit in the manifest), as in the engine arm. The
+download is checked against the sizes and MD5 checksums the track's storage reports for the data,
+queries and ground truth, and the runbook is fetched at commit `ec58203` of `big-ann-benchmarks` and
+checked against its SHA-256 (`b65641b2…`).
+
+## Submit
+
+Build the package locally (`python scripts/pace/package-bigann-stream.py BUILD_DIR ORYX_DIR`), copy
+`bigann-stream-01.tar.gz` to the PACE LongEval checkout, compare its SHA-256 with the receipt, then:
+
+```bash
+tar -xzf bigann-stream-01.tar.gz
+(cd bigann-stream-01 && sha256sum --check --quiet --strict SHA256SUMS && echo package OK)
+for seed in 11 29 47; do
+  for backend in epzero faiss_hnsw; do sbatch bigann-stream-01/scripts/pace/bigann-stream.sbatch order "$backend" "$seed"; done
+  sbatch bigann-stream-01/scripts/pace/bigann-stream.sbatch engine "$seed"
+done
+```
+
+## After completion
+
+```bash
+sacct -X --name=bigann-stream -S 2026-11-23 --format=JobID,State,ExitCode,Elapsed,Constraints
+grep -H '^PASS\|^exit_code' bigann-stream-*.log
+tar -czf bigann-stream-01-evidence.tar.gz build/pace-bigann-stream/jobs bigann-stream-*.log
+sha256sum bigann-stream-01-evidence.tar.gz
+```
+
+Locally: merge the jobs' `builds/epzero`, `builds/faiss_hnsw` and `builds/engine` folders, prepare the
+same sample locally or reuse one job's `sample.json` hashes for the check, and run
+`python -m research.longeval.bigann_stream analyze SAMPLE epzero=... faiss_hnsw=... --engine ... --output OUT.json`.
