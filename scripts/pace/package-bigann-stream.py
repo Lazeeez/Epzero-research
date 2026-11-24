@@ -50,7 +50,7 @@ def main():
     commit, engine = engine_source(oryx)
     payload.update(engine)
     for name, raw in payload.items():
-        if name.endswith(('.sh', '.sbatch', '.py')) and b'\r' in raw and not name.startswith('engine/'):
+        if name.endswith(('.sh', '.sbatch')) and b'\r' in raw:      # shell scripts only; Python reads either
             raise ValueError(f'CRLF line endings in {name}')
     script = payload['scripts/pace/bigann-stream.sbatch'].decode()
     if (f'PACKAGE="$ROOT/{NAME}"' not in script
