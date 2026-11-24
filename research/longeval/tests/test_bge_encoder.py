@@ -55,3 +55,15 @@ def test_encoder_end_to_end_on_the_pinned_model():
     long = 'word ' * 2000
     assert encoder.token_counts([long])[0] > bge_encoder.MAX_LENGTH                   # counted before truncation
     assert np.isfinite(encoder.encode([long])).all()                                  # encoded after right truncation
+    seen = []
+    encoder.encode(docs, batch_size=2, progress=seen.append)
+    assert seen == [2, 3]                                                             # called after each batch
+
+
+def test_a_gpu_run_far_too_slow_after_the_probe_stops():
+    probe = bge_encoder.PROBE_DOCUMENTS
+    assert bge_encoder.throughput_check('cuda', probe - 1, 36000) < 1                 # too early to judge
+    assert bge_encoder.throughput_check('cuda', probe, 1) == probe
+    assert bge_encoder.throughput_check('cpu', probe, 3600) > 0                       # CPU runs are slow by design
+    with pytest.raises(ValueError, match='not running on the GPU'):
+        bge_encoder.throughput_check('cuda', probe, probe / (bge_encoder.MIN_GPU_DOCUMENTS_PER_SECOND - 1))
