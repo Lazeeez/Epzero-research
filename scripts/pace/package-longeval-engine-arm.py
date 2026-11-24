@@ -1,4 +1,5 @@
 """Package the repaired-Epzero arm at full scale (exploratory follow-up; LONGEVAL_ENGINE_ARM.md).
+Package -01 held grown, repaired and rebuilt; -02 holds grown and repaired8 (8 links, screen D13).
 
 Usage, from the repository root:
     python scripts/pace/package-longeval-engine-arm.py BUILD_DIR ORYX_DIR
@@ -18,7 +19,8 @@ import sys
 import tarfile
 
 ROOT = Path(__file__).resolve().parents[2]
-NAME = 'longeval-engine-arm-01'
+NAME = 'longeval-engine-arm-02'
+ARMS = ['grown', 'repaired8']
 BRANCH = 'min-backlinks'
 EXTRA = ('research/__init__.py', 'research/longeval/requirements.txt', 'research/longeval/FINAL_PROTOCOL_V1_FREEZE.json',
          'research/longeval/EXTENSION_PROTOCOL_V1_FREEZE.json', 'research/longeval/tests/test_engine_arm_analysis.py',
@@ -70,9 +72,11 @@ def main():
     if (f'PACKAGE="$ROOT/{NAME}"' not in script
             or f'{NAME}/scripts/pace/longeval-engine-arm.sbatch' not in payload['scripts/pace/LONGEVAL_ENGINE_ARM.md'].decode()):
         raise ValueError('job script or runbook does not reference this package')
+    if f'RUN_ARMS="{" ".join(ARMS)}"' not in script:
+        raise ValueError('job script runs other arms than the manifest records')
     manifest = {'package': NAME, 'purpose': 'repaired-Epzero arm at full scale; post-freeze; no judgments',
                 'engine': {'repository': 'Epzero', 'branch': BRANCH, 'commit': commit, 'files': len(engine)},
-                'arms': ['grown', 'repaired', 'rebuilt'], 'seeds': [11, 29, 47], 'preflight': preflight,
+                'arms': ARMS, 'seeds': [11, 29, 47], 'preflight': preflight,
                 'files': {n: sha(r) for n, r in sorted(payload.items())}}
     payload['manifest.json'] = (json.dumps(manifest, indent=2, sort_keys=True) + '\n').encode()
     payload['SHA256SUMS'] = ''.join(f'{sha(r)}  {n}\n' for n, r in sorted(payload.items())).encode()
