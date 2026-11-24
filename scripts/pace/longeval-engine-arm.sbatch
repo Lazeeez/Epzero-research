@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # The repaired-Epzero arm at full scale (exploratory follow-up). See LONGEVAL_ENGINE_ARM.md.
-#   sbatch longeval-engine-arm-02/scripts/pace/longeval-engine-arm.sbatch SEED
+#   sbatch longeval-engine-arm-03/scripts/pace/longeval-engine-arm.sbatch SEED
 # One job builds all of snapshot 3 in Epzero's product path in each arm of RUN_ARMS and searches the
-# test and confirmation queries. Package -01 ran grown, repaired and rebuilt; -02 runs grown (a
-# same-job reference, and a check that -01 reproduces) and repaired8. Epzero is built on the node from the packaged source.
+# test and confirmation queries. Package -01 ran grown, repaired and rebuilt; -02 ran grown and repaired8;
+# -03 runs grown (a same-job reference, and a reproduction check) and repaired8w (refine width 100,
+# screen D15). Epzero is built on the node from the packaged source.
 # All archive downloads, extracted matrices and indexes stay on compute-node disk. No judgments.
 #SBATCH --job-name=longeval-engine-arm
 #SBATCH --account=coc
@@ -21,8 +22,8 @@
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:?submit from the isolated research checkout}"
 ROOT="$PWD"
-PACKAGE="$ROOT/longeval-engine-arm-02"
-RUN_ARMS="grown repaired8"
+PACKAGE="$ROOT/longeval-engine-arm-03"
+RUN_ARMS="grown repaired8w"
 CPU_PYTHON="$ROOT/build/pace-longeval/venv/bin/python"
 UV="$ROOT/build/pace-longeval/tools/bin/uv"
 OUTPUT="$ROOT/build/pace-longeval-engine-arm/jobs/${SLURM_JOB_ID:?requires a Slurm job}"
