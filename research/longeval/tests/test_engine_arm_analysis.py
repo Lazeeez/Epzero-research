@@ -53,3 +53,20 @@ def test_the_confirmation_reading_is_decided_by_the_effect(tmp_path):
         write(tmp_path, 'rebuilt', seed, table(100, .045, .045, rng), 'confirm-')
     out = engine_arm_analysis.analyze(tmp_path, confirm=True, draws=500)
     assert out['query_count'] == 100 and out['decision']['passed'] == out['decision']['effect']
+
+
+def test_the_eight_link_arm_is_tested_against_grown_and_other_arms_are_ignored(tmp_path):
+    rng = np.random.default_rng(3)
+    for seed in (11, 29, 47):
+        write(tmp_path, 'grown', seed, table(381, .08, .04, rng))
+        write(tmp_path, 'rebuilt', seed, table(381, .045, .045, rng))
+        write(tmp_path, 'repaired8', seed, table(381, .046, .043, rng))
+    write(tmp_path, 'repaired', 11, table(381, .05, .04, rng))          # another arm, other seeds: ignored
+    out = engine_arm_analysis.analyze(tmp_path, draws=500, arm='repaired8')
+    assert out['repair'] == 'repaired8' and out['seeds'] == [11, 29, 47]
+    assert set(out['arms']) == {'grown', 'repaired8', 'rebuilt'}
+    assert out['decision']['passed'] is True and 'repaired8_minus_grown' in out['contrasts']
+    with pytest.raises(ValueError):
+        engine_arm_analysis.analyze(tmp_path, draws=10)                   # repaired lacks seeds 29 and 47
+    with pytest.raises(ValueError):
+        engine_arm_analysis.analyze(tmp_path, draws=10, arm='grown')
