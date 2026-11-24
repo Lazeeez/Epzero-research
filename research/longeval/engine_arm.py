@@ -8,6 +8,7 @@ documents are inserted one at a time, in arrival order. Arms:
 
   grown     no repair (the current behaviour)
   repaired  `extra_backlinks` 4, and after each later snapshot the documents it added are refined
+  repaired8 the same with `extra_backlinks` 8 (screen D13; second run, package -02)
   rebuilt   every document trained on, bulk-built and refined at once (reference without history)
 
 Needs the Epzero build with `extra_backlinks` and `refine_links(first=...)`. SAMPLE is a full-scale
@@ -30,6 +31,7 @@ from .insertion_pilot import BANDS, insertion_order
 WIDTHS = (100, 200, 400)
 ARMS = {'grown': {'extra_backlinks': 0, 'refine_recent': False, 'rebuild': False},
         'repaired': {'extra_backlinks': 4, 'refine_recent': True, 'rebuild': False},
+        'repaired8': {'extra_backlinks': 8, 'refine_recent': True, 'rebuild': False},
         'rebuilt': {'extra_backlinks': 0, 'refine_recent': False, 'rebuild': True}}
 M, EF_CONSTRUCTION, REFINE_EF = 16, 100, 50        # REFINE_EF: what epzero.build() uses, max(efC / 2, 2M)
 
