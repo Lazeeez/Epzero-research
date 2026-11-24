@@ -99,17 +99,33 @@ download is checked against the sizes and MD5 checksums the track's storage repo
 queries and ground truth, and the runbook is fetched at commit `ec58203` of `big-ann-benchmarks` and
 checked against its SHA-256 (`b65641b2…`).
 
+*Changed on 24 November 2026, after screen D15 (`docs/screen-d15-refine-new-harder.md`):* Part B gains
+a fifth arm, `repaired8w` (8 links, each later cohort's insertions refined at width 100), which is
+the third full-scale engine arm's candidate. It is analysed as the other repairs, with the same effect
+and no-harm rules. Package `bigann-stream-02` holds it. Part A and the other arms are unchanged.
+If package -01's jobs were already submitted, they stand, and only `repaired8w` is run from -02
+(`ENGINE_ARMS=repaired8w`). It is then compared with -01's `grown` from a different job, and that
+contrast is reported as across jobs.
+
 ## Submit
 
 Build the package locally (`python scripts/pace/package-bigann-stream.py BUILD_DIR ORYX_DIR`), copy
-`bigann-stream-01.tar.gz` to the PACE LongEval checkout, compare its SHA-256 with the receipt, then:
+`bigann-stream-02.tar.gz` to the PACE LongEval checkout, compare its SHA-256 with the receipt, then:
 
 ```bash
-tar -xzf bigann-stream-01.tar.gz
-(cd bigann-stream-01 && sha256sum --check --quiet --strict SHA256SUMS && echo package OK)
+tar -xzf bigann-stream-02.tar.gz
+(cd bigann-stream-02 && sha256sum --check --quiet --strict SHA256SUMS && echo package OK)
 for seed in 11 29 47; do
-  for backend in epzero faiss_hnsw; do sbatch bigann-stream-01/scripts/pace/bigann-stream.sbatch order "$backend" "$seed"; done
-  sbatch bigann-stream-01/scripts/pace/bigann-stream.sbatch engine "$seed"
+  for backend in epzero faiss_hnsw; do sbatch bigann-stream-02/scripts/pace/bigann-stream.sbatch order "$backend" "$seed"; done
+  sbatch bigann-stream-02/scripts/pace/bigann-stream.sbatch engine "$seed"
+done
+```
+
+If -01's nine jobs are already queued or done, submit only the new arm instead:
+
+```bash
+for seed in 11 29 47; do
+  ENGINE_ARMS=repaired8w sbatch bigann-stream-02/scripts/pace/bigann-stream.sbatch engine "$seed"
 done
 ```
 
@@ -118,8 +134,8 @@ done
 ```bash
 sacct -X --name=bigann-stream -S 2026-11-23 --format=JobID,State,ExitCode,Elapsed,Constraints
 grep -H '^PASS\|^exit_code' bigann-stream-*.log
-tar -czf bigann-stream-01-evidence.tar.gz build/pace-bigann-stream/jobs bigann-stream-*.log
-sha256sum bigann-stream-01-evidence.tar.gz
+tar -czf bigann-stream-02-evidence.tar.gz build/pace-bigann-stream/jobs bigann-stream-*.log
+sha256sum bigann-stream-02-evidence.tar.gz
 ```
 
 Locally: merge the jobs' `builds/epzero`, `builds/faiss_hnsw` and `builds/engine` folders, prepare the
