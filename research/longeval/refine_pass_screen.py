@@ -2,8 +2,8 @@
 
     python -m research.longeval.refine_pass_screen SAMPLE OUTPUT.json --passes 2 --width 50
 
-Every vector added on all cores with 8-bit codes (`fast_build`, M 16, efConstruction 100, no
-principal-direction walk), then refined `passes` times at `width`. Then a sweep of search widths at
+Every vector added on all cores with 8-bit codes (`fast_build`, M 16, efConstruction 100 unless
+given, no principal-direction walk), then refined `passes` times at `width`. Then a sweep of search widths at
 k 10 and 100, one thread: recall, queries per second, distance computations. Aggregates only.
 """
 from __future__ import annotations
@@ -25,6 +25,7 @@ def main():
     parser.add_argument('--passes', type=int, required=True)
     parser.add_argument('--width', type=int, required=True)
     parser.add_argument('--seed', type=int, default=11)
+    parser.add_argument('--ef-construction', type=int, default=100, help="200 is epzero.build's default (D16b)")
     a = parser.parse_args()
     import epzero
     vectors = np.ascontiguousarray(np.load(a.sample / 'vectors.npy'))
@@ -32,7 +33,7 @@ def main():
     exact = np.load(a.sample / 'exact-top100.npy')
     metric = json.loads((a.sample / 'sample.json').read_text()).get('metric', 'ip')
     n, dim = vectors.shape
-    index = epzero.Index(dim=dim, metric=metric, max_elements=n, M=16, ef_construction=100, seed=a.seed,
+    index = epzero.Index(dim=dim, metric=metric, max_elements=n, M=16, ef_construction=a.ef_construction, seed=a.seed,
                          quantization='sq8', keep_vectors=True, nav_dim=0, fill_links=False, fast_build=True,
                          half_vectors=False)
     started = time.perf_counter()
@@ -58,7 +59,8 @@ def main():
             rows.append({'ef': width, 'k': k, 'recall': recall(np.asarray(labels, dtype=np.int64), exact, k),
                          'qps': len(queries) / seconds, 'distance_computations': float(work)})
     report = {'kind': 'EXPLORATORY development screen D16 (aggregates only)', 'sample': a.sample.name, 'metric': metric,
-              'passes': a.passes, 'width': a.width, 'seed': a.seed, 'documents': int(n), 'queries': int(len(queries)),
+              'passes': a.passes, 'width': a.width, 'seed': a.seed, 'ef_construction': a.ef_construction,
+              'documents': int(n), 'queries': int(len(queries)),
               'add_seconds': add_seconds, 'refine_seconds': refine_seconds, 'rows': rows}
     a.output.parent.mkdir(parents=True, exist_ok=True)
     a.output.write_text(json.dumps(report, indent=2) + '\n')
