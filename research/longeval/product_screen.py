@@ -33,6 +33,9 @@ def main():
     parser.add_argument('--train-on-first', action='store_true', help='train the 8-bit ranges on snapshot 1 only')
     parser.add_argument('--refine-each-snapshot', action='store_true',
                         help='grown: after each later snapshot, refine the documents it added')
+    parser.add_argument('--refine-scope', choices=('new', 'around', 'all'), default='new',
+                        help='with --refine-each-snapshot: the new documents, also the older ones they link to '
+                             '(screen D14), or every document')
     a = parser.parse_args()
     import epzero
     vectors = np.load(a.sample / 'vectors.npy', mmap_mode='r')
@@ -55,6 +58,7 @@ def main():
         index.refine_links(threads=0, ef=50)           # what epzero.build() does after the bulk build (ef = max(efC/2, 2M))
     bulk_seconds = time.perf_counter() - started
     insert_seconds = refine_seconds = 0.0
+    refined = []                                         # nodes refined after each later snapshot
     for step in (2, 3):
         batch = later[cohort[later] == step]
         position = len(index)                            # nothing is removed in this screen
@@ -65,7 +69,12 @@ def main():
         insert_seconds += time.perf_counter() - started
         if a.refine_each_snapshot and len(batch):
             started = time.perf_counter()
-            index.refine_links(threads=0, ef=50, first=position)
+            if a.refine_scope == 'new':
+                index.refine_links(threads=0, ef=50, first=position)
+                refined.append(int(len(batch)))
+            else:
+                refined.append(int(index.refine_links(threads=0, ef=50, first=0 if a.refine_scope == 'all' else position,
+                                                      around=a.refine_scope == 'around')))
             refine_seconds += time.perf_counter() - started
     band_of = np.zeros(101, dtype=np.int64)
     for b, (lo, hi) in enumerate(BANDS):
@@ -94,6 +103,7 @@ def main():
               'extra_backlinks': a.extra_backlinks, 'seed': a.seed, 'metric': metric,
               'bulk_seconds': bulk_seconds, 'insert_seconds': insert_seconds, 'refine_seconds': refine_seconds,
               'refine_each_snapshot': a.refine_each_snapshot, 'later_documents': int(len(later)),
+              'refine_scope': a.refine_scope if a.refine_each_snapshot else None, 'nodes_refined': refined,
               'widths': widths}
     a.output.parent.mkdir(parents=True, exist_ok=True)
     a.output.write_text(json.dumps(report, indent=2) + '\n')
