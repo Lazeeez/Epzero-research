@@ -55,3 +55,44 @@ Averaged over the three seeds:
 
 If prediction 1 fails, a width calibrated once holds up over this growth, and the calibration leg is
 reported as not shown on this collection at this scale.
+
+## Result
+
+Run on 24 November 2026, after the design above was committed (Epzero `min-backlinks` at 2d279c0e).
+Evaluation queries (281), means over seeds 11, 29 and 47. At snapshot 3 the computed exact neighbours
+matched the sample's on every seed (overlap 1.0). Raw results are in `Oryx/build/screen-d17/*.json`.
+
+Calibrated width after each snapshot (the same on every seed): grown 200 / 250 / 250; repaired8w
+200 / 200 / 250. The fixed width is therefore 200 throughout.
+
+| Arm | Snapshot | Recall@100, fixed width | Recall@100, recalibrated | Newest excess, fixed | Newest excess, recalibrated | Miss by cohort, fixed |
+| --- | --- | --- | --- | --- | --- | --- |
+| grown | 1 | 0.9611 | 0.9611 | | | 3.89% |
+| | 2 | 0.9517 | 0.9611 | 1.97 pp | 1.52 pp | 4.12 / 6.51% |
+| | 3 | 0.9502 | 0.9594 | **2.05 pp** | **1.68 pp** | 3.82 / 6.53 / 6.64% |
+| repaired8w | 1 | 0.9621 | 0.9621 | | | 3.79% |
+| | 2 | 0.9549 | 0.9549 | −0.19 pp | −0.19 pp | 4.44 / 4.69% |
+| | 3 | 0.9535 | 0.9619 | **0.20 pp** | **−0.08 pp** | 4.26 / 5.05 / 5.36% |
+
+At snapshot 2 the newest cohort is snapshot 2, against snapshot 1. At snapshot 3 it is snapshot 3 against 1.
+
+**Predictions:**
+
+1. "grown, fixed width: recall@100 at snapshot 3 below 0.95 by at least 0.5 points": **failed**. It
+   fell 1.1 points, from 0.9611 to 0.9502, and ends at the target. The coarse grid made the snapshot-1
+   width overshoot (0.961 at 200, against 0.95 sought), and that margin absorbed most of the drift.
+2. "grown, fixed width: newest excess at snapshot 3 at least 1.0 point": **held** (2.05; 1.97–2.09 on
+   each seed).
+3. "grown: the recalibrated width grows": **held** (200 → 250 by snapshot 2, on every seed).
+4. "repaired8w, fixed width: smaller recall shortfall and smaller excess than grown": **held** (recall
+   0.9535 against 0.9502; excess 0.20 against 2.05).
+
+**Reading:** keeping the snapshot-1 width costs 1.1 points of recall by snapshot 3, and two thirds of
+the misses that drift adds fall on documents that arrived later. The snapshot-1 cohort's miss rate
+does not rise (3.89 → 3.82%), while the later cohorts' is 6.5–6.6%. Recalibrating restores the
+average (0.9594 at width 250) but leaves 1.68 of the 2.05 points of excess. This is the same
+conclusion as section 4.7b with the frozen study's own recalibration, now with a fixed width beside it:
+calibration on mean recall sees the drift and not who bears it. With the repair, the snapshot-1 width
+still meets the target at snapshot 2, and the excess at the fixed width is 0.20 points. One sample,
+three seeds, development data. The full-scale version needs per-snapshot exact neighbours and goes
+with the next engine-arm package if the third run passes.
