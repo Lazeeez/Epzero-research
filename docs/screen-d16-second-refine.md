@@ -162,3 +162,31 @@ takes 25–55% longer. Under the correction above, this does not change the auto
 already refines at 100. What it supports is the width-100 refine in the repair (screen D15, the third
 engine arm), and refining at 100 in the research product path generally. Whether 200 beats 100 at the
 build's defaults is D16b.
+
+### D16b result (run 24 November 2026)
+
+efConstruction 200, seed 11, `full` (refine at 200) against `half` (at 100, today's without the walk).
+Change in distance computations and queries per second at recall@10 0.90 / 0.95 / 0.98 / 0.99. Raw results
+are in `Oryx/build/screen-d16/d16b-*.json`.
+
+| Dataset | Distance computations | Queries per second | Build |
+| --- | --- | --- | --- |
+| SIFT | +2.4 / +3.7 / +0.4 / −2.1% | −0.5 / −4.9 / +4.8 / +11.4% | 10.1 → 13.8 s |
+| GloVe | −1.2 / +1.8 / +2.1% / — | −1.5 / +2.2 / −1.3% / — | 13.1 → 16.8 s |
+| LongEval | −1.3 / +2.7 / **−12.0 / −28.2%** | +5.5 / −0.7 / **+18.5 / +48.6%** | 93 → 127 s |
+
+**Prediction** ("within 3% at every target on all three"): **held on GloVe, failed narrowly on SIFT**
+(+3.7% at 0.95, the wrong way for `full`), and **failed on LongEval**, where `full` needs 12% and 28%
+less work at 0.98 and 0.99.
+
+**Decision:** under the rule (at least 5% fewer at 0.98 on two datasets, none worse by more than 2%),
+`full` is not a candidate default: only LongEval gains, and SIFT is worse by 3.7% at 0.95. Nothing
+changes. The result agrees with the automatic build's rule as it stands. It halves the width only
+without the principal-direction walk, which it picks for high-dimensional data like LongEval's. With
+the walk it already refines at the full width, and this is where the full width pays.
+
+**Also seen, not predicted:** at the same refine width (100), building at efConstruction 200 instead
+of 100 needs fewer distance computations at every target: SIFT −0.9 to −4.7%, GloVe −2.3 to −5.1%,
+LongEval −7.4 to −16.5%. The build takes 36–48% longer. The research engine arms build at
+efConstruction 100, the study's setting, so their graphs are leaner than `epzero.build`'s default.
+This is a known trade and not a finding about arrival.
