@@ -132,3 +132,41 @@ cohort's excess under one point on all queries. Under decision 1 the paper may p
 remedy only after the remaining confirmation readings (BGE vectors and a public streaming workload);
 a stronger setting (`extra_backlinks` 8 cut the excess further on the development sample, screen
 D7b) is the next development step.
+
+## Second run: 8 links (package `longeval-engine-arm-02`)
+
+Recorded on 24 November 2026, before submission. Development screen D13
+(`docs/screen-d13-stronger-repair.md`) found that `extra_backlinks` 8 with each later snapshot refined
+cuts the 300K sample's excess from 2.22 to 0.28 points over three seeds (4 links: 0.63; rebuild: 0.12),
+and its rule sent 8 links to a full-scale run.
+
+**Design.** As the first run, two arms per job: `grown` (unchanged; a same-job reference) and
+`repaired8` (`extra_backlinks` 8, each later snapshot refined), seeds 11, 29 and 47, the same Epzero
+source branch (commit in the manifest). `rebuilt` is taken from the first run (no history, so not
+affected by the change).
+
+**Analysis, fixed now.** `engine_arm_analysis.py --arm repaired8` (and with `--confirm`), on the second
+run's `grown` and `repaired8` folders plus the first run's `rebuilt` folders, with decision 3's
+margins as before: effect (interval of repaired8 minus grown excluding 0, and repaired8's excess at most
+1.0 point), no harm (oldest cohort's rise ≤ 0.75, recall@100's fall ≤ 0.5, upper 95% bounds). The
+confirmation reading is decided by the effect. **Reproduction check:** the second run's `grown`
+per-query tables are compared with the first run's; any difference is reported (the bulk build runs on
+all cores), and the paired contrasts use the same-job `grown`.
+
+**Predictions.** Passes both readings: on the test queries repaired8's excess is at most 1.0 point
+(first run, 4 links: 1.54), with no harm; on the confirmation queries the effect holds. Search work at
+ef 200 within 5% of the 4-link arm's; insertion time at most 1.1× grown's.
+
+**Submit**, as the first run, with the new package:
+
+```bash
+sha256sum longeval-engine-arm-02.tar.gz
+tar -xzf longeval-engine-arm-02.tar.gz
+(cd longeval-engine-arm-02 && sha256sum --check --quiet --strict SHA256SUMS && echo package OK)
+for seed in 11 29 47; do
+  sbatch longeval-engine-arm-02/scripts/pace/longeval-engine-arm.sbatch "$seed"
+done
+```
+
+**After completion**, as the first run (`sacct -X --name=longeval-engine-arm -S 2026-11-25 ...`), into
+`longeval-engine-arm-02-evidence.tar.gz` (never committed).
