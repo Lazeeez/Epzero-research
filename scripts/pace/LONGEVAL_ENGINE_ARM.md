@@ -218,3 +218,52 @@ is not removed by more links alone. Bulk build and insertion leave the newest do
 disadvantage that only a rebuild (0.43, itself not zero) removes. Under decision 2 the test queries are a
 development reading; the confirmation readings that decide the paper are the confirmation queries
 (passed by both settings), the BGE vectors and a public streaming workload.
+
+## Third run: a wider refine of each new batch (package `longeval-engine-arm-03`)
+
+Recorded on 24 November 2026, before submission. Screen D14 (`docs/screen-d14-refine-around.md`)
+found that refining the older nodes around each batch widens the gap. Screen D15
+(`docs/screen-d15-refine-new-harder.md`) found that refining each later snapshot's insertions at width
+100 instead of 50 takes the 300K sample's excess from 0.28 to −0.08 points over three seeds (a rebuild
+gives 0.12). Recall@100 was 0.9519, against a rebuild's 0.9520, for 3% more search work and 15 s of
+refine on all cores instead of 8. D15's rule sent it to a full-scale run.
+
+**Design.** As the second run, two arms per job: `grown` (unchanged; a same-job reference) and
+`repaired8w` (`extra_backlinks` 8, each later snapshot's insertions refined at width 100). The refine
+after the bulk build stays at width 50 (`REFINE_EF`, what `epzero.build()` uses). Seeds 11, 29 and 47.
+The Epzero source is the same branch, now at 2d279c0e; its only change since 4d4a64cc is the off-by-default
+`refine_links(around)` of screen D14, which this run does not use. `rebuilt` is taken from the first run.
+
+**Analysis, fixed now.** `engine_arm_analysis.py --arm repaired8w` (and with `--confirm`), on the third
+run's `grown` and `repaired8w` folders plus the first run's `rebuilt` folders. The margins are decision
+3's, as before:
+
+- effect: the interval of repaired8w minus grown excludes 0, and repaired8w's excess is at most 1.0 point;
+- no harm: the upper 95% bound of the oldest cohort's rise is at most 0.75, and of recall@100's fall at
+  most 0.5.
+
+The confirmation reading is decided by the effect. Reported beside them: repaired8w against the second
+run's repaired8 (different jobs, so means only, not paired), and the reproduction check of `grown`
+against the first two runs.
+
+**Predictions.** Passes both readings: on the test queries repaired8w's excess is at most 1.0 point
+(repaired8: 1.17), with no harm by the margins; on the confirmation queries the effect holds. The
+oldest cohort's rise against grown on the test queries is at most the rebuild's (first run: +0.34)
+plus 0.25 points. Search work at ef 200 within 5% of repaired8's (3,016). Refine of later snapshots
+at most 2.5× the second run's 30 s on all cores. If the test-query excess is still above 1.0, a wider
+refine is reported as closing part of the gap, and the paper presents the repair under decision 1 as
+before.
+
+**Submit**, as before, with the new package:
+
+```bash
+sha256sum longeval-engine-arm-03.tar.gz
+tar -xzf longeval-engine-arm-03.tar.gz
+(cd longeval-engine-arm-03 && sha256sum --check --quiet --strict SHA256SUMS && echo package OK)
+for seed in 11 29 47; do
+  sbatch longeval-engine-arm-03/scripts/pace/longeval-engine-arm.sbatch "$seed"
+done
+```
+
+**After completion**, as before (`sacct -X --name=longeval-engine-arm -S 2026-11-24 ...`), into
+`longeval-engine-arm-03-evidence.tar.gz` (never committed).
