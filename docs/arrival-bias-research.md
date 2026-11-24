@@ -553,7 +553,8 @@ the mean can hide which documents lose.
 
 - How much of HNSW in-degree is position and how much is geometry (exact k-occurrence) — directly
   relevant to the SIGMOD 2026 hubness paper.
-- Whether the "timing minority" hypothesis holds in both directions (section 7.3).
+- Whether the "timing minority" hypothesis holds in both directions (section 7.3). Tested on Big-ANN's
+  clustered stream: not supported there; global position dominates (section 8.2b).
 - IVF and quantizers under *induced* drift; global-range 8-bit quantization clipping of late arrivals.
 - Calibration staleness by cohort with the width calibrated on snapshot 1 and held fixed (the
   growing optimism of recalibration is measured, 4.7b).
@@ -562,7 +563,8 @@ the mean can hide which documents lose.
   (screen X1, `docs/screen-x1-hnswlib.md`): as arrived 1.34 [1.20, 1.51], shuffled 1.00, reversed 0.77 on
   the 300K sample, within +0.04 [−0.00, +0.09] of FAISS's and Epzero's mean, so the gradient belongs to the
   construction rule, not one code base.
-- The Big-ANN streaming runbooks re-analysed by item age.
+- The Big-ANN streaming runbooks re-analysed by item age: done for the clustered MSTuring-10M runbook
+  (section 8.2b); the other runbooks remain.
 
 ---
 
@@ -970,6 +972,18 @@ prediction held. Against a full rebuild the repaired index is indistinguishable:
 of refine on all cores per checkpoint, against a 182 s rebuild; search work +2.5% against 8 links
 alone. The remaining confirmation readings (BGE vectors, the public streaming workload) are running.
 
+**Public streaming workload** (Big-ANN's clustered MSTuring-10M runbook, `scripts/pace/BIGANN_STREAM.md`;
+jobs 7269863–71 and 7279048–50; 10M vectors arriving as 32 k-means blocks). Part A: the cohort gap changes
+by −11.22 [−11.52, −10.91] points from as arrived to reversed for Epzero and −9.08 [−9.38, −8.79] for FAISS,
+more than twice LongEval's; shuffled builds show the global-position effect (+7.7 and +6.0 points, last
+against first tenth), and the position within a cluster's own block adds only +0.7 to +1.1. So **the bias
+follows global insertion position**: a cluster that arrives with its own neighbours is not protected, and
+the timing-minority reading is not supported (its prediction, |change| < 2.0, failed). Part B: the
+width-100 repair takes the newest cohort's excess from 5.63 to −0.65 points (paired gap change −4.95
+[−5.21, −4.68]), lowers the oldest cohort's misses (−1.36) and lifts recall@100 at ef 200 from 74.7% to
+80.9%, above a rebuild's 79.2% (whose bulk build also inserts in arrival order, excess 2.24). **The public
+confirmation reading passes**; BGE is the one remaining.
+
 ### 8.3 Baselines every design must beat
 
 Plain HNSW (Epzero, FAISS, hnswlib) at several search widths; a second entry point; the GRAB-ANNS
@@ -1017,7 +1031,7 @@ or the local `build/` folders.
 | ≥ 5 construction seeds, ef ladder, M ∈ {8, 16, 32, 48}, absolute differences alongside ratios | Non-determinism; dose-response; why M 32 is worse than M 16 |
 | Drift-free control: i.i.d. synthetic data and a random split of LongEval inserted in fixed groups | That the graph effect needs no drift |
 | Cross-implementation: hnswlib (**done**, X1: same gradient, same size), FAISS, Lucene (milder rule predicts a weaker gradient), FreshVamana, batch-built Vamana/NSG | Common to incremental graphs, or an artefact of one pruning rule |
-| Big-ANN streaming runbooks re-analysed by item age (ground truth already exists) | The blind spot on the community's own benchmark |
+| Big-ANN streaming runbooks re-analysed by item age (ground truth already exists; **clustered MSTuring-10M done**) | The blind spot on the community's own benchmark |
 
 ### Priority 1 (generality and the IR case)
 
