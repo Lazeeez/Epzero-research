@@ -58,6 +58,11 @@ def test_encoder_end_to_end_on_the_pinned_model():
     seen = []
     encoder.encode(docs, batch_size=2, progress=seen.append)
     assert seen == [2, 3]                                                             # called after each batch
+    full = encoder.token_counts(docs + [long])
+    batches = []
+    capped = encoder.token_counts(docs + [long], cap=bge_encoder.MAX_LENGTH + 1, batch=2, progress=batches.append)
+    assert batches == [2, 4] and np.array_equal(capped, np.minimum(full, bge_encoder.MAX_LENGTH + 1))
+    assert (capped > bge_encoder.MAX_LENGTH).tolist() == (full > bge_encoder.MAX_LENGTH).tolist()   # truncation exact
 
 
 def test_a_gpu_run_far_too_slow_after_the_probe_stops():
