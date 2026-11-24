@@ -558,7 +558,10 @@ the mean can hide which documents lose.
 - Calibration staleness by cohort with the width calibrated on snapshot 1 and held fixed (the
   growing optimism of recalibration is measured, 4.7b).
 - A second real-timestamp collection; the second encoder (BGE-base-en-v1.5 vectors are being encoded).
-- Other graph builders: hnswlib, Lucene (different reverse-link rule), Vamana/FreshVamana, NSG.
+- Other graph builders: Lucene (different reverse-link rule), Vamana/FreshVamana, NSG. hnswlib is done
+  (screen X1, `docs/screen-x1-hnswlib.md`): as arrived 1.34 [1.20, 1.51], shuffled 1.00, reversed 0.77 on
+  the 300K sample, within +0.04 [−0.00, +0.09] of FAISS's and Epzero's mean, so the gradient belongs to the
+  construction rule, not one code base.
 - The Big-ANN streaming runbooks re-analysed by item age.
 
 ---
@@ -1013,7 +1016,7 @@ or the local `build/` folders.
 | Position vs geometry: regress HNSW in-degree and per-item miss probability on exact k-occurrence (geometry), insertion position, local density/LID, upper-layer membership, hop distance from the entry point, and the timing-minority share of the exact neighbourhood | How much of "hubness" in incremental graphs is position; tests the timing-minority hypothesis in both directions |
 | ≥ 5 construction seeds, ef ladder, M ∈ {8, 16, 32, 48}, absolute differences alongside ratios | Non-determinism; dose-response; why M 32 is worse than M 16 |
 | Drift-free control: i.i.d. synthetic data and a random split of LongEval inserted in fixed groups | That the graph effect needs no drift |
-| Cross-implementation: hnswlib, FAISS, Lucene (milder rule predicts a weaker gradient), FreshVamana, batch-built Vamana/NSG | Common to incremental graphs, or an artefact of one pruning rule |
+| Cross-implementation: hnswlib (**done**, X1: same gradient, same size), FAISS, Lucene (milder rule predicts a weaker gradient), FreshVamana, batch-built Vamana/NSG | Common to incremental graphs, or an artefact of one pruning rule |
 | Big-ANN streaming runbooks re-analysed by item age (ground truth already exists) | The blind spot on the community's own benchmark |
 
 ### Priority 1 (generality and the IR case)
