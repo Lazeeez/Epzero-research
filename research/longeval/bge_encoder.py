@@ -124,8 +124,18 @@ class Encoder:
         self.model = AutoModel.from_pretrained(str(model_folder), local_files_only=True, trust_remote_code=False,
                                                use_safetensors=True, dtype=torch.float32).to(device).eval()
 
-    def token_counts(self, texts):
-        return np.array([len(ids) for ids in self.tokenizer(list(texts), truncation=False, add_special_tokens=True)['input_ids']])
+    def token_counts(self, texts, cap=None, batch=10_000, progress=None):
+        """Tokens per text, in batches; with `cap`, counting stops there (cap = MAX_LENGTH + 1 still tells
+        exactly which texts are truncated). Job 7279318 spent hours in one uncapped call over 1.66M texts.
+        `progress(done)` is called after each batch."""
+        texts, out = list(texts), []
+        for start in range(0, len(texts), batch):
+            ids = self.tokenizer(texts[start:start + batch], truncation=cap is not None, max_length=cap,
+                                 add_special_tokens=True)['input_ids']
+            out.extend(len(i) for i in ids)
+            if progress is not None:
+                progress(len(out))
+        return np.array(out, dtype=np.int64)
 
     def encode(self, texts, batch_size=128, progress=None):
         """Vectors in the order of `texts`; batches are formed by length to limit padding.
@@ -209,10 +219,19 @@ def encode_collection(model_folder, ids_path, documents, release, output, *, dev
         atomic_json(output / 'report.json', report)
         print(json.dumps({'stage': 'model', 'device': report['model_device'], 'gpu': report.get('gpu')}), flush=True)
         started = time.perf_counter()
-        counts = encoder.token_counts(texts)
+        shown = [0.0]
+
+        def counted(done):
+            if time.perf_counter() - started - shown[0] >= PROGRESS_SECONDS or done == len(texts):
+                shown[0] = time.perf_counter() - started
+                print(json.dumps({'counting_tokens': done, 'of': len(texts), 'seconds': round(shown[0], 1)}), flush=True)
+        # Counted up to MAX_LENGTH + 1 tokens: exact for the number and share truncated (the design's measure);
+        # the mean and quantiles are of the capped counts.
+        counts = encoder.token_counts(texts, cap=MAX_LENGTH + 1, progress=counted)
         report['token_seconds'] = time.perf_counter() - started
-        report['tokens'] = {'mean': float(counts.mean()), 'p50': float(np.median(counts)), 'p99': float(np.quantile(counts, .99)),
-                            'max': int(counts.max()), 'truncated': int((counts > MAX_LENGTH).sum()),
+        report['tokens'] = {'counted_up_to': MAX_LENGTH + 1, 'mean_capped': float(counts.mean()),
+                            'p50_capped': float(np.median(counts)), 'p99_capped': float(np.quantile(counts, .99)),
+                            'truncated': int((counts > MAX_LENGTH).sum()),
                             'truncated_share': float((counts > MAX_LENGTH).mean())}
         atomic_json(output / 'report.json', report)
         started = time.perf_counter()
