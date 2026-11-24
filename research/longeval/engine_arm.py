@@ -9,6 +9,7 @@ documents are inserted one at a time, in arrival order. Arms:
   grown     no repair (the current behaviour)
   repaired  `extra_backlinks` 4, and after each later snapshot the documents it added are refined
   repaired8 the same with `extra_backlinks` 8 (screen D13; second run, package -02)
+  repaired8w the same, with each later snapshot's insertions refined at width 100 (screen D15; third run, -03)
   rebuilt   every document trained on, bulk-built and refined at once (reference without history)
 
 Needs the Epzero build with `extra_backlinks` and `refine_links(first=...)`. SAMPLE is a full-scale
@@ -32,6 +33,7 @@ WIDTHS = (100, 200, 400)
 ARMS = {'grown': {'extra_backlinks': 0, 'refine_recent': False, 'rebuild': False},
         'repaired': {'extra_backlinks': 4, 'refine_recent': True, 'rebuild': False},
         'repaired8': {'extra_backlinks': 8, 'refine_recent': True, 'rebuild': False},
+        'repaired8w': {'extra_backlinks': 8, 'refine_recent': True, 'rebuild': False, 'refine_recent_ef': 100},
         'rebuilt': {'extra_backlinks': 0, 'refine_recent': False, 'rebuild': True}}
 M, EF_CONSTRUCTION, REFINE_EF = 16, 100, 50        # REFINE_EF: what epzero.build() uses, max(efC / 2, 2M)
 
@@ -66,7 +68,7 @@ def build(vectors, cohort, sequence, *, arm, seed, metric):
         timing['insert_seconds'] += time.perf_counter() - started
         if setting['refine_recent']:
             started = time.perf_counter()
-            index.refine_links(threads=0, ef=REFINE_EF, first=position)
+            index.refine_links(threads=0, ef=setting.get('refine_recent_ef', REFINE_EF), first=position)
             timing['refine_recent_seconds'] += time.perf_counter() - started
     return index, timing
 
