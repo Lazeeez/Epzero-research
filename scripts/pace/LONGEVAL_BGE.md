@@ -8,7 +8,7 @@ separate jobs.
 
 ## What the job does
 
-On one NVIDIA H200 node (packages -02 and -03; package -01 asked for any GPU, and job 7254797 landed on a node without NVIDIA tools): checks the package; runs the encoder's unit tests;
+On one NVIDIA H200 node (packages -02 to -04; package -01 asked for any GPU, and job 7254797 landed on a node without NVIDIA tools): checks the package; runs the encoder's unit tests;
 builds a CUDA environment (PyTorch 2.9.0, the pinned `encoder-requirements.txt`); downloads the pinned
 document archives and the pinned model (every file checked against its size and hash); encodes the
 1,661,900 snapshot-3 documents (title, then abstract; CLS pooling, float32, L2-normalised, 512 tokens,
@@ -37,17 +37,31 @@ Package -03 (24 November 2026; the encoder's outputs and settings are unchanged)
   5,000 documents;
 - GPU use is logged every minute (`gpu-usage.csv`), and the time limit is 6 hours.
 
+## Job 7279318 (package -03): the same stop, found
+
+The fixes in -03 showed where both jobs stopped. The texts loaded in 58 s and the model reached the H200
+(`"device": "cuda:0"`, 999 MiB held), then the GPU stayed at 0% for over two hours: the job was in the
+token count. Measured locally on the same texts: the uncapped count in one call takes 13.5 GB of memory
+for 200,000 texts (about 67 KB per text, as the tokenizer keeps every token's offsets and strings), so all
+1,661,900 need about 110 GB, more than the job's 96 GB. The texts are ordinary (mean 1,676 characters,
+longest 22,163; 0.15 ms per text to tokenize). Cancelled.
+
+Package -04 (25 November 2026): the count runs in batches of 10,000 and stops at 513 tokens, which is
+exact for the number and share truncated (the design's measure); its mean and quantiles are of the capped
+counts, and it prints progress every minute. Locally on all 1,661,900 texts: 220 s and 1.8 GB above the
+texts, with 367,481 (22.1%) truncated at 512 tokens. The encoding and its settings are unchanged.
+
 ## Submit
 
 Build the package locally (`python scripts/pace/package-longeval-bge.py BUILD_DIR`), copy
-`longeval-bge-03.tar.gz` to the PACE LongEval checkout, compare its SHA-256 with
-`longeval-bge-03-receipt.json`, then:
+`longeval-bge-04.tar.gz` to the PACE LongEval checkout, compare its SHA-256 with
+`longeval-bge-04-receipt.json`, then:
 
 ```bash
-sha256sum longeval-bge-03.tar.gz
-tar -xzf longeval-bge-03.tar.gz
-(cd longeval-bge-03 && sha256sum --check --quiet --strict SHA256SUMS && echo package OK)
-sbatch longeval-bge-03/scripts/pace/longeval-bge.sbatch
+sha256sum longeval-bge-04.tar.gz
+tar -xzf longeval-bge-04.tar.gz
+(cd longeval-bge-04 && sha256sum --check --quiet --strict SHA256SUMS && echo package OK)
+sbatch longeval-bge-04/scripts/pace/longeval-bge.sbatch
 ```
 
 ## After completion
@@ -55,8 +69,8 @@ sbatch longeval-bge-03/scripts/pace/longeval-bge.sbatch
 ```bash
 sacct -X --name=longeval-bge -S 2026-11-24 --format=JobID,State,ExitCode,Elapsed
 grep -H '^PASS\|^exit_code' longeval-bge-*.log
-tar -czf longeval-bge-03-evidence.tar.gz build/pace-longeval-bge/jobs longeval-bge-*.log
-sha256sum longeval-bge-03-evidence.tar.gz
+tar -czf longeval-bge-04-evidence.tar.gz build/pace-longeval-bge/jobs longeval-bge-*.log
+sha256sum longeval-bge-04-evidence.tar.gz
 ```
 
 The archive holds document and query vectors derived from LongEval data (about 5 GB): copy it to the
