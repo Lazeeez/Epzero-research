@@ -115,3 +115,17 @@ D16's `wide` width. D16, like the engine arms, builds at efConstruction 100, whe
   and screen D15's choice of width 100 for new batches.
 - A product-default check comes next: at efConstruction 200, refine at 100 (today's) against 200,
   on the three samples, as screen D16b (designed in its own section before it runs).
+
+## D16b: refine width at the automatic build's defaults (designed 24 November 2026, before it was run)
+
+**Design.** As D16 (8-bit codes, vectors kept, `fast_build`, M 16, no walk, all cores), at
+efConstruction **200**, `epzero.build`'s default. Arms: `half`, refine at width 100 (today's), and
+`full`, refine at width 200. Seed 11, the three 300K samples. Same sweep and measures as D16.
+
+**Prediction (the automatic build's note):** `full` is within 3% of `half` in distance computations at
+every recall@10 target on all three, and its refine takes about twice as long.
+
+**Decision:** if `full` needs at least 5% fewer distance computations at recall@10 0.98 on at least
+two datasets, with no target worse by more than 2%, it goes to a PACE round against Glass on the
+VIBE datasets as a candidate default, with its build-time cost. Otherwise nothing changes, and the
+note stands with this measurement added.
