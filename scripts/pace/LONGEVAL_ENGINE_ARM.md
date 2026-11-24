@@ -168,5 +168,5 @@ for seed in 11 29 47; do
 done
 ```
 
-**After completion**, as the first run (`sacct -X --name=longeval-engine-arm -S 2026-11-25 ...`), into
+**After completion**, as the first run (`sacct -X --name=longeval-engine-arm -S 2026-11-23 ...`), into
 `longeval-engine-arm-02-evidence.tar.gz` (never committed).
