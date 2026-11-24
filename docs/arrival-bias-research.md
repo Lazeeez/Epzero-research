@@ -900,7 +900,7 @@ versions, rebuild bytes and backlog.
 ### 8.2b Development screens so far (24 November 2026)
 
 Each design and prediction was committed before the run; the full records are `docs/screen-d1-*.md`
-to `docs/screen-d16-*.md` (D12 and D16 are speed work, section 12).
+to `docs/screen-d17-*.md` (D12 and D16 are speed work, section 12).
 
 | Screen | What | Result |
 | --- | --- | --- |
@@ -919,6 +919,7 @@ to `docs/screen-d16-*.md` (D12 and D16 are speed work, section 12).
 | D13 | `extra_backlinks` 8 with each snapshot's insertions refined, three seeds | Excess 0.63 → **0.28 pp** (rebuild 0.12); oldest +0.36, the same as the rebuild's; recall 0.9506 against 0.9509 with 4 links (failed narrowly). Sent to full scale |
 | D14 | Also refine the older nodes the new ones link to (`refine_links(around=True)`), or every node, after each snapshot | **Widens the gap** (prediction against): excess 0.28 → 0.58 / 0.55 pp, because the oldest cohort gains most (4.45 → 4.03 / 3.92%; newest 5.45 → 5.33 / 5.19%). Recall@100 0.9541 / 0.9552, above a rebuild's, for 4% more work. Nodes refined more often gain more: D8's asymmetry again. Not sent on |
 | D15 | Refine each new batch harder: width 100 instead of 50, or two passes at 50 | **Width 100: excess 0.28 → −0.08 pp**, below 0 on every seed and below a rebuild's 0.12; recall@100 0.9519 (rebuild 0.9520); oldest +0.42 against grown (rebuild +0.37); refine 15 s instead of 8; work +3%. Two passes: 0.38 (no gain). Sent to full scale (engine arm -03) |
+| D17 | A search width calibrated once on snapshot 1 and kept (the calibration leg), grown and repaired | Recall@100 falls 1.1 points (0.961 → 0.950) but ends at its 0.95 target, so the recall leg is **not shown** (prediction against). The drift is borne by later arrivals: snapshot-1 miss rate flat (3.89 → 3.82%), later cohorts 6.5–6.6%, excess 2.05 pp; recalibrating (200 → 250) restores the mean but leaves 1.68 pp. Repaired: excess 0.20 pp at the fixed width |
 
 `extra_backlinks` (design A in its online form: a stand-in for the later arrivals a new node has not
 had) plus refining each batch of new insertions is the lead repair. Both are on the Epzero branch
