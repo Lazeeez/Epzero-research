@@ -26,7 +26,7 @@ import numpy as np
 from .insertion_strata import risk_difference
 
 ARMS = ('grown', 'repaired', 'rebuilt')
-REPAIRS = ('repaired', 'repaired8')
+REPAIRS = ('repaired', 'repaired8', 'repaired8w')
 EFFECT_MAX_PP, OLDEST_MARGIN_PP, RECALL_MARGIN_PP = 1.0, 0.75, 0.5
 
 
