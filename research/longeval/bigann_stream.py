@@ -234,7 +234,8 @@ def analyze(sample, order_builds, engine_builds, *, ef=200):
             'global_position_shuffled': global_position(folder, ef=ef)}
     if engine_builds is not None:
         block = {}
-        for repair in ('repaired', 'repaired8'):
+        present = {f.name.rsplit('-', 1)[0] for f in Path(engine_builds).iterdir() if f.is_dir()}
+        for repair in [r for r in engine_arm_analysis.REPAIRS if r in present]:
             effect = order_pairs.compare(sample, engine_builds, 'grown', repair, ef=ef)
             margins = engine_arm_analysis.analyze(engine_builds, ef=ef, arm=repair)
             block[repair] = {'effect_gap_change': effect, 'margins': margins,
@@ -242,7 +243,7 @@ def analyze(sample, order_builds, engine_builds, *, ef=200):
                                           'oldest_no_harm': margins['decision']['oldest_no_harm'],
                                           'recall_no_harm': margins['decision']['recall_no_harm']}}
         block['within_block'] = {arm: within_block(sample, engine_builds, arm, ef=ef)
-                                 for arm in ('grown', 'repaired', 'repaired8', 'rebuilt')}
+                                 for arm in ('grown', *engine_arm_analysis.REPAIRS, 'rebuilt') if arm in present}
         out['engine'] = block
     return out
 
