@@ -96,3 +96,22 @@ recall@10 0.95, and at 0.98 where `one` reaches it, and is faster at 0.98 on SIF
 construction width without the walk as well (`engine/src/auto.cpp`). It goes to a PACE round against
 Glass on the VIBE datasets before it becomes the default, as round 11 does for the re-rank depth,
 with the build-time cost reported beside the speed gain. If it does not hold, nothing changes.
+
+## Correction (24 November 2026, while the replication was running, before its results were seen)
+
+The reading and the replication's decision above assumed that D16's `one` arm is the automatic
+build's setting. It is not. `epzero.build` defaults to efConstruction **200** (`Plan.ef_construction`,
+`AutoOptions::ef_construction`). Without the walk it refines at max(200 / 2, 2M) = **100**, which is
+D16's `wide` width. D16, like the engine arms, builds at efConstruction 100, where half the width is
+50. So:
+
+- What D16 shows: at efConstruction 100, a refine at width 100 beats one at 50 by up to 18–26% at
+  recall@10 0.98. A refine width of about 100 matters, whatever the construction width. It does not
+  show that the automatic build's halving is wrong. At efConstruction 200 the halving gives 100.
+- The automatic build's note (half of 200 gives the same graph as 200, GloVe-100 at 200K) is not
+  contradicted. D16 tested 50 against 100, not 100 against 200.
+- The replication's engine change is withdrawn. The replication still runs, as a check of the width
+  effect at efConstruction 100. That effect matters for the research product path, the engine arms,
+  and screen D15's choice of width 100 for new batches.
+- A product-default check comes next: at efConstruction 200, refine at 100 (today's) against 200,
+  on the three samples, as screen D16b (designed in its own section before it runs).
