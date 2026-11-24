@@ -114,7 +114,7 @@ def test_analyze_reads_order_and_engine_builds(stream, tmp_path):
                                 M=4, ef_construction=8, ef=10, efs=(10, 200))
     targets, cohort = np.load(sample / 'exact-top100.npy'), np.load(sample / 'cohort.npy')
     rng = np.random.default_rng(1)
-    for arm, newest_loss in (('grown', .3), ('repaired', .1), ('repaired8', .05), ('rebuilt', .05)):
+    for arm, newest_loss in (('grown', .3), ('repaired', .1), ('repaired8', .05), ('repaired8w', .05), ('rebuilt', .05)):
         for seed in (11, 29):
             out = tmp_path / 'engine' / f'{arm}-{seed}'
             out.mkdir(parents=True)
@@ -133,3 +133,5 @@ def test_analyze_reads_order_and_engine_builds(stream, tmp_path):
     assert out['order_faiss_hnsw']['global_position_shuffled']['seeds'] == [11, 29]
     assert out['engine']['repaired8']['decision']['effect'] is True
     assert out['engine']['repaired8']['effect_gap_change']['gap_change_pp']['value'] < 0
+    assert out['engine']['repaired8w']['decision']['effect'] is True
+    assert set(out['engine']['within_block']) == {'grown', 'repaired', 'repaired8', 'repaired8w', 'rebuilt'}
