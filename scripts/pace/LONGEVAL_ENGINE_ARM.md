@@ -170,3 +170,51 @@ done
 
 **After completion**, as the first run (`sacct -X --name=longeval-engine-arm -S 2026-11-23 ...`), into
 `longeval-engine-arm-02-evidence.tar.gz` (never committed).
+
+### Result of the second run (jobs 7265455–7265457, 24 November 2026)
+
+All three jobs passed; every evidence file verified against its job's checksums; the manifests match
+package -02 (engine commit `4d4a64cc`); the exact neighbours of both query sets matched the study's
+references; tests passed. Aggregates: `research/longeval/engine-arm-02-test.json` and
+`engine-arm-02-confirm.json` (second run's `grown` and `repaired8`, first run's `rebuilt`). Ef 200, seeds
+11, 29, 47 averaged within query, 10,000 bootstrap draws.
+
+| Reading | Arm | Newest-cohort excess | Oldest-cohort miss | Recall@100 |
+| --- | --- | --- | --- | --- |
+| Confirmation (100) | grown | 1.52 pp | 3.74% | 95.47% |
+| | repaired8 | −0.36 pp | 3.72% | 95.82% |
+| | rebuilt (first run) | −0.80 pp | 4.14% | 95.69% |
+| Development (381) | grown | 3.43 pp | 4.77% | 93.69% |
+| | repaired8 | 1.17 pp | 5.04% | 94.01% |
+| | rebuilt (first run) | 0.43 pp | 5.19% | 94.19% |
+
+repaired8 minus grown, with 95% intervals:
+
+- **Confirmation:** excess −1.87 [−3.00, −0.86]; oldest −0.02 [−0.98, +0.70]; recall +0.35 [−0.30, +1.19].
+- **Development:** excess −2.26 [−2.80, −1.75]; oldest +0.27 [+0.04, +0.48]; recall +0.32 [+0.10, +0.57].
+
+**Decision under the rules fixed beforehand:** the confirmation reading **passes** (the effect; the
+no-harm bounds, reported, are also inside the margins this time). The development reading **fails** on
+the absolute criterion: the excess falls by 66% with an interval excluding 0 and no harm by the margins
+(oldest upper bound +0.48 ≤ 0.75, recall up), but 1.17 points is above the 1.0 target.
+
+**Predictions:** "passes both readings": **failed** (development, 1.17 > 1.0). "Search work at ef 200
+within 5% of the 4-link arm's": held (3,016 against 3,009). "Insertion time at most 1.1× grown's": held
+(755 against 710 s single-threaded, 1.06×; with the 30 s of refine on all cores, 1.11×).
+
+**Against the first run's 4-link arm** (development): excess 1.54 → 1.17, oldest 4.89% → 5.04%, recall
+94.10% → 94.01%. Doubling the links removes a further 0.37 points; on the 300K sample it removed 0.35
+(0.63 → 0.28). At full scale the repair closes 75% of the gap between grown and rebuilt (3.43 → 1.17
+against 0.43), with 8 links; 62% with 4.
+
+**Reproduction check:** the second run's `grown` is not bit-identical to the first run's (the bulk build
+runs on all cores). Averaged over seeds, the development excess is 3.43 against 3.41, the oldest-cohort
+miss 4.77% against 4.85%, recall@100 93.69% against 93.61%; on the confirmation queries 1.52 against
+1.46 points, with one seed (29) differing by about a point of recall on 100 queries. Build-to-build
+variation of this size is why the paired contrasts use the same-job `grown`.
+
+**Reading:** a stronger setting helps, but with diminishing return; the remaining excess at full scale
+is not removed by more links alone. Bulk build and insertion leave the newest documents with a
+disadvantage that only a rebuild (0.43, itself not zero) removes. Under decision 2 the test queries are a
+development reading; the confirmation readings that decide the paper are the confirmation queries
+(passed by both settings), the BGE vectors and a public streaming workload.
