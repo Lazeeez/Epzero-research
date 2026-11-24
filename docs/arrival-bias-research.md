@@ -5,7 +5,10 @@ review: the headline is now the controlled order reversal with absolute risks; t
 "every miss is unreachable", IVF, wider-search, M 32 and cost statements are corrected; prior public
 proposals and new related work are added; the success criteria are absolute; and the plan adds
 paired target analysis, an equal-degree donor intervention, durability curves and an order-invariant
-partition baseline. It covers the research direction, the evidence, the literature
+partition baseline. Revision 3 (24 November 2026) adds the full-scale results that arrived that day:
+the order reversal confirmed on held-back queries with a paired target analysis, ten construction
+seeds and what calibration does, the first Epzero repair at full scale, and development screens
+D6–D11. It covers the research direction, the evidence, the literature
 review, current competing work, the plan for the engine, and the experiments that remain. Results
 marked *exploratory* were obtained after the frozen protocol (`FINAL_PROTOCOL_V1`) and are not part of
 it. The frozen study stays the record of what was pre-registered; nothing here changes it.
@@ -16,7 +19,7 @@ Companion material:
   with its source notes in [`research_notes/ANN index staleness bias/`](../research_notes/ANN%20index%20staleness%20bias/)
   (graph indexes, IVF and quantizers, benchmarks, IR and fairness, production systems).
 - Earlier evidence: [`research/longeval/HELDOUT_EXPLORATORY.md`](../research/longeval/HELDOUT_EXPLORATORY.md)
-  (sections 15–17) and the `insertion-*.json` aggregates in `research/longeval/`.
+  (sections 15–19) and the `insertion-*.json` aggregates in `research/longeval/`.
 
 ---
 
@@ -42,6 +45,15 @@ scientific documents; two independent HNSW implementations; public datasets as c
   The pre-specified contrast (rank-standardized ratio, as arrived minus reversed) was +0.77
   [0.58, 0.98] for Epzero and +0.62 [0.46, 0.80] for FAISS; the within-query version was added after
   inspecting that result.
+- **Confirmed on held-back queries, and reproduced exactly.** A rerun of the 18 full-scale builds
+  (two implementations, three orders, three seeds) reproduced every per-query table and searched the
+  100 LongEval-Sci training queries, never used for any arrival-order outcome. The pre-specified
+  contrast held: as arrived minus reversed, the newest cohort's within-query excess is **+3.11 points
+  [+1.33, +4.91] (Epzero) and +2.39 [+0.84, +3.97] (FAISS)** at ef 200. Paired at the level of single
+  (query, target) pairs, reversing the order changes the gap between the newest and oldest cohorts by
+  −4.04 points [−4.97, −3.10] on the test queries (Epzero; FAISS −3.38): individual losses move
+  between cohorts in both directions, with a large net transfer, while overall recall@100 moves by
+  at most 0.5 points.
 - **Random cohorts on public data** show the same pattern without any drift (SIFT: 1.92 as inserted,
   0.99 shuffled, 0.48 reversed; GloVe 1.17 / 0.99 / 0.80). The size varies a lot by workload.
 - **Relevant documents.** Among query–document pairs graded relevant in the exact top 10, HNSW drops
@@ -60,6 +72,10 @@ scientific documents; two independent HNSW implementations; public datasets as c
   (Epzero) and +0.58 pp (FAISS), while the ratio stays near 1.24–1.35. Existing repair passes narrow
   the in-degree gap (2.15× → about 1.4–1.5×) and reduce but do not remove the bias (1.13–1.26 at ef
   200–400).
+- **Calibration does not remove it.** Recalibrating the search width at every snapshot absorbs part
+  of the *average* drift (FAISS widened to ef 400 on six of ten seeds, and its nDCG gap barely moved
+  on those), but the calibrated arms still miss new relevant documents more often (section 4.1), and
+  calibration on training queries grows more optimistic as the collection grows (section 4.7b).
 - **Traversal, not ranking.** At ef 200 no missed target was ever scored: the search never expanded
   any node that links to it. Every scored exact target was returned. This diagnoses the traversal at
   that budget; it does not show the target is unreachable in the graph.
@@ -83,6 +99,14 @@ identical results under every insertion order. The cross-family taxonomy is ther
 hypotheses. The defensible, new claim is the controlled one: **in incremental HNSW, the physical
 position of a cohort in the build order changes which cohort loses exact neighbours, within the
 same queries and rank bands.**
+
+**A first repair, at full scale.** Two changes to how Epzero adds vectors (`extra_backlinks`: the
+closest construction candidates a new vector did not choose link back to it; and refining only the
+newest insertions) cut the newest cohort's excess in a grown 8-bit index from 3.41 to 1.54 points on
+the test queries and from 1.46 to −0.32 on the confirmation queries, with recall@100 +0.49 points,
+no harm to the oldest cohort (+0.04), 4% more insertion time and 2.5% more search work (section
+8.2b). It meets the effect criterion on the confirmation reading, but not yet the 1.0-point target on
+the test queries.
 
 **The plan.** (1) Pin down the mechanism (why in-degree repair leaves a residual). (2) Redesign how
 Epzero links new vectors so that retrievability does not depend on arrival order, at no loss in speed
@@ -506,14 +530,34 @@ new documents' *content* (where they land relative to the router). A direct test
 insertions into the identical trained IVF-Flat index with fixed probes and stable IDs; the results
 should not change. A family comparison should use a direct, paired HNSW-versus-IVF contrast.
 
+### 4.7b Calibration absorbs the average drift, not the arrival bias (ten seeds)
+
+The frozen study recalibrated each arm's search width at every snapshot to a target recall on the
+training queries. With ten construction seeds (`HELDOUT_EXPLORATORY.md` section 18):
+
+- **Average drift.** FAISS's calibration moved from ef 200 to 400 on six of ten seeds; on those six D
+  is −0.0005, on the four that stayed at 200 it is −0.0045. Widening the search as the collection grew
+  absorbed most of the growth in the nDCG gap. Epzero stayed at ef 200 on nine seeds; IVF never needed
+  more probes.
+- **Arrival bias.** Calibration targets mean recall, which the arrival bias barely moves (the
+  redistribution result, 4.6b). The calibrated arms still miss new relevant documents 2.0–2.9× as
+  often as old ones (4.1), and at ef 800 the newest cohort's ratio stays near 1.24–1.35 (4.2).
+- **Calibration optimism grows.** At the calibrated width the 50 calibration queries reach 0.012–0.017
+  higher recall than the 381 test queries for Epzero (0.009–0.012 for FAISS), and the difference grows
+  from snapshot 1 to 3: a measured case of search-width calibration depending on the index's history.
+
+So the frozen study's small D does not mean the index is order-neutral: an evaluation that tunes for
+the mean can hide which documents lose.
+
 ### 4.8 What has not been measured yet
 
 - How much of HNSW in-degree is position and how much is geometry (exact k-occurrence) — directly
   relevant to the SIGMOD 2026 hubness paper.
 - Whether the "timing minority" hypothesis holds in both directions (section 7.3).
 - IVF and quantizers under *induced* drift; global-range 8-bit quantization clipping of late arrivals.
-- Calibration staleness by cohort (ef calibrated on snapshot 1, held fixed).
-- A second real-timestamp collection, a second encoder (BGE-base-en-v1.5 is planned), more seeds.
+- Calibration staleness by cohort with the width calibrated on snapshot 1 and held fixed (the
+  growing optimism of recalibration is measured, 4.7b).
+- A second real-timestamp collection; the second encoder (BGE-base-en-v1.5 vectors are being encoded).
 - Other graph builders: hnswlib, Lucene (different reverse-link rule), Vamana/FreshVamana, NSG.
 - The Big-ANN streaming runbooks re-analysed by item age.
 
@@ -853,10 +897,10 @@ taken, scores and ties agree, and the final merge preserves it; once sealed it i
 errors. Probe immediately before and after sealing and compaction, and count query fan-out, dual
 versions, rebuild bytes and backlog.
 
-### 8.2b Development screens so far (23 November 2026)
+### 8.2b Development screens so far (24 November 2026)
 
 Each design and prediction was committed before the run; the full records are `docs/screen-d1-*.md`
-to `docs/screen-d5-*.md`.
+to `docs/screen-d11-*.md`.
 
 | Screen | What | Result |
 | --- | --- | --- |
@@ -870,12 +914,37 @@ to `docs/screen-d5-*.md`.
 | D7b | Diagnosis | Not the 8-bit construction (full-vector build: same excess, −32%). 8 links cut it 49%, but the oldest cohort rises 0.31 pp (limit 0.3). The larger product-path excess may come from the refine pass or 8-bit ranges trained on snapshot 1 only; untested |
 | D8 | Refine pass or stale 8-bit ranges? | The refine pass: without it the grown excess is 0.91 pp smaller; snapshot-1 ranges add only 0.27 pp (quantizer staleness small without drift) |
 | D9 | Refine each snapshot's insertions (new `refine_links(first=...)`), alone and with `extra_backlinks` 4 | Alone −31% (prediction against). **Together −77%** (2.27 → 0.53 pp); recall@100 0.9509 against the rebuild's 0.9522; oldest +0.29 pp; 8 s of refine on all cores instead of a 49 s rebuild. **Lead product design** |
+| D10 | D9's combination on two more seeds | Cut 66–77% on every seed (mean 2.22 → 0.63 pp); recall@100 +0.33 to +0.36 points; oldest +0.20 to +0.29. Within 0.5 pp of the rebuild failed narrowly (0.502) |
+| D11 | `extra_backlinks` and the refine pass in the automatic build (`epzero.build`), as a speed change | Not a general speed-up there (predictions against): on top of refine, 4 links are 6–11% slower on SIFT, 4–10% faster on GloVe, neutral on LongEval; without refine, builds are 33–37% faster but search 10–15% slower at recall@10 0.95, and links recover only part of it. **Stays opt-in**, as the repair for growing indexes |
 
 `extra_backlinks` (design A in its online form: a stand-in for the later arrivals a new node has not
-had) is the lead candidate, with 4 as the candidate default. It is on the Epzero branch
-`min-backlinks`, off by default. Before any claim: three seeds per arm, timing on a PACE node, the
-compressed (SQ8) configuration, then the confirmation readings (BGE vectors, a public streaming
-workload) and the margins of decision 3.
+had) plus refining each batch of new insertions is the lead repair. Both are on the Epzero branch
+`min-backlinks`, off by default; D11 shows they should stay off by default for a one-off build and be
+used for indexes that keep growing.
+
+**Full-scale engine arm** (`scripts/pace/LONGEVAL_ENGINE_ARM.md`; jobs 7254793–95, 24 November 2026;
+8-bit codes, refined bulk build of snapshot 1, snapshots 2–3 inserted one at a time; three seeds; ef
+200; design and predictions committed first):
+
+| Reading | Arm | Newest-cohort excess | Oldest-cohort miss | Recall@100 |
+| --- | --- | --- | --- | --- |
+| Confirmation (100 queries) | grown | 1.46 pp | 3.41% | 95.76% |
+| | repaired (4 links + refine new) | −0.32 pp | 3.69% | 95.84% |
+| | rebuilt | −0.80 pp | 4.14% | 95.69% |
+| Development (381 queries) | grown | 3.41 pp | 4.85% | 93.61% |
+| | repaired | 1.54 pp | 4.89% | 94.10% |
+| | rebuilt | 0.43 pp | 5.19% | 94.19% |
+
+Repaired minus grown: confirmation excess −1.78 [−3.06, −0.76], oldest +0.28 [−0.13, +0.87], recall
++0.08 [−0.42, +0.45]; development excess −1.87 [−2.41, −1.36], oldest +0.04 [−0.18, +0.25], recall
++0.49 [+0.27, +0.75]. Under decision 3 the confirmation reading **passes** (interval excludes 0, point
+under 1.0; non-harm reported with its interval, whose upper end +0.87 exceeds 0.75 on 100 queries).
+The development reading **fails** the absolute target (1.54 > 1.0) while halving the excess with no
+harm; the prediction "passes on both" therefore failed. Cost: later insertions +4% (702 → 733 s),
+30 s of refine on all cores, 2.5% more distance computations. The rebuild reaches a lower excess but
+raises the oldest cohort's miss rate (+0.34 to +0.73 points) and needs a 182 s bulk build. Next: a
+stronger setting (8 links, which cut more on the development sample in D7b, with the oldest cohort
+watched), then the BGE and public streaming confirmation readings before 1 March 2027.
 
 ### 8.3 Baselines every design must beat
 
@@ -1000,12 +1069,16 @@ public streaming workloads. Kept separate so the two do not double-publish.
 
 ## 12. Other work in progress
 
-- **Further construction seeds** for the held-out primary arms (seven seeds; package built, design and
-  prediction recorded in `scripts/pace/LONGEVAL_HELDOUT_SEEDS.md`; not yet submitted).
-- **Second encoder**: BGE-base-en-v1.5 replication of the held-out design (predictions to be recorded
-  before any vectors exist).
-- **Engine performance**: round 10 kernel and speed results, and the VIBE submission (three datasets).
-- **Label follow-up and human audit**: waiting on the advisor's decisions.
+- **Further construction seeds**: done (ten seeds, sections 2.1 and 4.7b).
+- **Order rerun with returned IDs**: done (confirmation, reproduction and paired analysis, section 1).
+- **Full-scale engine arm**: done (section 8.2b); a stronger setting is next.
+- **Second encoder**: BGE-base-en-v1.5 (revision and predictions recorded in
+  `research/longeval/docs/protocol/E4_SECOND_ENCODER.md`); the encoding job is queued on PACE.
+- **Engine performance**: round 10 kernels and the VIBE runs are recorded in Epzero's
+  `docs/performance.md`; the VIBE submission is ready. Screens D11 (extra links and refine as a speed
+  change: no) and D12 (the re-rank ceiling of the principal-direction walk) are the current speed work.
+- **Arrival-order human audit**: kit built (balanced census, amendment 2); grading and a second
+  annotator are pending.
 
 ---
 
