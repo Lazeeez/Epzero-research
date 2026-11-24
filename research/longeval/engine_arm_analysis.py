@@ -1,9 +1,10 @@
 """Pre-registered contrasts of the repaired-Epzero arm (design: scripts/pace/LONGEVAL_ENGINE_ARM.md).
 
-    python -m research.longeval.engine_arm_analysis BUILDS OUTPUT.json [--confirm]
+    python -m research.longeval.engine_arm_analysis BUILDS OUTPUT.json [--confirm] [--arm repaired8]
 
 BUILDS holds `{arm}-{seed}/` folders from `engine_arm` (any number of job folders may be merged into
-it). Per arm, seeds are averaged within each query; contrasts are paired by query, with a query
+it). `--arm` names the repair tested against `grown` and `rebuilt` (default `repaired`; other arms
+present are ignored). Per arm, seeds are averaged within each query; contrasts are paired by query, with a query
 bootstrap. Margins are those of decision 3 in docs/arrival-bias-research.md:
 
   effect      the newest cohort's within-query excess (snapshot 3 against 1) is lower in `repaired`
@@ -25,20 +26,21 @@ import numpy as np
 from .insertion_strata import risk_difference
 
 ARMS = ('grown', 'repaired', 'rebuilt')
+REPAIRS = ('repaired', 'repaired8')
 EFFECT_MAX_PP, OLDEST_MARGIN_PP, RECALL_MARGIN_PP = 1.0, 0.75, 0.5
 
 
-def tables(builds, *, ef=200, prefix=''):
-    """{arm: seed-averaged per-query table}, and the seeds found for each arm (all arms must share them)."""
+def tables(builds, *, ef=200, prefix='', arms=ARMS):
+    """{arm: seed-averaged per-query table} for `arms`, and their seeds (all of them must share the seeds)."""
     found = {}
     for folder in sorted(Path(builds).glob('*-*')):
         arm, seed = folder.name.rsplit('-', 1)
-        if arm in ARMS and (folder / f'{prefix}per-query-ef{ef}.npy').exists():
+        if arm in arms and (folder / f'{prefix}per-query-ef{ef}.npy').exists():
             found.setdefault(arm, {})[int(seed)] = np.load(folder / f'{prefix}per-query-ef{ef}.npy').astype(float)
-    if set(found) != set(ARMS) or len({tuple(sorted(s)) for s in found.values()}) != 1:
+    if set(found) != set(arms) or len({tuple(sorted(s)) for s in found.values()}) != 1:
         raise ValueError(f'every arm needs the same seeds; found { {a: sorted(s) for a, s in found.items()} }')
     seeds = sorted(next(iter(found.values())))
-    return {arm: np.mean([found[arm][s] for s in seeds], axis=0) for arm in ARMS}, seeds
+    return {arm: np.mean([found[arm][s] for s in seeds], axis=0) for arm in arms}, seeds
 
 
 def oldest(t):
@@ -52,26 +54,29 @@ def recall(t):
 STATISTICS = {'newest_excess': lambda t: risk_difference(t, 3), 'oldest_miss': oldest, 'recall_at_100': recall}
 
 
-def analyze(builds, *, ef=200, confirm=False, draws=10_000, seed=20261124):
-    by_arm, seeds = tables(builds, ef=ef, prefix='confirm-' if confirm else '')
+def analyze(builds, *, ef=200, confirm=False, draws=10_000, seed=20261124, arm='repaired'):
+    if arm not in REPAIRS:
+        raise ValueError(f'unknown repair arm {arm!r}')
+    repair = arm
+    by_arm, seeds = tables(builds, ef=ef, prefix='confirm-' if confirm else '', arms=('grown', repair, 'rebuilt'))
     nq = next(iter(by_arm.values())).shape[0]
     rows = np.random.default_rng(seed).integers(0, nq, (draws, nq))
-    point = {arm: {name: 100 * float(f(t)) for name, f in STATISTICS.items()} for arm, t in by_arm.items()}
+    point = {label: {name: 100 * float(f(t)) for name, f in STATISTICS.items()} for label, t in by_arm.items()}
     contrasts = {}
-    for a, b in (('repaired', 'grown'), ('rebuilt', 'grown'), ('repaired', 'rebuilt')):
+    for a, b in ((repair, 'grown'), ('rebuilt', 'grown'), (repair, 'rebuilt')):
         block = {}
         for name, f in STATISTICS.items():
             sample = np.array([100 * (f(by_arm[a][r]) - f(by_arm[b][r])) for r in rows])
             block[name] = {'value': point[a][name] - point[b][name],
                            'interval_95': np.quantile(sample, [.025, .975]).tolist()}
         contrasts[f'{a}_minus_{b}'] = block
-    c = contrasts['repaired_minus_grown']
+    c = contrasts[f'{repair}_minus_grown']
     decision = {
-        'effect': bool(c['newest_excess']['interval_95'][1] < 0 and point['repaired']['newest_excess'] <= EFFECT_MAX_PP),
+        'effect': bool(c['newest_excess']['interval_95'][1] < 0 and point[repair]['newest_excess'] <= EFFECT_MAX_PP),
         'oldest_no_harm': bool(c['oldest_miss']['interval_95'][1] <= OLDEST_MARGIN_PP),
         'recall_no_harm': bool(-c['recall_at_100']['interval_95'][0] <= RECALL_MARGIN_PP)}
     decision['passed'] = decision['effect'] if confirm else all(decision.values())
-    return {'kind': 'repaired-Epzero arm, pre-registered contrasts (aggregates only)', 'ef': ef,
+    return {'kind': 'repaired-Epzero arm, pre-registered contrasts (aggregates only)', 'ef': ef, 'repair': repair,
             'queries': 'confirmation (100 training queries)' if confirm else 'test (381)', 'query_count': int(nq),
             'seeds': seeds, 'bootstrap': {'draws': draws, 'seed': seed, 'unit': 'query, seeds averaged within query'},
             'margins_pp': {'effect_max': EFFECT_MAX_PP, 'oldest': OLDEST_MARGIN_PP, 'recall': RECALL_MARGIN_PP},
@@ -84,8 +89,9 @@ def main():
     parser.add_argument('output', type=Path)
     parser.add_argument('--ef', type=int, default=200)
     parser.add_argument('--confirm', action='store_true')
+    parser.add_argument('--arm', choices=REPAIRS, default='repaired')
     a = parser.parse_args()
-    out = analyze(a.builds, ef=a.ef, confirm=a.confirm)
+    out = analyze(a.builds, ef=a.ef, confirm=a.confirm, arm=a.arm)
     a.output.write_text(json.dumps(out, indent=2) + '\n')
     print(json.dumps({'arms': out['arms'], 'decision': out['decision']}, indent=2))
 
