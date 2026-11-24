@@ -129,3 +129,36 @@ every recall@10 target on all three, and its refine takes about twice as long.
 two datasets, with no target worse by more than 2%, it goes to a PACE round against Glass on the
 VIBE datasets as a candidate default, with its build-time cost. Otherwise nothing changes, and the
 note stands with this measurement added.
+
+## Replication result (seeds 29 and 47, run 24 November 2026)
+
+Width 100 (`wide`) against 50 (`one`) at efConstruction 100. Change in distance computations and in
+queries per second at recall@10 0.90 / 0.95 / 0.98 / 0.99 ("—": `one` does not reach the target). Seed 11
+is repeated from above. Raw results are in `Oryx/build/screen-d16/*-s29.json` and `*-s47.json`.
+
+| Dataset | Seed | Distance computations | Queries per second | Build |
+| --- | --- | --- | --- | --- |
+| SIFT | 11 | −0.2 / −1.9 / −3.8 / −1.2% | +6.0 / +5.3 / +18.1 / +11.0% | 5.2 → 7.4 s |
+| | 29 | −2.6 / −3.2 / −4.2 / −0.2% | −2.3 / +5.3 / +9.9 / −2.6% | 5.6 → 7.2 s |
+| | 47 | −1.2 / **+0.4** / −1.5 / +2.0% | +2.2 / −2.2 / +9.5 / +6.1% | 5.2 → 8.1 s |
+| GloVe | 11 | −4.1 / −8.0% / — / — | +7.7 / +13.5% / — / — | 7.0 → 8.9 s |
+| | 29 | −1.2 / −6.2% / — / — | −0.9 / +13.6% / — / — | 6.8 → 8.6 s |
+| | 47 | −3.2 / −3.1% / — / — | +13.2 / +6.0% / — / — | 6.9 → 8.2 s |
+| LongEval | 11 | +3.3 / +1.2 / −19.4 / −7.2% | −3.9 / +8.3 / +26.1 / +11.7% | 47 → 68 s |
+| | 29 | −5.3 / −2.0 / −21.0 / −20.5% | +11.0 / +3.5 / +36.4 / +32.4% | 51 → 64 s |
+| | 47 | −4.6 / −9.2 / −12.7 / −7.2% | +8.9 / +11.8 / +19.8 / +13.1% | 48 → 63 s |
+
+On GloVe `one` peaks at recall@10 0.9757–0.9771 within the sweep, and `wide` at 0.9800–0.9807 on every seed.
+
+**Prediction** ("on every seed and dataset, `wide` needs fewer distance computations at 0.95, and at
+0.98 where `one` reaches it, and is faster at 0.98 on SIFT and LongEval"): **failed in one of its ten
+cells**. On SIFT seed 47, `wide` needs 0.4% more distance computations at 0.95. All other cells held. It
+is faster at 0.98 on every seed of SIFT (+9.5 to +18.1%) and LongEval (+19.8 to +36.4%).
+
+**Reading:** at efConstruction 100, a refine at width 100 rather than 50 makes a better graph at high
+recall. The effect is large on LongEval's 2,560-d vectors (13–21% less work at 0.98), clear on GloVe
+(3–8% less at 0.95, and a higher ceiling within the sweep), and small on SIFT (within ±4%). The build
+takes 25–55% longer. Under the correction above, this does not change the automatic build, which
+already refines at 100. What it supports is the width-100 refine in the repair (screen D15, the third
+engine arm), and refining at 100 in the research product path generally. Whether 200 beats 100 at the
+build's defaults is D16b.
