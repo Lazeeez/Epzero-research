@@ -1,0 +1,116 @@
+{
+  "kind": "repaired-Epzero arm, pre-registered contrasts (aggregates only)",
+  "ef": 200,
+  "repair": "repaired8",
+  "queries": "test (381)",
+  "query_count": 381,
+  "seeds": [
+    11,
+    29,
+    47
+  ],
+  "bootstrap": {
+    "draws": 10000,
+    "seed": 20261124,
+    "unit": "query, seeds averaged within query"
+  },
+  "margins_pp": {
+    "effect_max": 1.0,
+    "oldest": 0.75,
+    "recall": 0.5
+  },
+  "arms": {
+    "grown": {
+      "newest_excess": 3.43020878797699,
+      "oldest_miss": 4.769136055817771,
+      "recall_at_100": 93.68503937007874
+    },
+    "repaired8": {
+      "newest_excess": 1.1748591024910562,
+      "oldest_miss": 5.0372802517272035,
+      "recall_at_100": 94.00699912510936
+    },
+    "rebuilt": {
+      "newest_excess": 0.42626372917336575,
+      "oldest_miss": 5.185033176003831,
+      "recall_at_100": 94.18810148731409
+    }
+  },
+  "contrasts": {
+    "repaired8_minus_grown": {
+      "newest_excess": {
+        "value": -2.2553496854859336,
+        "interval_95": [
+          -2.798526859726953,
+          -1.746296338281473
+        ]
+      },
+      "oldest_miss": {
+        "value": 0.26814419590943217,
+        "interval_95": [
+          0.044729936656585784,
+          0.48030759391252875
+        ]
+      },
+      "recall_at_100": {
+        "value": 0.321959755030619,
+        "interval_95": [
+          0.0970909886264232,
+          0.5721784776902883
+        ]
+      }
+    },
+    "rebuilt_minus_grown": {
+      "newest_excess": {
+        "value": -3.003945058803624,
+        "interval_95": [
+          -3.7791999323850503,
+          -2.2929319806513084
+        ]
+      },
+      "oldest_miss": {
+        "value": 0.4158971201860595,
+        "interval_95": [
+          0.09383582296298572,
+          0.7419749910173202
+        ]
+      },
+      "recall_at_100": {
+        "value": 0.5030621172353449,
+        "interval_95": [
+          0.1732283464566886,
+          0.8372922134733187
+        ]
+      }
+    },
+    "repaired8_minus_rebuilt": {
+      "newest_excess": {
+        "value": 0.7485953733176904,
+        "interval_95": [
+          0.09887634392717311,
+          1.453790986403682
+        ]
+      },
+      "oldest_miss": {
+        "value": -0.14775292427662734,
+        "interval_95": [
+          -0.45940520499263066,
+          0.15952425380316126
+        ]
+      },
+      "recall_at_100": {
+        "value": -0.18110236220472586,
+        "interval_95": [
+          -0.483836395450567,
+          0.13385826771653564
+        ]
+      }
+    }
+  },
+  "decision": {
+    "effect": false,
+    "oldest_no_harm": true,
+    "recall_no_harm": true,
+    "passed": false
+  }
+}
