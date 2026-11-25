@@ -1,0 +1,165 @@
+{
+  "kind": "Analysis R2 (docs/analysis-r2-repair-relevance.md): the repair and ranked relevance, aggregates only",
+  "snapshot": 3,
+  "width": 200,
+  "top": 10,
+  "queries": 374,
+  "seeds": [
+    11,
+    29,
+    47
+  ],
+  "ungraded_pairs": 11,
+  "bootstrap": {
+    "draws": 10000,
+    "unit": "query, seeds averaged within query"
+  },
+  "arms": {
+    "grown": {
+      "net_gain_ndcg10": {
+        "official": -0.008981208897453585,
+        "local_full": -0.006734083814440924,
+        "local_full_ungraded_at_3": -0.005713403078964877
+      },
+      "relevant_dropped_share_by_arrival_group": {
+        "official": {
+          "1": 0.016576124808469147,
+          "2": 0.04589917231000752,
+          "3": 0.0429769392033543
+        },
+        "local_full": {
+          "1": 0.017566048341765037,
+          "2": 0.04157043879907621,
+          "3": 0.04540763673890609
+        },
+        "local_full_ungraded_at_3": {
+          "1": 0.017566048341765037,
+          "2": 0.04157043879907621,
+          "3": 0.04540763673890609
+        }
+      },
+      "substitutes_per_query": 0.33868092691622104,
+      "substitutes_officially_graded_share": 0.25526315789473686,
+      "substitutes_local_relevant_share": 0.4
+    },
+    "repaired8w": {
+      "net_gain_ndcg10": {
+        "official": -0.008156469354972383,
+        "local_full": -0.00643251098475669,
+        "local_full_ungraded_at_3": -0.005921386049963115
+      },
+      "relevant_dropped_share_by_arrival_group": {
+        "official": {
+          "1": 0.0157403538097228,
+          "2": 0.033860045146726865,
+          "3": 0.020964360587002098
+        },
+        "local_full": {
+          "1": 0.016301292861157952,
+          "2": 0.030792917628945343,
+          "3": 0.021671826625386997
+        },
+        "local_full_ungraded_at_3": {
+          "1": 0.016301292861157952,
+          "2": 0.030792917628945343,
+          "3": 0.021671826625386997
+        }
+      },
+      "substitutes_per_query": 0.30303030303030304,
+      "substitutes_officially_graded_share": 0.2323529411764706,
+      "substitutes_local_relevant_share": 0.3205882352941177
+    },
+    "rebuilt": {
+      "net_gain_ndcg10": {
+        "official": -0.0065164209428808595,
+        "local_full": -0.005116580206005705,
+        "local_full_ungraded_at_3": -0.003885557974230282
+      },
+      "relevant_dropped_share_by_arrival_group": {
+        "official": {
+          "1": 0.013929516645772392,
+          "2": 0.0398796087283672,
+          "3": 0.02410901467505241
+        },
+        "local_full": {
+          "1": 0.01475548060708263,
+          "2": 0.03387220939183987,
+          "3": 0.02476780185758514
+        },
+        "local_full_ungraded_at_3": {
+          "1": 0.01475548060708263,
+          "2": 0.03387220939183987,
+          "3": 0.02476780185758514
+        }
+      },
+      "substitutes_per_query": 0.31016042780748665,
+      "substitutes_officially_graded_share": 0.28735632183908044,
+      "substitutes_local_relevant_share": 0.34770114942528735
+    }
+  },
+  "contrasts": {
+    "repaired8w_minus_grown": {
+      "official": {
+        "mean_difference": 0.0008247395424812011,
+        "percentile_interval": [
+          -0.0027816073516025146,
+          0.004125730138954801
+        ],
+        "two_sided_randomization_p": 0.6593734062659373
+      },
+      "local_full": {
+        "mean_difference": 0.0003015728296842325,
+        "percentile_interval": [
+          -0.0033367210037829505,
+          0.0035443679397390445
+        ],
+        "two_sided_randomization_p": 0.8768712312876871
+      },
+      "local_full_ungraded_at_3": {
+        "mean_difference": -0.0002079829709982376,
+        "percentile_interval": [
+          -0.0036179022946439647,
+          0.002472581618392734
+        ],
+        "two_sided_randomization_p": 0.8985110148898511
+      }
+    },
+    "rebuilt_minus_grown": {
+      "official": {
+        "mean_difference": 0.002464787954572724,
+        "percentile_interval": [
+          -0.00013544264360502693,
+          0.005522099477753362
+        ],
+        "two_sided_randomization_p": 0.08506914930850691
+      },
+      "local_full": {
+        "mean_difference": 0.0016175036084352175,
+        "percentile_interval": [
+          -0.0005285625650655593,
+          0.004208803376896038
+        ],
+        "two_sided_randomization_p": 0.1988580114198858
+      },
+      "local_full_ungraded_at_3": {
+        "mean_difference": 0.0018278451047345954,
+        "percentile_interval": [
+          -0.0002880905439078264,
+          0.004283387925721042
+        ],
+        "two_sided_randomization_p": 0.12436875631243688
+      }
+    }
+  },
+  "prediction": {
+    "interval_within_0.01": {
+      "official": true,
+      "local_full": true
+    },
+    "repaired_drops_fewer_newest": {
+      "official": true,
+      "local_full": true
+    },
+    "bound_moves_below_0.002": true
+  }
+}
