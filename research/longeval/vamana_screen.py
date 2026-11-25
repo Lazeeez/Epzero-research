@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import subprocess
 import time
 from pathlib import Path
@@ -34,8 +35,12 @@ def driver(cache):
     digest = hashlib.sha256(SOURCE.read_bytes()).hexdigest()[:16]
     binary = Path(cache) / f'vamana_driver-{digest}'
     if not binary.exists():
+        # Compiled to a private file and renamed into place, so that builds started together never run a
+        # binary another one is still writing ("Text file busy").
         binary.parent.mkdir(parents=True, exist_ok=True)
-        subprocess.run(['g++', '-O3', '-march=native', '-std=c++17', str(SOURCE), '-o', str(binary)], check=True)
+        partial = binary.with_name(f'{binary.name}.{os.getpid()}.partial')
+        subprocess.run(['g++', '-O3', '-march=native', '-std=c++17', str(SOURCE), '-o', str(partial)], check=True)
+        os.replace(partial, binary)
     return binary
 
 
