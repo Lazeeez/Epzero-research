@@ -71,3 +71,55 @@ beside them.
 
 A result against a prediction is reported as such. Aggregates only: no LongEval identifiers, texts or
 vectors leave the WSL folders.
+
+## Result (26 November 2026)
+
+Eight builds (`research/longeval/accumulation.py`; aggregates `research/longeval/m1-accumulation.json`), Epzero
+0.5.0, all completed. In the appended builds the two seeds give near-identical graphs (Epzero's seed sets
+only the level draws). Per insertion tenth, shuffled builds, mean over the two seeds:
+
+| | 1st | 2nd | 3rd | 4th | 5th | 6th | 7th | 8th | 9th | 10th |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| LongEval: chosen by later arrivals, C | 40.7 | 23.7 | 17.0 | 12.8 | 9.7 | 7.2 | 5.2 | 3.5 | 1.9 | 0.62 |
+| LongEval: exposure prediction, E | 40.3 | 23.6 | 17.1 | 12.9 | 9.8 | 7.3 | 5.3 | 3.5 | 2.0 | 0.63 |
+| LongEval: links from later nodes kept, S | 26.7 | 20.2 | 15.8 | 12.4 | 9.6 | 7.2 | 5.2 | 3.5 | 1.9 | 0.62 |
+| LongEval: links from earlier nodes, R | 2.7 | 5.2 | 6.8 | 8.0 | 9.1 | 9.9 | 10.6 | 11.1 | 11.5 | 11.8 |
+| SIFT: C | 38.3 | 23.0 | 16.9 | 12.8 | 9.7 | 7.3 | 5.2 | 3.5 | 2.0 | 0.63 |
+| SIFT: E | 38.0 | 23.0 | 16.9 | 12.8 | 9.8 | 7.3 | 5.3 | 3.5 | 2.0 | 0.64 |
+| SIFT: S | 26.0 | 20.0 | 15.8 | 12.5 | 9.6 | 7.3 | 5.2 | 3.5 | 2.0 | 0.63 |
+| SIFT: R | 2.6 | 5.3 | 7.0 | 8.3 | 9.4 | 10.2 | 10.9 | 11.4 | 11.8 | 12.1 |
+
+Each insertion chooses 12.2 (LongEval) or 11.9 (SIFT) neighbours on average.
+
+**Predictions:**
+
+1. **Exposure explains the choices — held, 8 of 8.** Exposure accounts for 99% of the first-to-last-tenth
+   difference in C in shuffled builds (0.989–0.993) and 102–108% in appended ones, and matches C to within
+   about 1% in every tenth of the shuffled builds. A new node chooses an existing node with probability close
+   to k/(j − 1) whatever its age: there is no measurable rich-get-richer term in construction, only exposure.
+2. **S is linear in ln(n/i) — held in 3 of 4 shuffled builds** (R² 0.957, 0.957, 0.9505; SIFT seed 29: 0.9496,
+   just below 0.95), not in appended ones (0.93, where content order bends the curve). Slope 8.5–8.7 links per
+   unit of ln(n/i), below the 12 chosen because pruning removes a third of the oldest tenth's incoming links
+   (66–69% survive) and almost none of the rest's. **R is flat — failed, 0 of 8:** R rises from 2.6–3.2 in the
+   first tenth to 11.7–12.1 in the last. A late node keeps nearly all of its own reverse links; an early node
+   loses most of them as the neighbours it chose fill up with later arrivals.
+3. **The in-degree gap never closes — failed, 0 of 8.** Between the first and fifth twentieths, the gap in
+   mean in-degree shrinks by 26–37% from the 50% checkpoint to the end (LongEval shuffled 10.4 → 7.7). It
+   closes, slowly, because the oldest nodes' incoming links are pruned.
+4. **The newest are always disadvantaged — held, 8 of 8:** the newest tenth's within-query miss ratio against
+   the first tenth is 1.3–1.9 (LongEval) and 2.3–4.5 (SIFT) at every checkpoint from 10% on. **A fixed group
+   keeps more than half of its excess** (read as the excess ratio − 1; the design's literal wording, a ratio
+   above half its value, holds trivially) **— held in 5 of 8:** the fifth tenth's ratio goes from 1.53–1.56
+   at 50% to 1.17–1.47 at 100% on LongEval and from 2.27–2.88 to 1.42–1.94 on SIFT; the three failures are
+   shuffled builds.
+
+**The model, as measured.** A node inserted at position i of n ends with in-degree
+
+  in(i) ≈ s(i) · k̄ · ln(n / i) + r(i),
+
+where the first term is exposure (every later arrival chooses it with probability k̄ / (j − 1)), s(i) is the
+share of those choices that survive pruning (0.66 for the oldest tenth, about 1 for the rest), and r(i) is the
+reverse links it keeps (about k̄ for the newest, a few for the oldest). The newest nodes therefore have
+in-degree close to k̄ (about 12), the oldest about 2.4 k̄ (about 29), on any data and in any order, and the
+gap fades only as fast as pruning trims the oldest. That is why an extra-link repair works: it gives each
+insertion the incoming links that exposure would otherwise give it only over the rest of the build.
