@@ -100,8 +100,9 @@ keep bitwise-identical vectors, and encode queries with the organiser-specified 
 prompt. The 100 training queries are split into 50 calibration and 50 development queries; the 381
 test queries were used once, after the protocol was frozen.
 
-**Arms.** Every index is built single-threaded on Intel Xeon Gold 6226 nodes with construction seeds
-11, 29 and 47.
+**Arms.** Two HNSW implementations, FAISS 1.16 and Epzero 0.5 (an open-source C++ library), separate
+properties of HNSW from those of one code base. Every index is built single-threaded on Intel Xeon Gold
+6226 nodes with construction seeds 11, 29 and 47.
 
 | Arm | Construction | Search settings |
 | --- | --- | --- |
@@ -321,7 +322,7 @@ cost in ranked relevance is within ±0.01.
 **A repair.** Late insertions lack the incoming links that earlier documents keep receiving from later
 arrivals. We give each insertion eight more, from its closest construction candidates that it did not
 choose, and refine each new batch once, with a search width of 100, at the batch's end. In Epzero's
-production path (8-bit codes; snapshot 1 bulk-built, snapshots 2 and 3 inserted) on all 1,661,900
+default build path (8-bit codes; snapshot 1 bulk-built, snapshots 2 and 3 inserted) on all 1,661,900
 documents, the within-query excess miss rate of snapshot-3 over snapshot-1 arrivals at ef 200 falls from
 3.36 to 0.57 points on the test queries (change −2.79 [−3.41, −2.21]) and from 1.12 to −0.37 on the
 100 training queries; a full rebuild gives 0.43 and −0.80. The oldest arrivals' miss rate changes by
