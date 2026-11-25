@@ -14,7 +14,7 @@ points against the 1.0 target (a rebuild gives 0.43).
 
 ## Design
 
-As D13 (product path on the 300K development sample: 8-bit codes, `fast_build`, M 16,
+As D13 (default build path on the 300K development sample: 8-bit codes, `fast_build`, M 16,
 efConstruction 100; snapshot 1 bulk-built and refined at width 50; snapshots 2 and 3 inserted one at a
 time; `extra_backlinks` 8; seeds 11, 29, 47; test queries; ef 100, 200, 400). Only the refine of each
 later snapshot's insertions changes (`refine_links(first=position before the snapshot)`; no engine
