@@ -5,7 +5,7 @@ limitation of the repair result: it was confirmed by neighbour recall only.
 
 ## Data
 
-The full-scale engine arm, run 3 (`LONGEVAL_ENGINE_ARM.md`; Epzero's production path, all 1,661,900
+The full-scale engine arm, run 3 (`LONGEVAL_ENGINE_ARM.md`; Epzero's default build path, all 1,661,900
 documents, seeds 11, 29, 47): arms `grown`, `repaired8w` (8 extra links, each later batch refined at
 width 100) and `rebuilt`, the 381 test queries' returned IDs at ef 200 (`labels-ef200.npy`). Labels: the
 official GPT-OSS-120B grades at snapshot 3 and the local judge's full grades of the judging pool (E1, job
