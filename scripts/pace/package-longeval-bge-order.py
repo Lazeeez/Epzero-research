@@ -1,7 +1,7 @@
 """Package E4 on the BGE vectors: the arrival-order reversal and the engine arm (LONGEVAL_BGE_ORDER.md).
 
 Usage, from the repository root:
-    python scripts/pace/package-longeval-bge-order.py BUILD_DIR ORYX_DIR
+    python scripts/pace/package-longeval-bge-order.py BUILD_DIR EPZERO_SOURCE
 
 Holds the research code, the job script, the Epzero `engine` folder of `main` (tracked files only, via
 git archive; its commit recorded) and the Qwen order rerun's sample metadata (document order, arrival
