@@ -43,3 +43,16 @@ the only difference between them): as arrived above 1.10, shuffled within [0.90,
 0.95; and in shuffled builds, mean in-degree of the first insertion decile exceeds the last decile's by at
 least 30%. If the ratios fail, the arrival gradient is specific to HNSW's insertion rule, and that is
 reported.
+
+## Addendum: DiskANN's own library (26 November 2026, before any run of it)
+
+With the author's approval, DiskANN's Python package was installed in its own WSL environment
+(`~/diskann-venv`, Python 3.11): `diskannpy` 0.7.0, wheel `diskannpy-0.7.0-cp311-cp311-manylinux_2_28_x86_64.whl`,
+PyPI SHA-256 cf9af7b23453e3c20551cfc7949324d1ee309bd5a8f6aee20853084299ad837d, with numpy 1.25.0. The screen
+adds a second Vamana backend, `diskann`, beside the independent driver: `DynamicMemoryIndex` (FreshDiskANN's
+in-memory dynamic index) with distance `l2`, graph degree 32, build complexity 100, α 1.2, one frozen start
+point (the library's default), one thread, one `insert` call per vector in the insertion order (tag = sample
+position + 1); searched with complexity 100, 200, 400 and 800, k 100. In-degree is read from the saved
+graph file (each location's neighbour list, the frozen point excluded) through the saved tags. Same data,
+orders, measures and predictions as above; the two backends' ratios are reported side by side. No DiskANN
+build or search had been run on study data when this was written.
