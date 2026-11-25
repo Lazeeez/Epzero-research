@@ -34,3 +34,24 @@ From Analysis C (the order effect is not detectable at the top 10 with 374 queri
 `repaired8w − grown` lies within ±0.01 under both label sets; the repaired arm drops a smaller share of
 the newest arrivals' relevant documents than the grown arm; and the bound moves no contrast by more than
 0.002.
+
+## Result (26 November 2026)
+
+`research/longeval/repair_relevance.py`; aggregates `research/longeval/r2-repair-relevance.json`. 374 queries,
+snapshot 3, ef 200, top 10, seeds 11, 29, 47 averaged within query.
+
+| Arm | nDCG@10 minus exact: official / full grades | Relevant exact top-10 documents dropped, arrivals of snapshot 1 / 2 / 3 (official) | Substitutes per query; officially graded; locally relevant |
+| --- | --- | --- | --- |
+| grown | −0.0090 / −0.0067 | 1.7 / 4.6 / 4.3% | 0.34; 26%; 40% |
+| repaired8w | −0.0082 / −0.0064 | 1.6 / 3.4 / 2.1% | 0.30; 23%; 32% |
+| rebuilt | −0.0065 / −0.0051 | 1.4 / 4.0 / 2.4% | 0.31; 29%; 35% |
+
+Repaired minus grown: +0.0008 [−0.0028, +0.0041] (official), +0.0003 [−0.0033, +0.0035] (full grades), +0.0002
+lower with the 11 ungraded pairs set to grade 3. Rebuilt minus grown: +0.0025 [−0.0001, +0.0055] and +0.0016
+[−0.0005, +0.0042].
+
+**Predictions: all three held.** Both intervals of repaired minus grown lie within ±0.01 (within ±0.004); the
+repaired arm drops half as many of the newest arrivals' relevant documents as the grown arm (2.1% against 4.3%
+official, 2.2% against 4.5% full grades), fewer than a rebuild (2.4%), with the oldest unchanged (1.6% against
+1.7%); the bound moves no contrast by more than 0.0005. So the repair's neighbour-level effect reaches the
+relevant documents of the newest arrivals, and costs nothing in mean nDCG@10, which it does not measurably raise.
