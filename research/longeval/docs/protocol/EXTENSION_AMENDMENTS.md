@@ -118,3 +118,32 @@ through `trajectory_core` completes.
 
 **Known at the time:** the BGE vectors and their checks; the BGE order and engine-arm jobs (amendment 3)
 had been submitted, and none had returned. No BGE retrieval outcome of any kind existed.
+
+## 5. The order rerun's substitutions in the judging pool (25 November 2026)
+
+**What the frozen protocol says** (section E1, decision 3): the pool is "primary arms plus the
+shuffled-order runs and the ef sweep, 6,298 pairs (1,138 never graded), plus the top-10 substitutions of
+the full-scale order rerun (E2b) on the test queries at ef 200, all three orders and seeds, added before
+grading starts", each distinct pair graded once.
+
+**Why something has to be decided:** the frozen `coverage.prepare` derives both the pairs to grade and the
+scoring universe of the primary estimates from the same pooled sets of the ledger. The universe sets which
+graded documents count for a query, including its ideal DCG, so adding the substitutions there would
+change the primary arms' estimates at snapshot 3, which the protocol does not intend. The frozen
+validation sampler also cannot draw an empty sample (it always keeps every grade-3 pair), so the
+substitutions cannot be prepared on their own by `coverage.prepare` either.
+
+**What is done:** two grading folders, graded in the same job under the same configuration.
+
+- **Primary:** `coverage.prepare` unchanged, with the pooled sets `reported`, `+all_lists` and
+  `+extension` of the judging-pool ledger (`longeval-heldout-pool-02`; 6,298 distinct pairs, as decision
+  3 states) and its 1,000-pair validation sample. The frozen `coverage.analyze` reads it unchanged.
+- **Substitutions:** the order rerun's top-10 substitutions at ef 200 (documents in a build's top 10 that
+  are not in exact search's top 10; 2 implementations × 3 orders × 3 seeds, 381 test queries, snapshot 3):
+  468 distinct pairs, of which 446 are already in the primary pool and graded there. The other 22 are
+  written by a new module, `research/longeval/grading_inputs.py`, in the frozen input format (`pairs.jsonl`,
+  `key.jsonl`, `universe.json`, `inputs.json`), which the frozen `coverage.grade` and `local_grades` read.
+  Their grades serve the arrival-order analyses only; they enter no primary estimate.
+
+**Known at the time:** the ledger, the order rerun's returned IDs and the count of substitutions. No
+grade from the local judge existed for any study pair, and no grade of any substitution had been looked up.
