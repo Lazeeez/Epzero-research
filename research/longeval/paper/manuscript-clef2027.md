@@ -1,9 +1,9 @@
 # Does the Index Matter Over Time? Approximate Search, Index History and Collection Growth in Longitudinal Dense Retrieval
 
 **Draft for the CLEF 2027 conference track (LNCS, long paper: 12 pages plus references). Version 2026-11-25.**
-Passages marked **[E4]** wait for the second-encoder (BGE) runs, which were submitted on 25 November.
-In the LNCS layout (`md2lncs.py`, then XeLaTeX) the body ends on page 11 of 13, references after it: about
-10.5 of the 12 pages allowed, leaving room for the [E4] results.
+Passages marked **[E4]** wait for the second encoder's (BGE) held-out runs; its order and engine-arm runs are in.
+In the LNCS layout (`md2lncs.py`, then XeLaTeX) the body ends six lines into page 12 of 13, references after
+it: about 11.1 of the 12 pages allowed, leaving under a page for the held-out [E4] results.
 This version restructures and shortens [the full draft of 21 November](../docs/history/manuscript-full-draft-2026-11-23.md),
 which is kept unchanged and holds every analysis in more detail. Every number comes from verified
 evidence: `../HELDOUT_RESULTS.md`, `../HELDOUT_EXPLORATORY.md` and the development result files.
@@ -279,6 +279,14 @@ by −11.2 [−11.5, −10.9] points for Epzero and −9.1 [−9.4, −8.8] for 
 LongEval), while a vector's position within its own cluster adds only 0.7–1.1 points. Arriving with its
 neighbours does not protect a cluster: what counts is the global insertion position.
 
+**A second encoder.** With BGE-base-en-v1.5 vectors of the same documents (768 dimensions, another
+model family), under predictions recorded before any BGE vector existed, the within-query ratio is
+1.31 [1.21, 1.42] as arrived, 0.99 shuffled and 0.81 reversed for Epzero, and 1.24 [1.14, 1.35], 0.98
+and 0.84 for FAISS. As arrived minus reversed, the newest group's excess miss rate changes by +4.8
+[+3.9, +5.7] and +4.0 [+3.1, +4.8] points (+4.3 and +3.4 with Qwen), while recall@100 differs by
+less than 1 point between orders (0.6 and 0.8 at ef 200). On the 100 training queries the change is +4.1 [+2.0, +6.5] and +3.1
+[+1.6, +4.9]. The effect is not specific to one representation.
+
 **Effect on effectiveness.** On the 77 queries whose exact top 10 is at least half new content,
 Epzero's calibrated arm, which stayed at ef 200, loses 0.026 nDCG@10 [0.006, 0.055], against 0.008
 on the other 297; FAISS, whose search widened, loses 0.008 and 0.005. These queries were already
@@ -301,8 +309,10 @@ is 9% more insertion time and 54 s of refining on 24 cores, against 182 s for a 
 stream the excess falls from 5.63 to −0.65 points and recall@100 at ef 200 rises from 74.7% to 80.9%,
 above a rebuild's 79.2%. The repair was chosen on a 300,000-document development sample through
 screens whose designs and predictions were recorded before they ran; refining the older documents
-around each batch, or two narrow refine passes, made the gap worse or no better. **[E4]** The
-second-encoder reading is pending.
+around each batch, or two narrow refine passes, made the gap worse or no better. On the BGE vectors
+the excess falls from 3.31 to 0.36 points on the test queries (change −2.95 [−3.64, −2.27]; rebuild
+0.38) and from 1.01 to −1.03 on the training queries, the oldest arrivals' miss rate changes by +0.08
+[−0.29, +0.42] points and recall@100 rises by 0.90 points.
 
 ## 6 What the Labels Can Support
 
@@ -353,8 +363,9 @@ only 3.4–3.7% of the top 10; the top-10 neighbours it misses are less relevant
 
 ## 8 Limitations
 
-There is one collection and, until the second encoder's runs return **[E4]**, one embedding model,
-and the collection only grows, so the equivalence result does not cover deletions or rewritten
+There is one collection; the arrival effect and its repair were reproduced with a second encoder,
+but until its held-out runs return **[E4]** the arm comparisons rest on one embedding model; and
+the collection only grows, so the equivalence result does not cover deletions or rewritten
 documents; only the insertion-position effect was reproduced elsewhere (GloVe, SIFT, a third
 implementation and the Big-ANN stream). The effectiveness results rest on lenient LLM labels whose pool leaves most
 substitutes ungraded; human grades cover 29 queries at one snapshot. The test queries were used
