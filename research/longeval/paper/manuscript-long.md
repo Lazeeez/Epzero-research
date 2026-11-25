@@ -1,6 +1,6 @@
 # Does the Index Matter Over Time? The Long Version
 
-**A working document, without a page limit. Version 2026-11-26.** It explains the whole study: the
+**A working document, without a page limit. Version 2026-11-26 (second revision).** It explains the whole study: the
 background a reader needs, every experiment and its design, the results, the analyses that failed,
 and what remains open. The submission is the 12-page `manuscript-clef2027.md`; every number here comes
 from the same verified sources (`../HELDOUT_RESULTS.md`, `../HELDOUT_EXPLORATORY.md`,
@@ -211,9 +211,27 @@ could still have grown by 60–80%.
 with the repeat behaviour of an LLM assessor (D moves by a standard deviation of at most 0.0007).
 Construction randomness matters more: Epzero's change comes mostly from one of its three seeds (−0.011
 against −0.003 and −0.004), and with seeds resampled as well as queries its interval is [−0.0146,
-+0.0011]. With ten construction seeds (`HELDOUT_EXPLORATORY.md` section 18), FAISS's calibration moved from
-ef 200 to 400 on six of ten seeds, with D −0.0005 on those six against −0.0045 on the four that stayed at
-200; Epzero stayed at ef 200 on nine seeds; IVF never needed more probes.
++0.0011].
+
+**Ten construction seeds** *(exploratory; design and prediction recorded before submission)*. Seven
+further seeds (101, 211, 307, 401, 503, 601, 701) through the frozen code, with queries and seeds both
+resampled (`HELDOUT_EXPLORATORY.md` section 18):
+
+| Arm | D, three frozen seeds | D, ten seeds | 95% interval (queries and seeds) | SD across seeds |
+| --- | --- | --- | --- | --- |
+| Epzero HNSW | −0.0059 | −0.0034 | [−0.0092, +0.0015] | 0.0033 |
+| FAISS HNSW | −0.0007 | −0.0021 | [−0.0060, +0.0015] | 0.0027 |
+| IVF, frozen training | −0.0015 | −0.0009 | [−0.0035, +0.0014] | 0.0023 |
+
+Over ten seeds all three intervals lie within ±0.01, Epzero's included: the frozen three-seed value was
+pulled down by seed 29 (−0.0110; the other nine lie between −0.0047 and +0.0007). The prediction that
+Epzero's ten-seed D is smaller in magnitude held; the prediction that FAISS stays within ±0.004 held for
+its point estimate but not its interval, so with seed variation included the defensible bound for FAISS
+is about 0.006 rather than 0.004 (IVF: 0.0035). FAISS's calibration moved from ef 200 to 400 on six of ten
+seeds, with D −0.0005 on those six against −0.0045 on the four that stayed at 200; Epzero stayed at ef 200
+on nine seeds; IVF never needed more probes. The frozen, confirmatory result for Epzero remains
+"inconclusive"; the ten-seed result is exploratory. The same seven seeds on the BGE vectors are prepared
+as a follow-up (amendment 7, §15).
 
 **The margin is as large as the trend** *(exploratory)*. Exact search's own nDCG@10 changes by +0.0070
 [−0.0000, +0.0139] over the same snapshots. So the collection can show that the loss to approximation did
@@ -267,6 +285,36 @@ instead of 95%) on 50 queries cuts that risk from 21% to 5.5%, at a wider mean w
 width the 50 calibration queries reach 0.012–0.017 higher recall than the 381 test queries for Epzero
 (0.009–0.012 for FAISS), and the difference grows from snapshot 1 to 3: a measured case of search-width
 calibration depending on the index's history.
+
+**The calibration queries themselves are the problem, not only their number** *(analysis R1.2, design
+recorded first)*. Repeating the study above by resampling the 50 *calibration* queries (the seven further
+seeds recorded each one's recall at every width) shows how often the protocol's rule keeps ef 200 at
+snapshot 3:
+
+| Resampled calibration queries | 25 | 50 | 100 | 200 | 400 |
+| --- | --- | --- | --- | --- | --- |
+| Rule keeps ef 200 (Epzero / FAISS) | 58% / 52% | 58% / 49% | 60% / 47% | 63% / 45% | 66% / 42% |
+
+Against 21–22% when the calibration set is drawn from the test queries, as predicted. Every seed's mean
+calibration recall at ef 200 lies between 0.944 and 0.956, within about half a point of the 0.95 target, so
+the rule's choice is close to a coin flip; and because these 50 queries are easier than the test queries,
+more of them makes it worse for Epzero (66% at 400), not better. A larger calibration set helps only if it
+is drawn like the queries it stands for.
+
+**A margin, as an operator would run it** *(analysis R1.1)*. Applying the rule with a 0.96 target to the
+frozen runs (the test rankings at the chosen widths come from the held-out sweep, which reproduced the
+frozen rankings; a 0.95 target reproduces the frozen D exactly): both HNSW arms choose ef 400 at every
+snapshot, for every seed, which was knowable from the calibration recalls beforehand.
+
+| Arm, target 0.96 | Gap s1 / s2 / s3 | D | 95% interval | Test recall@100, s1 / s3 |
+| --- | --- | --- | --- | --- |
+| Epzero HNSW | −0.0027 / −0.0046 / −0.0053 | −0.0026 | [−0.0059, +0.0002] | 96.8% / 96.3% |
+| FAISS HNSW | −0.0028 / −0.0041 / −0.0050 | −0.0022 | [−0.0052, +0.0005] | 96.8% / 96.3% |
+
+The loss is about halved at every snapshot and D is within ±0.01 for both, at about twice the latency of
+ef 200 (§8). A 0.97 target chooses the same widths. FAISS's protocol arm had the smaller D (−0.0007) only
+because its calibration widened part-way through, which masked the gap's growth; at a constant width the
+two implementations change alike.
 
 ---
 
@@ -400,6 +448,42 @@ tenth). Rejection is real but minor; the gradient is accumulation. Consistent wi
 floor of incoming links at insertion (D2) had no effect, while giving late nodes extra incoming links
 from nodes they had not chosen (D1, D3) removed most of their excess.
 
+**A model that predicts it** (screen M1; design and predictions recorded first). Insert n nodes in a
+random order; node j chooses k_j out-links among the j − 1 nodes present. If the choice ignores how long a
+node has been there, node i is chosen by j with probability k_j / (j − 1), and the number of later arrivals
+that choose it is E_i = Σ_{j>i} k_j / (j − 1) ≈ k̄ ln(n / i): *exposure*. Every link j → i with j later than i
+comes from j's own choice (j's list otherwise gains only links from nodes newer than itself), so a node's
+final in-degree splits exactly into links kept from later nodes (S) and from earlier ones (R). Reading
+each node's list right after its own insertion, in eight 300,000-vector builds of LongEval and SIFT:
+
+| Shuffled build, by insertion tenth | 1st | 2nd | 3rd | 5th | 8th | 10th |
+| --- | --- | --- | --- | --- | --- | --- |
+| LongEval: chosen by later arrivals, observed | 40.7 | 23.7 | 17.0 | 9.7 | 3.5 | 0.62 |
+| LongEval: exposure prediction | 40.3 | 23.6 | 17.1 | 9.8 | 3.5 | 0.63 |
+| LongEval: links from later nodes kept (S) | 26.7 | 20.2 | 15.8 | 9.6 | 3.5 | 0.62 |
+| LongEval: links from earlier nodes (R) | 2.7 | 5.2 | 6.8 | 9.1 | 11.1 | 11.8 |
+| SIFT: chosen, observed / predicted | 38.3 / 38.0 | 23.0 / 23.0 | 16.9 / 16.9 | 9.7 / 9.8 | 3.5 / 3.5 | 0.63 / 0.64 |
+
+Exposure predicts the choices to within about 1% in every tenth, on both datasets: there is no
+rich-get-richer term in construction, only time. Pruning removes a third of the oldest tenth's incoming
+links and almost none of the rest; the kept links fall linearly in ln(n / i) (R² 0.95–0.96 in shuffled
+builds). Against the author's prediction, R is not flat: a late node keeps nearly all of its ~12 reverse
+links, an early one only a few, because the neighbours it chose later fill up with newer arrivals. So
+
+  in(i) ≈ s(i) · k̄ · ln(n / i) + r(i):
+
+about k̄ (12) for the newest nodes, about 2.4 k̄ (29) for the oldest, on any data and in any order. This is
+also why the repair works: extra incoming links at insertion give a node now what exposure would give it
+only over the rest of the build.
+
+**The disadvantage fades, slowly** (screen M1, checkpoints after every tenth of each build). Against a
+second prediction, the in-degree gap between the first and fifth twentieths of a build is not constant:
+it shrinks by 26–37% from the half-way checkpoint to the end, as pruning trims the oldest nodes' incoming
+links. In search, the newest tenth inserted is missed 1.3–1.9 times as often as the first tenth (LongEval)
+and 2.3–4.5 times (SIFT) at every checkpoint; a fixed group, the fifth tenth of the build, goes from 1.53–1.56
+at the half-way point to 1.17–1.47 at the end on LongEval. A document's disadvantage lasts most of the
+collection's growth after it.
+
 **Late nodes are weakly connected, not unreachable.** At most 0.06% of documents have no incoming link.
 At ef 200 on the 300,000-document sample, no missed target was ever *scored* by the search: the search
 simply never expanded any node that links to it, and every scored exact target was returned. The misses
@@ -532,8 +616,22 @@ above a rebuild's 79.2% (whose bulk build also inserts in arrival order).
 rebuild 0.38), 1.01 → −1.03 on the training queries; the oldest arrivals' miss rate changes by +0.08
 [−0.29, +0.42] points and recall@100 rises by 0.90.
 
-**What it is not.** The repair is confirmed by neighbour recall. Its effect on ranked relevance was not
-measured; §12 suggests it would be within ±0.01 on these queries, as the order effect itself is.
+**What it does to ranked relevance** (analysis R2; design and predictions recorded first). The engine
+arm's returned IDs at snapshot 3 can be scored almost completely: of the 3,973 distinct (query, document)
+pairs in the three arms' top 10, only 11 have neither an official nor a local grade (bounded by setting
+them to grade 3). At ef 200, 374 queries, three seeds:
+
+| Arm | nDCG@10 minus exact: official / full grades | Relevant exact top-10 documents dropped, snapshot 1 / 2 / 3 arrivals |
+| --- | --- | --- |
+| grown | −0.0090 / −0.0067 | 1.7 / 4.6 / 4.3% |
+| repaired (8 links, refine at 100) | −0.0082 / −0.0064 | 1.6 / 3.4 / 2.1% |
+| rebuilt | −0.0065 / −0.0051 | 1.4 / 4.0 / 2.4% |
+
+Repaired minus grown: +0.0008 [−0.0028, +0.0041] official, +0.0003 [−0.0033, +0.0035] with full grades. All
+three predictions held: the repair halves the share of the newest arrivals' relevant documents that the
+index drops (4.3% to 2.1%, below a rebuild's 2.4%), leaves the oldest unchanged, and costs nothing in mean
+nDCG@10, which it does not measurably raise either. The neighbour-level effect reaches the relevant
+documents; at these queries' size, mean nDCG@10 cannot show it.
 
 ---
 
@@ -611,6 +709,15 @@ second encoder's three within-encoder arm tests form one Holm family at 0.05.
 - **6.** The BGE held-out inputs are checked by content, not by file bytes: the 15 jobs prepared identical
   inputs but wrote different gzip timestamps and temporary paths, which the byte-level check would have
   refused. Checked before any analysis ran.
+- **7.** Seven further construction seeds on the BGE vectors (`LONGEVAL_BGE_SEEDS.md`), as an exploratory
+  follow-up beside E4's confirmatory three-seed results, which it does not change. Package
+  `longeval-bge-seeds-01` is built; the jobs have not run.
+
+**Predictions for the next release** (`NEXT_RELEASE_PREDICTIONS.md`, fixed on 26 November 2026, before any
+2027 data or schedule existed): seven predictions (index history, the arrival ratio and its reversal, IVF's
+small excess, D within ±0.01, the loss's concentration, the repair, calibration optimism) to be tested
+unchanged on the next LongEval-Sci release's new snapshot and new test queries. It is the only test of
+these findings on queries that no analysis here has seen.
 
 **Pre-registered predictions for the second encoder** (fixed on 23 November, before any BGE vector
 existed), and what happened:
@@ -641,9 +748,11 @@ larger than it is, because the documents an approximate index substitutes are mo
 - Rebuilding in a new order only moves the misses (§9, §12).
 - Extra incoming links for each insertion and a refine of each new batch remove the gap between arrivals
   for 9% more insertion work (§13).
-- What matters most is the search width: re-check it as the collection grows, with a calibration set
-  large enough to detect a one-point drift or a margin on the target (§7), or target about 98% recall at
-  about 3.5 times the latency (§8).
+- What matters most is the search width: re-check it as the collection grows, with a margin on the
+  target (a 0.96 target halved the loss and kept D within ±0.01 for both HNSW arms, at about twice the
+  latency, §7), and with calibration queries drawn like the queries they stand for, since a larger set of
+  easier queries makes the choice worse, not better; or target about 98% recall at about 3.5 times the
+  latency (§8).
 - A system whose users mostly look for new content should measure recall on those documents, not only on
   average: averages hide the effect (§9).
 
@@ -651,12 +760,16 @@ larger than it is, because the documents an approximate index substitutes are mo
 3.4–3.7% of the top 10; the top-10 neighbours it misses are less relevant than those it keeps (mean grade
 0.77–1.01 against 1.54); and many of its replacements are relevant documents the release never graded.
 
-**Relation to prior work.** Elliott and Clark [20] showed that HNSW recall depends on insertion order; we
-show *which documents* bear the loss when a collection grows by appending, that the mechanism is
-passive accumulation of incoming links, and that a targeted repair removes it. Streaming ANN benchmarks
-(Big-ANN [24], CANDOR-Bench [25]) average recall over the collection and so cannot see it. Concurrent work
-(GRAB-ANNS, PQR-Search) describes related effects; the full novelty assessment is in
-`docs/arrival-bias-research.md` §7.
+**Relation to prior work.** Elliott and Clark [20] showed that HNSW recall depends on insertion order, and
+CleanANN [26] that FreshVamana's insertion is not robust to the order of insertion (recall per round
+differs between inserting whole clusters together and a random order, about 10 points below a rebuild),
+which it repairs for every insertion with bridge edges. We show *which documents* bear the loss when a
+collection grows by appending, that the mechanism is exposure (each later arrival chooses an existing
+node in proportion to its age, with no preferential term), and that a targeted repair removes it, at
+neighbour level and in the relevant documents dropped. Streaming ANN benchmarks (Big-ANN [24],
+CANDOR-Bench [25]) average recall over the collection and so cannot see it. GRAB-ANNS names newcomer
+isolation qualitatively and PQR-Search shows that average recall hides per-query failures; the full
+novelty assessment, last checked on 26 November 2026, is in `docs/arrival-bias-research.md` §7.
 
 ---
 
@@ -666,22 +779,24 @@ passive accumulation of incoming links, and that a targeted repair removes it. S
   deletions or rewritten documents. The insertion-position effect was reproduced elsewhere (GloVe, SIFT,
   a third implementation, the Big-ANN stream); the effectiveness results were not.
 - **Two encoders, one disagreement.** Epzero's small change in D under Qwen did not reproduce under BGE;
-  whether its arm agrees across encoders within the margin is open.
+  with three seeds, whether its arm agrees across encoders within the margin is open. Ten Qwen seeds put
+  its D at −0.0034, within the margin; ten BGE seeds are prepared (amendment 7).
 - **Lenient labels.** The effectiveness results rest on lenient LLM labels, which the local judge was
   validated against and shares; human grades cover 29 queries at one snapshot, and agree weakly.
 - **Reused test queries.** The test queries were used once for the frozen analysis, and every
   exploratory analysis reuses them. The pre-registered replications (confirmation queries, second
-  encoder, the public stream) are the defence.
+  encoder, the public stream) are the defence, with predictions fixed for the next release's new queries.
 - **A post-hoc measure.** The within-query ratio was chosen after the pooled result was seen, and it
   averages over query groups whose ratios differ (§9).
 - **Few seeds.** Three construction seeds cannot separate seed variation from Epzero's change; ten seeds
-  (§6, §7) help but were exploratory.
+  (§6, §7) put every arm within the margin, but were exploratory.
 - **A coarse calibration.** 50 calibration queries and a coarse ef grid, a design choice that separates
   the two HNSW arms.
 - **Development-only screens.** The query-driven repair results come from development screens.
-- **Neighbour-level repair.** The arrival repair was confirmed at full scale and on the stream by
-  neighbour recall, not by judged effectiveness; at the top 10 the order effect itself was not
-  detectable (§12).
+- **The repair at the top 10.** The arrival repair was confirmed at full scale and on the stream by
+  neighbour recall; on judged relevance it halves the newest arrivals' dropped relevant documents, but on
+  374 queries its effect on mean nDCG@10 is within ±0.004 and not detectable (§13), as the order effect's
+  is (§12).
 
 ---
 
@@ -695,9 +810,11 @@ passive accumulation of incoming links, and that a targeted repair removes it. S
 - **Deletions and updates.** Every result here is for append-only growth.
 - **A second longitudinal collection,** such as LongEval Web, for the effectiveness results; the
   neighbour-level arrival test needs no labels and is the cheap first step.
-- **The repair's effect on relevance,** by grading its top-10 substitutes with the validated judge.
-- **How fast the disadvantage fades** with a document's age, by replaying a build with checkpoints (§9
-  showed it lasts most of a document's life in one final-snapshot view).
+- **The ten BGE seeds** (amendment 7), packaged and ready to submit.
+- **The next release**, against the predictions fixed for it (§15).
+- **Why the disadvantage fades at the rate it does.** Screen M1 measured the rate (the in-degree gap
+  closes by about a third over the second half of a build) and that pruning of the oldest nodes' links
+  drives it; a closed form for s(i) and r(i) is not yet derived.
 
 ---
 
@@ -761,3 +878,4 @@ beside the code (`research/longeval/*.json`).
 23. Greenland and Robins. Estimation of a Common Effect Parameter from Sparse Follow-Up Data. Biometrics 41(1), pp. 55–68, 1985. https://doi.org/10.2307/2530643
 24. Simhadri et al. Results of the Big ANN: NeurIPS'23 Competition. NeurIPS 2025 Datasets and Benchmarks Track, 2025. arXiv:2409.17424.
 25. Wang, Dong, Liao and Jin. CANDOR-Bench: Benchmarking In-Memory Continuous ANNS under Dynamic Open-World Streams. SIGMOD 2026. https://doi.org/10.1145/3786630
+26. Zhang, Wei, Engels and Shun. CleanANN: Efficient and Robust Full Dynamism in Graph-Based Approximate Nearest Neighbor Search. SPAA 2026. https://doi.org/10.1145/3816782.3819219 (arXiv:2507.19802)
