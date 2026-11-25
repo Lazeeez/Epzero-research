@@ -58,6 +58,7 @@ attempt: 22 of 22 substitutions, 7,135 of 7,135 primary pairs. `coverage analyze
   The local grades are therefore compatible with the official assessor.
 - **Coverage.** With every pooled pair graded, the gap at snapshots 1 / 2 / 3 is −0.0032 / −0.0068 / −0.0082
   (Epzero), −0.0019 / −0.0024 / −0.0021 (FAISS) and −0.0032 / −0.0031 / −0.0030 (frozen IVF), against −0.0057 /
-  −0.0102 / −0.0117, −0.0048 / −0.0049 / −0.0055 and −0.0065 / −0.0079 / −0.0080 with the official labels: missing
-  judgments made up 0.002–0.007 of the gap. D under full grades: −0.0050 [−0.0117, +0.0008], −0.0002 [−0.0040,
+  −0.0102 / −0.0117, −0.0048 / −0.0049 / −0.0055 and −0.0065 / −0.0079 / −0.0080 with the official labels (30%
+  smaller for Epzero, about 60% for the others); under the local grades alone, scoring only the officially
+  graded documents widens the gap by 0.002–0.007. D under full grades: −0.0050 [−0.0117, +0.0008], −0.0002 [−0.0040,
   +0.0039], +0.0001 [−0.0021, +0.0025]; the coverage effect on D is at most +0.0018 [−0.0004, +0.0041].
