@@ -147,3 +147,27 @@ substitutions cannot be prepared on their own by `coverage.prepare` either.
 
 **Known at the time:** the ledger, the order rerun's returned IDs and the count of substitutions. No
 grade from the local judge existed for any study pair, and no grade of any substitution had been looked up.
+
+## 6. Checking the BGE held-out inputs by content (25 November 2026)
+
+**What amendment 4 says:** every held-out job prepares the BGE inputs itself (`bge_heldout prepare`), and the
+analysis passes the frozen `heldout_analysis.collect` the hash of one job's `prepared.json` and of its gzipped
+references, which collect requires every report to match.
+
+**Why something has to be decided:** the 15 jobs (7298272-7298286, all passed) prepared identical inputs but
+wrote 15 different `prepared.json` files: each records the temporary folder it wrote the snapshots to and the
+hashes of its gzipped reference files, whose gzip headers carry the time they were written. Checked locally
+before any analysis was run: the decompressed references of all three snapshots, the calibration and
+evaluation query arrays, and every snapshot's archive and vector hashes are identical in all 15 jobs. The
+byte-level check would stop the analysis at the second job, for a difference in nothing that a search reads.
+
+**What is done:** `bge_heldout analyze` checks the inputs' identity on their content instead. For each report it
+finds the job's own `prepared` folder, requires that the report's recorded hashes are that folder's, and requires
+that folder's content fingerprint (decompressed references, query arrays and IDs, snapshot archive and vector
+hashes, counts, the pinned BGE files and the sample-agreement check, without folder paths or gzip bytes) to equal
+the analysis folder's. It then calls the frozen `collect` with no byte-level inputs check; every other check of
+collect (configurations, completeness, duplicates, recounted recall) runs unchanged. `heldout_analysis.py` is not
+edited.
+
+**Known at the time:** that all 15 jobs passed, their evidence checksums, and the identity of their inputs as
+above. No analysis of the BGE held-out runs had been run, and no D, miss rate or recall of them had been read.
