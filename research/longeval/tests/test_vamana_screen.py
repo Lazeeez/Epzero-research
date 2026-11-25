@@ -43,3 +43,13 @@ def test_driver_rejects_unnormalised_inner_product(tmp_path):
     (tmp_path / 'sample' / 'sample.json').write_text(json.dumps({'metric': 'ip'}))
     with pytest.raises(ValueError):
         vamana_screen.run(tmp_path / 'sample', tmp_path / 'build', order='appended', seed=11, cache=tmp_path / 'cache')
+
+
+def test_diskann_backend_matches_brute_force(tmp_path):
+    pytest.importorskip('diskannpy')
+    _, _, dist = _sample(tmp_path / 'sample')
+    report = vamana_screen.run_diskann(tmp_path / 'sample', tmp_path / 'build', order='shuffled', seed=11)
+    assert report['widths']['200']['recall_at_100'] > 0.95
+    assert 0 < report['indegree_by_insertion_decile'][0]
+    table = np.load(tmp_path / 'build' / 'per-query-ef200.npy')
+    assert table.shape == (60, 3, 3, 2) and (table[..., 0].sum(axis=(1, 2)) == 100).all()
