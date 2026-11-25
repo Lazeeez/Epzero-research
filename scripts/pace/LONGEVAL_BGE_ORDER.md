@@ -69,3 +69,23 @@ sha256sum longeval-bge-order-01-evidence.tar.gz
 
 The archive holds run files derived from LongEval data: copy it to the local `build` directory and never
 commit it.
+
+## Result (25 November 2026)
+
+All nine jobs (7297889-7297897) passed on Gold 6226 nodes; the evidence archive's SHA-256 matched
+the node's, every job's evidence checksums verified, and all nine wrote the same sample (cohorts, exact
+targets, query and document IDs). Aggregates: `research/longeval/e4-bge-order.json` (10,000 draws).
+
+**Part A, test queries, ef 200, snapshot 3 against 1.** Within-query ratio as arrived / shuffled /
+reversed: Epzero 1.305 [1.207, 1.423] / 0.992 / 0.807; FAISS 1.240 [1.144, 1.354] / 0.980 / 0.839.
+Change in the newest cohort's excess miss risk, as arrived minus reversed: Epzero +4.8 [+3.9, +5.7]
+points, FAISS +4.0 [+3.1, +4.8]. **Prediction 1 held** for both implementations. Recall@100 spread
+between orders: 0.60 and 0.77 points at ef 200 (0.31-0.89 across ef 100-800). **Prediction 2 held.**
+Confirmation queries: the change is +4.1 [+2.0, +6.5] and +3.1 [+1.6, +4.9]; the recall spread
+between orders there is 1.18 points for Epzero and 0.96 for FAISS at ef 200, above 1 point for
+Epzero (a confirmation reading, not the prediction's test, reported as it is).
+
+**Part B.** Test queries: newest excess grown 3.31, repaired8w 0.36, rebuilt 0.38 points; repaired8w
+minus grown −2.95 [−3.64, −2.27]; oldest +0.08 [−0.29, +0.42]; recall@100 +0.90 [+0.56, +1.27]:
+passed. Confirmation: grown 1.01, repaired8w −1.03, rebuilt −1.27; effect −2.04 [−3.33, −0.79]:
+passed. **The prediction held.**
