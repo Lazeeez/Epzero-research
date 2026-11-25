@@ -53,3 +53,21 @@ repaired (as above). The 381 test queries, exact top 100 of the live set. Same m
 and (3) as in Part A, and |grown minus rebuilt| below 1 point (deletions this sparse change little).
 
 Aggregates only; a new module `research/longeval/deletion_screen.py` builds and scores.
+
+## Result, Part B: LongEval with synthetic deletions (26 November 2026)
+
+Nine builds (Epzero 0.5.0 from `~/epzero-main-venv`, seeds 11, 29, 47), each schedule tombstoning 37,927
+documents (262,073 live at the end); aggregates `research/longeval/m2-deletions-longeval.json`. ef 200, 381
+test queries, seeds averaged within query, 5,000-draw query bootstrap.
+
+| Arm | Newest cohort's within-query excess | Oldest cohort's miss rate | Recall@100 | Build (one thread) |
+| --- | --- | --- | --- | --- |
+| grown (tombstones) | +1.88 [+1.30, +2.49] points | 4.31% | 0.947 | 455 s |
+| rebuilt (final live set, same order) | +1.64 [+1.08, +2.24] | 4.53% | 0.946 | 382 s |
+| repaired (8 links, refine at 100) | −0.05 [−0.54, +0.43] | 4.24% | 0.955 | 524 s, of which refine 76 s on 4 threads |
+
+**Predictions: all held.** (1) The grown arm's excess is positive with its interval excluding 0. Rebuilt
+minus grown is −0.24 [−0.52, +0.06] points, within the predicted ±1: sparse deletions neither worsen nor relieve
+the bias. (3) The repair changes the excess by −1.93 [−2.36, −1.52] points (all of it), with the oldest cohort's
+miss rate changing by −0.08 points (upper 95% bound +0.08, against the 0.75 allowed) and recall@100 rising by
+0.8 points.
