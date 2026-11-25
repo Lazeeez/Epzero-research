@@ -26,7 +26,7 @@ insertion position causes this, and a denser graph sharpens it. The effect appea
 implementations, with a second encoder, and, twice as strongly, on the Big-ANN streaming benchmark. Giving each insertion
 extra incoming links and refining each new batch removes it at a fraction of a rebuild's cost. Most documents that an
 approximate index substitutes into the top 10 were never graded; grading them with a validated local judge
-halves the measured loss and leaves its change over time unchanged, though the LLM labels agree weakly with
+shrinks the measured loss by 30–60% and leaves its change over time unchanged, though the LLM labels agree weakly with
 human grades.
 
 ## 1 Introduction
@@ -344,8 +344,9 @@ agreement with the official grades 0.956 [0.941, 0.971] (required 0.90), linear-
 | FAISS HNSW | −0.0055 | −0.0007 | −0.0021 | −0.0007 | +0.0004 | −0.0002 [−0.0040, +0.0039] |
 | IVF, frozen | −0.0080 | −0.0017 | −0.0030 | −0.0015 | +0.0003 | +0.0001 [−0.0021, +0.0025] |
 
-Graded in full, the gap is 0.002–0.008 at every snapshot, against 0.005–0.012 with the official labels:
-missing judgments made up 0.002–0.007 of it, for every arm and snapshot. The pattern over time is unchanged:
+Graded in full, the gap is 0.002–0.008 at every snapshot, against 0.005–0.012 with the official labels
+(30% smaller for Epzero, about 60% for FAISS and IVF); under the local grades alone, scoring only the
+officially graded documents instead of all of them widens the gap by 0.002–0.007 for every arm and snapshot. The pattern over time is unchanged:
 coverage moves D by at most +0.0018 [−0.0004, +0.0041], so the equivalence results of §4.2 stand, with
 Epzero's arm still the inconclusive one. **Leniency.** On the 29 test queries that also
 have human grades (1,581 pairs), the LLM labels call 87% of the pairs relevant against 60%, with a
@@ -353,7 +354,7 @@ linear-weighted kappa of 0.24 [0.14, 0.36]; exact search scores 0.93 nDCG@10 und
 and 0.56 under the human grades, uncorrelated per query.
 
 Under lenient labels a substitute costs little when it is graded and its full gain when it is not, so
-judgment coverage made up half of the measured gap; the local judge, validated against the same lenient
+judgment coverage made up a third to two thirds of the measured gap; the local judge, validated against the same lenient
 labels, shares their leniency, so the full grades measure the loss under these labels, not under human ones.
 The results on neighbour recall, index history and arrival (§4.1, §4.3, §5) use no labels at all.
 
@@ -376,7 +377,7 @@ content should measure recall on those documents, not only on average.
 **Why the loss is small.** Approximate search misses about 6.3% of the exact top 100 at ef 200 but
 only 3.4–3.7% of the top 10; the top-10 neighbours it misses are less relevant than those it keeps
 (mean grade 0.77–1.01 against 1.54); and many of the replacements are relevant documents the release
-never graded: graded in full, the loss halves (§6).
+never graded: graded in full, the loss shrinks by 30–60% (§6).
 
 ## 8 Limitations
 
@@ -400,7 +401,8 @@ three calibrated arms. Incremental maintenance was equivalent to rebuilding. At 
 fell by about a point, and an index built by appending missed its newest documents most; inserting
 the same documents first reversed that, and a denser graph made it stronger. Extra incoming links for
 each insertion and a refine of each new batch removed it, on LongEval and on the Big-ANN stream. Graded in
-full by a validated local judge, the loss is about half the official measure, 0.002–0.008, with the same trend.
+full by a validated local judge, the loss is 30–60% smaller than the official measure, 0.002–0.008, with the
+same trend.
 
 **Figure 1** (`figures/fig-gap-recall.pdf`). (a) ANN-minus-exact nDCG@10 by snapshot at calibrated
 settings, mean over 374 queries and three seeds, with 95% query-bootstrap intervals. (b) Mean
