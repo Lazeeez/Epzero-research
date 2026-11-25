@@ -16,7 +16,7 @@ The scripts pin every file by checksum and refuse anything that differs.
 ## 1. One-command check
 
 ```bash
-git clone https://github.com/Lazeeez/Epzero-research.git && cd Epzero-research
+git clone https://github.com/Lazeeez/ann-longeval-research.git && cd ann-longeval-research
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r research/longeval/requirements.txt     # includes the released Epzero 0.5.0 engine
 bash scripts/verify.sh
