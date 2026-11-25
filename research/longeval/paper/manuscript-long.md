@@ -528,6 +528,35 @@ query ratio 1.10 [1.01, 1.20], +0.44 points) and none under BGE. With a fixed ro
 scans, IVF's results cannot depend on insertion order, so its small Qwen excess must come from where the
 new documents' content lands relative to the router.
 
+**Beyond HNSW: Vamana** (screen M3; design and predictions recorded first). Vamana, the graph of DiskANN and
+FreshDiskANN, has no layer hierarchy and prunes with α > 1, keeping long-range edges. Two implementations
+of its incremental insertion were built on the LongEval and SIFT 300K samples (degree 32, build list 100,
+α 1.2, one thread): an independent driver written for this screen from FreshDiskANN's published algorithms,
+and DiskANN's own library (`diskannpy` 0.7.0).
+
+| Implementation | Data | As arrived | Shuffled | Reversed | In-degree, first / last tenth |
+| --- | --- | --- | --- | --- | --- |
+| independent driver | LongEval | 1.32 [1.18, 1.47] | 0.94 | 0.65 | 51.9 / 17.4 |
+| independent driver | SIFT | 1.99 [1.73, 2.28] | 0.99 | 0.42 | 44.4 / 18.6 |
+| DiskANN library | LongEval | 0.99 [0.84, 1.16] | 0.97 | 0.89 | 47.0 / 28.1 |
+| DiskANN library | SIFT | 1.43 [1.16, 1.76] | 0.90 | 0.47 | 45.4 / 26.4 |
+
+The independent implementation shows the arrival gradient as strongly as HNSW on both datasets, and every
+prediction held. DiskANN's library shows it on SIFT, but on LongEval its as-arrived ratio is 0.99, against the
+predicted above 1.10, and that prediction failed. What differs is the floor of incoming links: the library's
+newest tenth keeps 26–28 (HNSW about 12, the driver 17–19). One candidate cause, not yet tested, is that
+DiskANN lets a neighbour list grow to 1.3 R (every saved graph reports a maximum degree of 41) before pruning
+it, so a newcomer's reverse links are kept more often. So the effect belongs to incremental graph insertion,
+not to HNSW, but an implementation's slack on neighbour lists can largely remove it.
+
+**With deletions** (screen M2 Part B; recorded first). On the LongEval 300K sample, with 10% of the live
+documents tombstoned before each later cohort arrived (37,927 in all), the grown Epzero index's newest cohort
+has a within-query excess of +1.88 [+1.30, +2.49] points, against +1.64 [+1.08, +2.24] for a rebuild of the
+same live set: −0.24 [−0.52, +0.06], within the predicted ±1. Sparse deletions neither worsen nor relieve the
+bias. The repair (§13) removes it under deletions too (−1.93 [−2.36, −1.52] points), with the oldest cohort no
+worse and recall@100 0.8 points higher. Big-ANN's deletion runbook (10 million vectors, 5.4 million deleted)
+is the larger test; it is running.
+
 ---
 
 ## 12. What it costs in ranked relevance
@@ -777,7 +806,8 @@ novelty assessment, last checked on 26 November 2026, is in `docs/arrival-bias-r
 
 - **One collection, append-only.** LongEval-Sci only grows: the equivalence result does not cover
   deletions or rewritten documents. The insertion-position effect was reproduced elsewhere (GloVe, SIFT,
-  a third implementation, the Big-ANN stream); the effectiveness results were not.
+  a third HNSW implementation, an independent Vamana, the Big-ANN stream, and with synthetic deletions);
+  the effectiveness results were not. DiskANN's own library shows it on SIFT but hardly on LongEval (§11).
 - **Two encoders, one disagreement.** Epzero's small change in D under Qwen did not reproduce under BGE;
   with three seeds, whether its arm agrees across encoders within the margin is open. Ten Qwen seeds put
   its D at −0.0034, within the margin; ten BGE seeds are prepared (amendment 7).
@@ -810,7 +840,10 @@ novelty assessment, last checked on 26 November 2026, is in `docs/arrival-bias-r
   snapshot 1, and the 100 documents put in their place, presented blind to role, arrival group and order,
   on the organisers' 0–2 scale. It is the human check on §12. A second annotator is sought for a blind
   50-pair overlap.
-- **Deletions and updates.** Every result here is for append-only growth.
+- **Deletions and updates.** Sparse synthetic deletions leave the arrival bias unchanged (§11); Big-ANN's
+  deletion runbook is running, and rewritten documents are untested (LongEval Web would test both).
+- **Which Vamana choice protects late arrivals.** DiskANN's 1.3 R slack on neighbour lists, its frozen start
+  point, or something else: a screen varying them one at a time.
 - **A second longitudinal collection,** such as LongEval Web, for the effectiveness results; the
   neighbour-level arrival test needs no labels and is the cheap first step.
 - **The ten BGE seeds** (amendment 7), packaged and ready to submit.
