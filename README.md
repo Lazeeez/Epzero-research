@@ -1,8 +1,9 @@
-# Epzero research
+# Research on approximate nearest-neighbour search and dense retrieval
 
-This repository holds the research built around [Epzero](https://github.com/Lazeeez/Epzero), an
-in-memory vector search engine. The engine, its benchmarks and the website live in the Epzero
-repository; this one contains the studies, their code, protocols, results and literature reviews.
+This repository holds research on approximate nearest-neighbour search and dense retrieval: the
+studies, their code, protocols, results and literature reviews. The experiments use several graph
+and partition indexes, among them FAISS (HNSW and IVF), hnswlib, Glass, DiskANN and Epzero, an
+open-source C++ HNSW library.
 
 ## Contents
 
