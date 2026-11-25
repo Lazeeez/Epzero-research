@@ -2,8 +2,8 @@
 
 **Draft for the CLEF 2027 conference track (LNCS, long paper: 12 pages plus references). Version 2026-11-25.**
 The second encoder's (BGE) order, engine-arm and held-out results are in (E4 complete).
-In the LNCS layout (`md2lncs.py`, then XeLaTeX) the body ends about 31 lines into page 12 of 13, references
-after it: about 11.6 of the 12 pages allowed.
+In the LNCS layout (`md2lncs.py`, then XeLaTeX) the body ends about 39 lines into page 12 of 14, references
+after it: about 11.8 of the 12 pages allowed.
 This version restructures and shortens [the full draft of 21 November](../docs/history/manuscript-full-draft-2026-11-23.md),
 which is kept unchanged and holds every analysis in more detail. Every number comes from verified
 evidence: `../HELDOUT_RESULTS.md`, `../HELDOUT_EXPLORATORY.md` and the development result files.
@@ -306,7 +306,12 @@ loss is −0.017 [−0.045, +0.004] for Epzero and −0.003 for FAISS: most of i
 does not help: it spreads the misses across document ages without reducing them (snapshot-3 recall
 0.933 against 0.936), does not reduce the fresh-content loss (Epzero −0.026 to −0.024, FAISS −0.009
 to −0.017) and makes the other queries worse. A reordered rebuild is no remedy; a wider search lowers
-every miss rate, and the repair below removes the gap between arrivals.
+every miss rate, and the repair below removes the gap between arrivals. With the pool graded in full (§6),
+nDCG@10 at snapshot 3 differs between the as-arrived and reversed builds by +0.0013 [−0.0052, +0.0079] for
+Epzero and +0.0043 [−0.0004, +0.0095] for FAISS: at the top 10 the order effect is not detectable, although
+the newest documents' relevant neighbours are dropped less when inserted first (Epzero 4.0% against 3.3%,
+FAISS 2.8% against 1.9%). The arrival effect is a fact about what the index retrieves; on these queries its
+cost in ranked relevance is within ±0.01.
 
 **A repair.** Late insertions lack the incoming links that earlier documents keep receiving from later
 arrivals. We give each insertion eight more, from its closest construction candidates that it did not
