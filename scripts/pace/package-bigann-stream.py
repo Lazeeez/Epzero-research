@@ -1,7 +1,7 @@
 """Package the public streaming workload (exploratory follow-up; BIGANN_STREAM.md).
 
 Usage, from the repository root:
-    python scripts/pace/package-bigann-stream.py BUILD_DIR ORYX_DIR
+    python scripts/pace/package-bigann-stream.py BUILD_DIR EPZERO_SOURCE
 
 Holds the research code, the job script and the Epzero `engine` folder of the `min-backlinks` branch
 (tracked files only, via git archive; its commit recorded). No data: every job downloads the public
