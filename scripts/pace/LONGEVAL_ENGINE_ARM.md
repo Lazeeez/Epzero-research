@@ -5,8 +5,8 @@ these jobs was submitted. Decided by the author; the advisor was unavailable.
 
 ## Why
 
-On the 300K development sample, two engine changes together removed most of the arrival bias in
-Epzero's product path (screens D3–D10, `docs/screen-d*.md`): `extra_backlinks` 4 (each insertion is
+On the 300K development sample, two engine options together removed most of the arrival bias in
+Epzero's default build path (screens D3–D10, `docs/screen-d*.md`): `extra_backlinks` 4 (each insertion is
 also linked from the closest construction candidates it did not choose) and refining each later
 snapshot's insertions (`refine_links(first=...)`). Over three seeds the newest cohort's excess fell
 from 2.22 to 0.63 points (a rebuild gives 0.12). This run tests the same repair, chosen on development
