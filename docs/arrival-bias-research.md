@@ -732,6 +732,14 @@ the measurement and its shuffle control would establish priority early; whether 
 - Unreachable points from deletion churn (MN-RU and others).
 - IVF centroids and fixed search widths go stale under drift, mostly as cost (DeDrift, Quake, Ada-IVF).
 - Average recall hides per-query failures (PQR-Search, VIBE's hard-query split).
+- Incremental graph insertion is not robust to insertion order (CleanANN, Zhang, Wei, Engels and Shun,
+  SPAA 2026, arXiv:2507.19802): on synthetic clustered data inserted 1% per round, FreshVamana's recall
+  per round differs between inserting whole clusters together and a uniformly random order, about 10
+  points below a rebuild under the bad order; attributed to one-directional edge creation at insertion,
+  and repaired for every insertion by guided bridge edges. Not measured there: recall by a point's
+  insertion age, in-degree by insertion position, or which points bear the loss. Checked on 26 November
+  2026 with five other dynamic-index papers found in the same search (arXiv 2508.07218, 2610.15130,
+  2510.02774, 2602.21247, 2510.25401), none of which addresses arrival-dependent misses.
 
 ### 7.2 New (among the sources checked to 23 November 2026)
 
