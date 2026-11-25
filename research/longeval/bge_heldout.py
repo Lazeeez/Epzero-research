@@ -283,6 +283,86 @@ def analyze(prepared, release, evidence, output, *, hnsw_config, ivf_config):
     return A.write_outputs(Path(output), result, rows, extra)
 
 
+def strata(prepared, evidence, dense, *, step=3, draws=10_000, seed=20261120):
+    """E4 prediction 3: insertion_strata.heldout's neighbour-level ratios of the held-out arms at one snapshot
+    (later arrivals, snapshots 2 and 3, against snapshot-1 arrivals), with the BGE references. A document's
+    arrival snapshot is the released one (the BGE snapshots hold the same documents, checked by prepare)."""
+    from . import insertion_strata as S
+    from .heldout_analysis import SEEDS, collect
+    from .heldout_exploratory import cohorts
+    _, queries, refs, _ = load_prepared(prepared)
+    ids = queries[ROLE].ids
+    exact = {s: {q: refs[s - 1][q] for q in ids} for s in SNAPSHOTS}
+    report_paths = sorted(Path(evidence).rglob('report.json'))
+    check_inputs(report_paths, prepared)  # amendment 6
+    _, runs, _ = collect(report_paths, ROLE, ids, exact)
+    first = cohorts(dense)
+    arms = {'epzero_hnsw_ef200': ('epzero', 'incremental', 'frozen'), 'faiss_hnsw_ef200': ('faiss_hnsw', 'incremental', 'frozen'),
+            'ivf_frozen_training': ('faiss_ivf', 'frozen_incremental', 'current_calibration'),
+            'ivf_refreshed_training': ('faiss_ivf', 'refreshed_rebuild', 'current_calibration')}
+    rows = S._draws(len(ids), draws, seed)
+    out = {}
+    for name, (backend, mode, regime) in arms.items():
+        builds = {}
+        for run_seed in SEEDS:
+            run = runs[(backend, mode, run_seed, step, regime)]
+            table = np.zeros((len(ids), 3, len(S.BANDS), 2), dtype=np.int64)
+            for qi, q in enumerate(ids):
+                returned = {d for d, _ in run[q]}
+                for rank, (doc, _) in enumerate(exact[step][q], 1):
+                    band = next(i for i, b in enumerate(S.BANDS) if b[0] <= rank <= b[1])
+                    table[qi, first[doc] - 1, band, 0] += 1
+                    table[qi, first[doc] - 1, band, 1] += doc not in returned
+            builds[('appended', run_seed)] = table
+        out[name] = {label: S._item(*S._seed_mean(builds, 'appended', statistic, rows))
+                     for label, statistic in (('pooled_ratio', lambda t: S._ratio(t.sum(axis=0), (2, 3), 1)),
+                                              ('within_query_ratio', lambda t: S.mantel_haenszel(t, (2, 3))),
+                                              ('within_query_rate_difference', lambda t: S.risk_difference(t, (2, 3))))}
+    return {'kind': 'E4 prediction 3: neighbour-level ratios of the BGE held-out arms (aggregates only)',
+            'snapshot': step, 'queries': len(ids), 'later_group': 'snapshots 2 and 3 together',
+            'bootstrap': {'draws': draws, 'seed': seed, 'unit': 'query, seeds averaged within query'}, 'arms': out}
+
+
+PRIMARY_ARMS = {'epzero_hnsw': ('epzero', 'incremental', 'matched_recall'),
+                'faiss_hnsw': ('faiss_hnsw', 'incremental', 'matched_recall'),
+                'ivf_frozen': ('faiss_ivf', 'frozen_incremental', 'current_calibration')}
+
+
+def per_query_d(csv_path, family='gpt-oss-120b'):
+    """{arm: {query: D}} from an analysis's per-query.csv: the change from snapshot 1 to 3 in the arm's nDCG@10
+    gap to exact search, seeds averaged within the query (as the frozen primary contrast)."""
+    import csv
+    gaps = {}
+    with open(csv_path, newline='') as handle:
+        for row in csv.DictReader(handle):
+            if row['family'] != family or not row['ANN_minus_exact_nDCG@10']:
+                continue
+            key = (row['backend'], row['mode'], row['regime'])
+            gaps.setdefault(key, {}).setdefault(row['query_id'], {}).setdefault(int(row['snapshot']), []).append(
+                float(row['ANN_minus_exact_nDCG@10']))
+    out = {}
+    for name, key in PRIMARY_ARMS.items():
+        out[name] = {q: float(np.mean(s[3])) - float(np.mean(s[1])) for q, s in gaps.get(key, {}).items() if 1 in s and 3 in s}
+    return out
+
+
+def contrast(bge_csv, qwen_csv, *, draws=10_000, seed=20261125, margin=0.01):
+    """The paired contrast of D between encoders, BGE minus Qwen, on the queries both panels hold."""
+    bge, qwen = per_query_d(bge_csv), per_query_d(qwen_csv)
+    rng = np.random.default_rng(seed)
+    out = {}
+    for name in PRIMARY_ARMS:
+        common = sorted(set(bge[name]) & set(qwen[name]))
+        diff = np.array([bge[name][q] - qwen[name][q] for q in common])
+        boot = diff[rng.integers(0, len(diff), (draws, len(diff)))].mean(axis=1)
+        low, high = np.quantile(boot, [0.025, 0.975])
+        out[name] = {'queries': len(common), 'bge_D': float(np.mean([bge[name][q] for q in common])),
+                     'qwen_D': float(np.mean([qwen[name][q] for q in common])), 'bge_minus_qwen': float(diff.mean()),
+                     'interval_95': [float(low), float(high)], 'within_margin': bool(-margin <= low and high <= margin)}
+    return {'kind': 'E4: paired contrast of D between encoders (BGE minus Qwen), primary family, aggregates only',
+            'margin': margin, 'bootstrap': {'draws': draws, 'seed': seed, 'unit': 'query'}, 'arms': out}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest='command', required=True)
@@ -306,6 +386,9 @@ def main():
         p.add_argument(name, type=Path)
     p.add_argument('--hnsw-config', type=Path, required=True)
     p.add_argument('--ivf-config', type=Path, required=True)
+    p = sub.add_parser('strata', help='E4 prediction 3: neighbour-level ratios of the held-out arms')
+    for name in ('prepared', 'evidence', 'dense', 'output'):
+        p.add_argument(name, type=Path)
     a = parser.parse_args()
     if a.command == 'prepare':
         r = prepare(a.bge, a.qwen_docnos, a.training_queries, a.sample, a.output)
@@ -316,6 +399,9 @@ def main():
     elif a.command == 'ivf':
         r = run_ivf(a.prepared, a.output, a.config, mode=a.mode, seed=a.seed,
                     package_root=a.package_root, native_origin=a.native_origin)
+    elif a.command == 'strata':
+        r = strata(a.prepared, a.evidence, a.dense)
+        a.output.write_text(json.dumps(r, indent=2) + '\n')
     else:
         r = analyze(a.prepared, a.release, a.evidence, a.output, hnsw_config=a.hnsw_config, ivf_config=a.ivf_config)
     print(json.dumps(r if isinstance(r, dict) else {'result': str(r)}, indent=2, default=str)[:4000])
