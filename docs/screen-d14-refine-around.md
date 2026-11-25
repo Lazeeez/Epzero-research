@@ -74,7 +74,7 @@ go. If neither qualifies, refining the older side is not the missing piece, and 
 
 Run on 24 November 2026, after the design above was committed (Epzero `min-backlinks` at 2d279c0e).
 Ef 200, test queries of the 300K sample, means over seeds 11, 29 and 47. The D13 and rebuilt rows are
-from screens D10 and D13 on the same seeds. Raw results are in `Oryx/build/screen-d14/*.json`.
+from screens D10 and D13 on the same seeds. Raw results are in `BUILD_DIR/screen-d14/*.json`.
 
 | Arm (8 links) | Newest excess (11 / 29 / 47; mean) | Miss by cohort 1 / 2 / 3 | Recall@100 | Recall@10 | Distance computations | Refine, all cores |
 | --- | --- | --- | --- | --- | --- | --- |
