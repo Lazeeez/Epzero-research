@@ -1,4 +1,4 @@
-# Development screen D7: arrival bias and `extra_backlinks` in Epzero's product path
+# Development screen D7: arrival bias and `extra_backlinks` in Epzero's default build path
 
 Recorded on 23 November 2026, before it was run. Development data only (300K LongEval sample, 381
 test queries).
@@ -41,7 +41,7 @@ oldest cohort's miss rate rising by at most 0.3 points and recall not falling.
 
 **Prediction 1 held:** documents added after the initial build are missed clearly more often than
 after a rebuild (excess 2.27 against 0.22 points at ef 200). This is the arrival bias users of the
-product path would see.
+default build path would see.
 
 **Prediction 2 failed:** `extra_backlinks` 4 cut the grown excess by 37% at ef 200 (47% at ef 400,
 40% at ef 100), not by half; the oldest cohort's miss rate rose 0.16 points (within 0.3); recall@100
