@@ -51,7 +51,7 @@ are chosen. That is reported, and points to the in-link supply alone (section 7.
 Run on 24 November 2026, after the design above was committed (Epzero `min-backlinks` at 2d279c0e; the
 engine code these arms use is unchanged from 4d4a64cc). Ef 200, test queries of the 300K sample, means
 over seeds 11, 29 and 47. The D13 row is from screen D13 on the same seeds. Raw results are in
-`Oryx/build/screen-d15/*.json`.
+`BUILD_DIR/screen-d15/*.json`.
 
 | Arm (8 links) | Newest excess (11 / 29 / 47; mean) | Miss by cohort 1 / 2 / 3 | Recall@100 | Recall@10 | Distance computations | Refine, all cores |
 | --- | --- | --- | --- | --- | --- | --- |
