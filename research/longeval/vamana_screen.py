@@ -188,7 +188,7 @@ def main():
     r.add_argument('output', type=Path)
     r.add_argument('--order', choices=('appended', 'shuffled', 'reversed'), required=True)
     r.add_argument('--seed', type=int, required=True)
-    r.add_argument('--cache', type=Path, default=Path.home() / '.cache' / 'epzero-research')
+    r.add_argument('--cache', type=Path, default=Path.home() / '.cache' / 'ann-longeval-research')
     r.add_argument('--backend', choices=('driver', 'diskann'), default='driver')
     a = sub.add_parser('analyze')
     a.add_argument('output', type=Path)
