@@ -2,7 +2,8 @@
 
 **Draft for the CLEF 2027 conference track (LNCS, long paper: 12 pages plus references). Version 2026-11-25.**
 Passages marked **[E4]** wait for the second-encoder (BGE) runs, which were submitted on 25 November.
-About 5,100 words with references and captions: to be measured in the LNCS layout and trimmed to 12 pages.
+In the LNCS layout (`md2lncs.py`, then XeLaTeX) the body ends on page 11 of 13, references after it: about
+10.5 of the 12 pages allowed, leaving room for the [E4] results.
 This version restructures and shortens [the full draft of 21 November](../docs/history/manuscript-full-draft-2026-11-23.md),
 which is kept unchanged and holds every analysis in more detail. Every number comes from verified
 evidence: `../HELDOUT_RESULTS.md`, `../HELDOUT_EXPLORATORY.md` and the development result files.
@@ -232,7 +233,7 @@ ratio after seeing the pooled one; the pooled contrast recorded in advance is re
 three arrival blocks reversed), three seeds each. The design and its pooled contrast were recorded
 before any output was seen, and the as-arrived builds reproduce the held-out runs query for query.
 
-**Table 4.** Miss ratio of snapshot-3 arrivals against snapshot-1 arrivals at ef 200, mean over
+**Table 3.** Miss ratio of snapshot-3 arrivals against snapshot-1 arrivals at ef 200, mean over
 three seeds with 95% paired query-bootstrap intervals.
 
 | Graph | Implementation | Ratio | As arrived | Shuffled | Reversed |
@@ -253,7 +254,7 @@ depend on collection size.
 
 **A denser graph sharpens it.** With M 32 and efConstruction 200, also recorded before the jobs
 ran, recall@100 at ef 200 rises from 0.93 to 0.96–0.97, but the misses that remain fall more heavily
-on the latest arrivals (Table 4). Tuning the graph for recall does not remove the effect of
+on the latest arrivals (Table 3). Tuning the graph for recall does not remove the effect of
 insertion position.
 
 **Position alone.** In a shuffled build a document's position is independent of the document and
@@ -311,7 +312,7 @@ substitutes into the top 10 are ungraded and count as non-relevant. Two rescorin
 effect without new judgments: *carried* gives an ungraded occurrence the grade the same pair has at
 another snapshot, and *condensed* removes ungraded documents from every ranking.
 
-**Table 5.** Gap at snapshot 3 and D under three scoring rules.
+**Table 4.** Gap at snapshot 3 and D under three scoring rules.
 
 | Arm (calibrated) | Gap: official | carried | condensed | D: official | carried | condensed |
 | --- | --- | --- | --- | --- | --- | --- |
