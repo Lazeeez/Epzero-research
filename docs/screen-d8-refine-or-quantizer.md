@@ -1,10 +1,10 @@
-# Development screen D8: is the product path's larger excess the refine pass or stale 8-bit ranges?
+# Development screen D8: is the default build path's larger excess the refine pass or stale 8-bit ranges?
 
 Recorded on 23 November 2026, before it was run, after screen D7b.
 
 ## Question
 
-Grown in the product path, the newest cohort's excess is 2.27 points at ef 200, against 1.62 in the
+Grown in the default build path, the newest cohort's excess is 2.27 points at ef 200, against 1.62 in the
 plain configuration and 0.22 for a full rebuild. Two explanations:
 
 - **Refine density:** the bulk-built snapshot-1 graph is refined, so later insertions compete with
@@ -45,7 +45,7 @@ ef 200 (bar: 0.5). The refine pass improves the bulk-built documents (snapshot-1
 excess by 0.27 points at ef 200 (bar: 0.5), and less at ef 100 and 400. On this organically growing
 collection, stale code ranges matter little, as the literature review expected without drift.
 
-**Consequence for the engine:** in the product path, the refine pass is itself a source of arrival
+**Consequence for the engine:** in the default build path, the refine pass is itself a source of arrival
 bias, because it treats only the documents present at the bulk build. Refining the documents
 inserted since the last refine (for example at each checkpoint) would treat every document once.
 That is the next design to screen (D9), against and together with `extra_backlinks`.
