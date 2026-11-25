@@ -24,7 +24,7 @@ repair. If the oldest cohort rises by more than 0.4 points, 8 links do not go to
 
 (Run 24 November 2026, after the design above was committed.) Ef 200, test queries of the 300K sample;
 grown, 4-link and rebuilt arms from screens D7, D9 and D10 on the same seeds. Raw:
-`Oryx/build/screen-d13/*.json`.
+`BUILD_DIR/screen-d13/*.json`.
 
 | Arm | Newest-cohort excess (seeds 11 / 29 / 47; mean) | Oldest-cohort miss, mean | Recall@100, mean | Distance computations |
 | --- | --- | --- | --- | --- |
