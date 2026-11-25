@@ -109,3 +109,59 @@ def test_a_prepared_run_goes_through_the_frozen_hnsw_core(stand_in, monkeypatch)
     report = json.loads((root / 'run' / 'report.json').read_text())
     assert report['provenance']['heldout_inputs']['bge_encoder'] == bge_heldout.IDENTITY
     assert report['evaluation_role'] == ROLE
+
+
+def _job(stand_in, name):
+    """One job's prepared folder and a report recording it, as a held-out job writes them."""
+    root, bge, docnos, sample, *_ = stand_in
+    job = root / 'jobs' / name
+    bge_heldout.prepare(bge, docnos, root / 'training', sample, job / 'prepared', pinned=None)
+    _, _, _, identity = bge_heldout.load_prepared(job / 'prepared')
+    (job / 'trajectory').mkdir(parents=True)
+    report = {'provenance': {'heldout_inputs': {k: identity[k] for k in ('bge_prepared_sha256', 'bge_references_sha256')}}}
+    (job / 'trajectory' / 'report.json').write_text(json.dumps(report))
+    return job
+
+
+def _restamp(path, mtime):
+    """The same references, gzipped at another time (the header's timestamp is all that changes)."""
+    raw = gzip.open(path).read()
+    with open(path, 'wb') as out, gzip.GzipFile(filename='', fileobj=out, mode='wb', mtime=mtime) as gz:
+        gz.write(raw)
+
+
+def test_inputs_are_checked_by_content_not_by_gzip_bytes_or_folders(stand_in):
+    first, second = _job(stand_in, 'a'), _job(stand_in, 'b')
+    for step in bge_heldout.SNAPSHOTS:                                   # job b wrote its files later
+        _restamp(second / 'prepared' / f'references-snapshot-{step}.json.gz', 1_000_000 + step)
+    evidence = json.loads((second / 'prepared' / 'prepared.json').read_text())
+    evidence['references_sha256'] = {str(s): bge_heldout.sha256(second / 'prepared' / f'references-snapshot-{s}.json.gz')
+                                     for s in bge_heldout.SNAPSHOTS}
+    (second / 'prepared' / 'prepared.json').write_text(json.dumps(evidence, indent=2) + '\n')
+    _, _, _, identity = bge_heldout.load_prepared(second / 'prepared')
+    report = {'provenance': {'heldout_inputs': {k: identity[k] for k in ('bge_prepared_sha256', 'bge_references_sha256')}}}
+    (second / 'trajectory' / 'report.json').write_text(json.dumps(report))
+    assert (second / 'prepared' / 'prepared.json').read_bytes() != (first / 'prepared' / 'prepared.json').read_bytes()
+    assert bge_heldout.content_fingerprint(first / 'prepared') == bge_heldout.content_fingerprint(second / 'prepared')
+    reports = sorted((stand_in[0] / 'jobs').rglob('report.json'))
+    assert bge_heldout.check_inputs(reports, first / 'prepared') == 2
+
+    # A report that records another job's inputs, and a job whose references differ, both stop it.
+    (second / 'trajectory' / 'report.json').write_text((first / 'trajectory' / 'report.json').read_text())
+    with pytest.raises(ValueError, match="own job"):
+        bge_heldout.check_inputs(reports, first / 'prepared')
+    third = _job(stand_in, 'c')
+    path = third / 'prepared' / 'references-snapshot-3.json.gz'
+    refs = json.loads(gzip.open(path).read())
+    query = next(iter(refs))
+    refs[query] = refs[query][::-1]
+    with gzip.open(path, 'wt', encoding='utf-8') as handle:
+        json.dump(refs, handle)
+    evidence = json.loads((third / 'prepared' / 'prepared.json').read_text())
+    evidence['references_sha256']['3'] = bge_heldout.sha256(path)
+    (third / 'prepared' / 'prepared.json').write_text(json.dumps(evidence, indent=2) + '\n')
+    _, _, _, identity = bge_heldout.load_prepared(third / 'prepared')
+    (third / 'trajectory' / 'report.json').write_text(json.dumps(
+        {'provenance': {'heldout_inputs': {k: identity[k] for k in ('bge_prepared_sha256', 'bge_references_sha256')}}}))
+    with pytest.raises(ValueError, match="differ in content"):
+        bge_heldout.check_inputs([third / 'trajectory' / 'report.json'], first / 'prepared')
