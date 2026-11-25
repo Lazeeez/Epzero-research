@@ -1,0 +1,78 @@
+{
+  "kind": "EXPLORATORY analysis R1.3: fixed-effects logistic check of the within-query ratio (aggregates only)",
+  "ef": 200,
+  "bootstrap": {
+    "draws": 5000,
+    "unit": "query, seeds summed within query"
+  },
+  "backends": {
+    "epzero": {
+      "appended": {
+        "odds_ratio_snapshot3_vs_1": 1.7645247779851019,
+        "odds_ratio_snapshot2_vs_1": 1.3989027261321125,
+        "interval_95_snapshot3_vs_1": [
+          1.4594477482783432,
+          2.113807542251056
+        ],
+        "queries_used": 294
+      },
+      "shuffled": {
+        "odds_ratio_snapshot3_vs_1": 1.0158741511633311,
+        "odds_ratio_snapshot2_vs_1": 0.9660070859466748,
+        "interval_95_snapshot3_vs_1": [
+          0.8698430914696391,
+          1.1799241089230748
+        ],
+        "queries_used": 325
+      },
+      "reversed": {
+        "odds_ratio_snapshot3_vs_1": 0.7718618352368575,
+        "odds_ratio_snapshot2_vs_1": 0.8449492069750042,
+        "interval_95_snapshot3_vs_1": [
+          0.6387514396079328,
+          0.9178135527793133
+        ],
+        "queries_used": 296
+      }
+    },
+    "faiss_hnsw": {
+      "appended": {
+        "odds_ratio_snapshot3_vs_1": 1.527574076379225,
+        "odds_ratio_snapshot2_vs_1": 1.3517275839106064,
+        "interval_95_snapshot3_vs_1": [
+          1.266317314030508,
+          1.8268299739964458
+        ],
+        "queries_used": 308
+      },
+      "shuffled": {
+        "odds_ratio_snapshot3_vs_1": 1.060004709158682,
+        "odds_ratio_snapshot2_vs_1": 1.033830161101313,
+        "interval_95_snapshot3_vs_1": [
+          0.9110030306441715,
+          1.2242433927074714
+        ],
+        "queries_used": 335
+      },
+      "reversed": {
+        "odds_ratio_snapshot3_vs_1": 0.7762417865394486,
+        "odds_ratio_snapshot2_vs_1": 0.8212430766807777,
+        "interval_95_snapshot3_vs_1": [
+          0.6478627131663447,
+          0.9181269279428351
+        ],
+        "queries_used": 296
+      }
+    }
+  },
+  "prediction": {
+    "epzero": {
+      "orders_as_mh": true,
+      "as_arrived_excludes_1": true
+    },
+    "faiss_hnsw": {
+      "orders_as_mh": true,
+      "as_arrived_excludes_1": true
+    }
+  }
+}
