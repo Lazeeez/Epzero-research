@@ -224,16 +224,54 @@ def run_ivf(prepared, output, config_path, *, mode, seed, package_root, native_o
                     provenance_record=record, evaluation_role=ROLE)
 
 
+def content_fingerprint(prepared):
+    """What a search reads from a prepared folder, without the paths and gzip bytes each job writes
+    differently (amendment 6): decompressed references, query arrays and IDs, snapshot hashes, counts."""
+    prepared = Path(prepared)
+    evidence = json.loads((prepared / 'prepared.json').read_text())
+    digest = hashlib.sha256()
+    for step in SNAPSHOTS:
+        with gzip.open(prepared / f'references-snapshot-{step}.json.gz', 'rb') as handle:
+            digest.update(hashlib.sha256(handle.read()).digest())
+    for role in ('calibration', ROLE):
+        digest.update(hashlib.sha256(np.load(prepared / f'{role}-queries.npy').tobytes()).digest())
+    kept = {'specs': [{k: v for k, v in s.items() if k != 'folder'} for s in evidence['specs']],
+            **{k: evidence[k] for k in ('encoder', 'calibration_ids', 'evaluation_ids', 'calibration_count',
+                                        'evaluation_count', 'bge_files_sha256', 'sample_agreement')}}
+    digest.update(json.dumps(kept, sort_keys=True).encode())
+    return digest.hexdigest()
+
+
+def check_inputs(report_paths, prepared):
+    """Amendment 6: each report's recorded inputs are its own job's prepared folder, and that folder's
+    content is the analysis folder's. Returns the number of jobs checked."""
+    expected = content_fingerprint(prepared)
+    jobs = {}
+    for path in report_paths:
+        job = next((p for p in Path(path).parents if (p / 'prepared' / 'prepared.json').exists()), None)
+        if job is None:
+            raise ValueError(f'no prepared folder for {path}')
+        held = json.loads(Path(path).read_text())['provenance'].get('heldout_inputs', {})
+        _, _, _, own = load_prepared(job / 'prepared')
+        if any(held.get(k) != own[k] for k in ('bge_prepared_sha256', 'bge_references_sha256')):
+            raise ValueError(f'{path}: recorded inputs are not its own job\'s prepared folder')
+        if jobs.setdefault(job, content_fingerprint(job / 'prepared')) != expected:
+            raise ValueError(f'{job}: prepared inputs differ in content')
+    return len(jobs)
+
+
 def analyze(prepared, release, evidence, output, *, hnsw_config, ivf_config):
-    """As heldout_analysis.analyze_heldout, with the BGE cohorts and references."""
+    """As heldout_analysis.analyze_heldout, with the BGE cohorts and references. The inputs are checked by
+    content across jobs (amendment 6), then the frozen collect runs without its byte-level check."""
     from . import heldout_analysis as A
     from .release import checksum
     _, queries, refs, identity = load_prepared(prepared)
     query_ids = queries[ROLE].ids
     exact = {step: {q: refs[step - 1][q] for q in query_ids} for step in A.SNAPSHOTS}
-    reports, runs, excluded = A.collect(sorted(Path(evidence).rglob('report.json')), ROLE, query_ids, exact,
-                                        config_sha256=(checksum(hnsw_config), checksum(ivf_config)),
-                                        inputs_sha256={k: identity[k] for k in ('bge_prepared_sha256', 'bge_references_sha256')})
+    report_paths = sorted(Path(evidence).rglob('report.json'))
+    identity['jobs_checked_by_content'] = check_inputs(report_paths, prepared)
+    reports, runs, excluded = A.collect(report_paths, ROLE, query_ids, exact,
+                                        config_sha256=(checksum(hnsw_config), checksum(ivf_config)))
     binaries = {r['provenance']['epzero_binary_sha256'] for r in reports.values()}
     qrels, judgments = A.load_test_qrels(release)
     result, rows = A.analyze_core(runs, exact, qrels, query_ids, primary_family=A.PRIMARY_FAMILY, families=A.FAMILIES,
