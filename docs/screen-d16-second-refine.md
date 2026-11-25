@@ -49,7 +49,7 @@ the re-rank depth. If it does not, the D14 recall rise was the extra work, and n
 
 Run on 24 November 2026, after the design above was committed (Epzero `min-backlinks` at 2d279c0e).
 Seed 11, one build per arm and dataset, searched with one thread. Raw results are in
-`Oryx/build/screen-d16/*.json`. Change against `one`, by interpolation at recall@10 0.90 / 0.95 / 0.98 /
+`BUILD_DIR/screen-d16/*.json`. Change against `one`, by interpolation at recall@10 0.90 / 0.95 / 0.98 /
 0.99 ("—" where `one` does not reach the target within the 17 widths):
 
 | Dataset | Arm | Distance computations | Queries per second | Build (add + refine) |
@@ -127,14 +127,14 @@ every recall@10 target on all three, and its refine takes about twice as long.
 
 **Decision:** if `full` needs at least 5% fewer distance computations at recall@10 0.98 on at least
 two datasets, with no target worse by more than 2%, it goes to a PACE round against Glass on the
-VIBE datasets as a candidate default, with its build-time cost. Otherwise nothing changes, and the
+VIBE datasets as a candidate setting, with its build-time cost. Otherwise nothing changes, and the
 note stands with this measurement added.
 
 ## Replication result (seeds 29 and 47, run 24 November 2026)
 
 Width 100 (`wide`) against 50 (`one`) at efConstruction 100. Change in distance computations and in
 queries per second at recall@10 0.90 / 0.95 / 0.98 / 0.99 ("—": `one` does not reach the target). Seed 11
-is repeated from above. Raw results are in `Oryx/build/screen-d16/*-s29.json` and `*-s47.json`.
+is repeated from above. Raw results are in `BUILD_DIR/screen-d16/*-s29.json` and `*-s47.json`.
 
 | Dataset | Seed | Distance computations | Queries per second | Build |
 | --- | --- | --- | --- | --- |
@@ -167,7 +167,7 @@ build's defaults is D16b.
 
 efConstruction 200, seed 11, `full` (refine at 200) against `half` (at 100, today's without the walk).
 Change in distance computations and queries per second at recall@10 0.90 / 0.95 / 0.98 / 0.99. Raw results
-are in `Oryx/build/screen-d16/d16b-*.json`.
+are in `BUILD_DIR/screen-d16/d16b-*.json`.
 
 | Dataset | Distance computations | Queries per second | Build |
 | --- | --- | --- | --- |
@@ -180,7 +180,7 @@ are in `Oryx/build/screen-d16/d16b-*.json`.
 less work at 0.98 and 0.99.
 
 **Decision:** under the rule (at least 5% fewer at 0.98 on two datasets, none worse by more than 2%),
-`full` is not a candidate default: only LongEval gains, and SIFT is worse by 3.7% at 0.95. Nothing
+`full` is not a candidate setting: only LongEval gains, and SIFT is worse by 3.7% at 0.95. Nothing
 changes. The result agrees with the automatic build's rule as it stands. It halves the width only
 without the principal-direction walk, which it picks for high-dimensional data like LongEval's. With
 the walk it already refines at the full width, and this is where the full width pays.
