@@ -6,7 +6,7 @@ Recorded on 23 November 2026, before it was run. Development data only.
 
 Screens D3–D4 showed that `extra_backlinks` raises recall at a fixed search width for slightly more
 work. Benchmarks compare indexes at matched work, along the whole recall–throughput curve. If the
-option moves Epzero's curve up across the range, it is a product improvement and a candidate default,
+option moves Epzero's curve up across the range, it is a general speed improvement,
 not only a fix for arrival bias.
 
 ## Design
@@ -28,7 +28,7 @@ above recall 0.9), and is lower by at least 3% on at least two of the three data
 
 Change in the distance computations needed to reach a recall target, `extra_backlinks` 8 against 0
 (negative = less work), linear interpolation between the measured widths; "n/a" where neither build
-reaches the target. Raw curves: `Oryx/build/screen-d5/*.json`.
+reaches the target. Raw curves: `BUILD_DIR/screen-d5/*.json`.
 
 | Data | Order | recall@10 0.90 | 0.95 | 0.98 | 0.99 | recall@100 0.95 |
 | --- | --- | --- | --- | --- | --- | --- |
