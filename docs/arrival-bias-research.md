@@ -638,7 +638,7 @@ positional, not geometric — some "anti-hubs" in an incrementally built HNSW ar
 Decomposing in-degree and miss probability into geometry (exact k-occurrence) and position is a
 direct, citable test of their framework. (2) Their γ rule is peer-reviewed prior art for
 in-degree-aware pruning and must be a baseline. (3) Their "reachability, not raw in-degree" fits our
-residual after in-degree repair. (4) Their open problem is our engine target.
+residual after in-degree repair. (4) Their open problem is the construction-side fix tested here.
 
 ### 5.3 Partition (IVF) and quantizer staleness
 
@@ -923,7 +923,7 @@ to `docs/screen-d17-*.md` (D12 and D16 are speed work, section 12).
 | D4 | `extra_backlinks` 8 on SIFT, GloVe and two more LongEval seeds | Excess cut 67–87% everywhere; oldest +0.05 to +0.21 pp; recall +0.25 to +0.75 pp; work +0.6% to +5.2% (SIFT just above the predicted 5%) |
 | D5 | Recall against work over the whole width range | Not a uniform speed-up: 1–5% more work at low recall, 6–21% less at recall@10 ≥ 0.98; neutral to slightly positive overall |
 | D6 | Clean sequential timing, 17 widths, `extra_backlinks` 0 / 4 / 8 | With 4: single-thread throughput −0.1% to +24% across recall@10 0.90–0.99 on all three datasets (+24% at 0.98 on LongEval, +13% at 0.99 on SIFT); build +0–5%. With 8: smaller throughput gain, −2.3% in one cell. **4 is the candidate default** |
-| D7 | Product path: 8-bit codes, refined bulk build of snapshot 1, later snapshots inserted one at a time; against a full rebuild | The bias reaches users: excess 2.27 pp grown against 0.22 rebuilt. `extra_backlinks` 4 cut it only 37% (prediction against) |
+| D7 | Default build path: 8-bit codes, refined bulk build of snapshot 1, later snapshots inserted one at a time; against a full rebuild | The bias reaches users: excess 2.27 pp grown against 0.22 rebuilt. `extra_backlinks` 4 cut it only 37% (prediction against) |
 | D7b | Diagnosis | Not the 8-bit construction (full-vector build: same excess, −32%). 8 links cut it 49%, but the oldest cohort rises 0.31 pp (limit 0.3). The larger product-path excess may come from the refine pass or 8-bit ranges trained on snapshot 1 only; untested |
 | D8 | Refine pass or stale 8-bit ranges? | The refine pass: without it the grown excess is 0.91 pp smaller; snapshot-1 ranges add only 0.27 pp (quantizer staleness small without drift) |
 | D9 | Refine each snapshot's insertions (new `refine_links(first=...)`), alone and with `extra_backlinks` 4 | Alone −31% (prediction against). **Together −77%** (2.27 → 0.53 pp); recall@100 0.9509 against the rebuild's 0.9522; oldest +0.29 pp; 8 s of refine on all cores instead of a 49 s rebuild. **Lead product design** |
