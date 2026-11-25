@@ -17,7 +17,7 @@ on GloVe.
 A one-off build of each 300K sample: SIFT (L2), GloVe (inner product) and LongEval (inner product,
 2,560-d), in sample order. Product settings without the principal-direction walk: 8-bit codes, vectors
 kept, `fast_build`, M 16, efConstruction 100. All vectors are added on all cores, then refined (all
-cores). Epzero branch `min-backlinks`; no engine change. Arms:
+cores). Epzero development branch `min-backlinks`; no new option. Arms:
 
 | Arm | Refine after the build |
 | --- | --- |
@@ -92,10 +92,10 @@ Seeds 29 and 47, arms `one` and `wide`, all three datasets, as above.
 **Prediction:** on every seed and dataset, `wide` needs fewer distance computations than `one` at
 recall@10 0.95, and at 0.98 where `one` reaches it, and is faster at 0.98 on SIFT and LongEval.
 
-**Decision:** if the prediction holds, the engine change is for the automatic build to refine at the full
-construction width without the walk as well (`engine/src/auto.cpp`). It goes to a PACE round against
-Glass on the VIBE datasets before it becomes the default, as round 11 does for the re-rank depth,
-with the build-time cost reported beside the speed gain. If it does not hold, nothing changes.
+**Reading:** if the prediction holds, refining at the full construction width is also the better choice
+for Epzero's automatic build without the walk; that would need its own comparison against Glass on the
+VIBE datasets, with the build-time cost reported beside the speed gain. If it does not hold, nothing
+follows.
 
 ## Correction (24 November 2026, while the replication was running, before its results were seen)
 
@@ -110,8 +110,8 @@ D16's `wide` width. D16, like the engine arms, builds at efConstruction 100, whe
   show that the automatic build's halving is wrong. At efConstruction 200 the halving gives 100.
 - The automatic build's note (half of 200 gives the same graph as 200, GloVe-100 at 200K) is not
   contradicted. D16 tested 50 against 100, not 100 against 200.
-- The replication's engine change is withdrawn. The replication still runs, as a check of the width
-  effect at efConstruction 100. That effect matters for the research product path, the engine arms,
+- The replication's proposed change of default is withdrawn. The replication still runs, as a check of the width
+  effect at efConstruction 100. That effect matters for the default build path, the engine arms,
   and screen D15's choice of width 100 for new batches.
 - A product-default check comes next: at efConstruction 200, refine at 100 (today's) against 200,
   on the three samples, as screen D16b (designed in its own section before it runs).
@@ -160,7 +160,7 @@ recall. The effect is large on LongEval's 2,560-d vectors (13–21% less work at
 (3–8% less at 0.95, and a higher ceiling within the sweep), and small on SIFT (within ±4%). The build
 takes 25–55% longer. Under the correction above, this does not change the automatic build, which
 already refines at 100. What it supports is the width-100 refine in the repair (screen D15, the third
-engine arm), and refining at 100 in the research product path generally. Whether 200 beats 100 at the
+engine arm), and refining at 100 in the default build path generally. Whether 200 beats 100 at the
 build's defaults is D16b.
 
 ### D16b result (run 24 November 2026)
