@@ -1,0 +1,94 @@
+{
+  "kind": "EXPLORATORY screen M2 (docs/screen-m2-deletions.md), aggregates only",
+  "ef": 200,
+  "prepared": {
+    "kind": "longeval",
+    "metric": "ip",
+    "count": 300000,
+    "dimension": 2560,
+    "queries": 381,
+    "delete_seed": 11,
+    "deleted": 37927,
+    "live": 262073,
+    "cohort_live": {
+      "1": 127022,
+      "2": 73259,
+      "3": 61792
+    }
+  },
+  "backends": {
+    "epzero": {
+      "arms": {
+        "grown": {
+          "seeds": [
+            11,
+            29,
+            47
+          ],
+          "excess_pp": 1.8829120952223486,
+          "excess_interval_95_pp": [
+            1.3026957452775538,
+            2.486480852165284
+          ],
+          "oldest_miss_rate": 0.043137509959187643
+        },
+        "rebuilt": {
+          "seeds": [
+            11,
+            29,
+            47
+          ],
+          "excess_pp": 1.644940158612466,
+          "excess_interval_95_pp": [
+            1.082064914791225,
+            2.2381398439513003
+          ],
+          "oldest_miss_rate": 0.0453000764215216
+        },
+        "repaired": {
+          "seeds": [
+            11,
+            29,
+            47
+          ],
+          "excess_pp": -0.04888110908833009,
+          "excess_interval_95_pp": [
+            -0.5442490146567556,
+            0.43417217643395994
+          ],
+          "oldest_miss_rate": 0.042357034844961866
+        }
+      },
+      "contrasts": {
+        "rebuilt_minus_grown": {
+          "seeds": [
+            11,
+            29,
+            47
+          ],
+          "excess_change_pp": -0.23797193660988272,
+          "interval_95_pp": [
+            -0.524680442615766,
+            0.05656517628566808
+          ],
+          "oldest_miss_change_pp": 0.21625664623339536,
+          "oldest_upper_95_pp": 0.41058551977646973
+        },
+        "repaired_minus_grown": {
+          "seeds": [
+            11,
+            29,
+            47
+          ],
+          "excess_change_pp": -1.9317932043106785,
+          "interval_95_pp": [
+            -2.3601498801422425,
+            -1.5227106199415443
+          ],
+          "oldest_miss_change_pp": -0.07804751142257774,
+          "oldest_upper_95_pp": 0.08183008116947957
+        }
+      }
+    }
+  }
+}
