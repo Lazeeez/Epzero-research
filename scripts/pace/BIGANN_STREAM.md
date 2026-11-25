@@ -61,7 +61,7 @@ interval excluding 0 in `appended` builds for both. (1) is smaller in magnitude 
 (|gap change| < 2.0 points) for both, and may include 0. If instead (1) is at least as large as on
 LongEval, position alone explains the bias and the timing-minority reading is not supported.
 
-## Part B: the engine repair (Epzero's product path)
+## Part B: the engine repair (Epzero's default build path)
 
 As the full-scale engine arm (`research/longeval/engine_arm.py`, unchanged; M 16, efConstruction 100,
 8-bit codes, `fast_build`): cohort 1 bulk-built on all cores and refined, cohorts 2 and 3 inserted one
