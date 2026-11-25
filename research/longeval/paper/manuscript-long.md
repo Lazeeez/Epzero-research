@@ -145,7 +145,7 @@ one snapshot (1,581 pairs). §14 shows what these labels can and cannot support.
 | Epzero HNSW, FAISS HNSW | M 16, efConstruction 100 | ef 200 fixed; calibrated ef |
 | FAISS IVF-Flat | nlist 1,024; training frozen at snapshot 1, or refreshed | nprobe fixed at its snapshot-1 value; calibrated |
 
-Epzero is our own C++ HNSW implementation; FAISS is Meta's library. Using two implementations separates
+Epzero is an open-source C++ HNSW library; FAISS is Meta's. Using two implementations separates
 properties of HNSW from properties of one codebase.
 
 **Calibration.** A *calibrated* setting is the smallest ef in {100, 200, 400, 800}, or nprobe in
@@ -583,8 +583,8 @@ prediction committed before its run; records `docs/screen-d1-*.md` to `docs/scre
 | D2 | A guaranteed floor of incoming links at insertion, 2 / 4 / 8 | No effect (prediction against): the gradient is passive accumulation (§10). Option removed |
 | D3 | `extra_backlinks` 4 / 8 at insertion | Excess 1.62 → 0.78 / 0.41 points; oldest +0.08 / +0.16; work +0.4 / +0.9%; build +2 / +4% |
 | D4 | 8 links on SIFT, GloVe and two more LongEval seeds | Excess cut 67–87% everywhere; oldest +0.05 to +0.21 points; work +0.6–5.2% |
-| D7 | The production path: 8-bit codes, refined bulk build of snapshot 1, later snapshots inserted | The bias reaches users there too: excess 2.27 points grown, 0.22 rebuilt; 4 links cut it only 37% (prediction against) |
-| D8 | Why the production path is worse | The refine pass of the bulk build: without it the grown excess is 0.91 points smaller |
+| D7 | The default build path: 8-bit codes, refined bulk build of snapshot 1, later snapshots inserted | The bias reaches users there too: excess 2.27 points grown, 0.22 rebuilt; 4 links cut it only 37% (prediction against) |
+| D8 | Why the default build path is worse | The refine pass of the bulk build: without it the grown excess is 0.91 points smaller |
 | D9 | Refine each snapshot's insertions, alone and with 4 links | Alone −31% (prediction against); together −77% (2.27 → 0.53 points) |
 | D13 | 8 links with each batch refined | Excess 0.63 → 0.28 points (rebuild 0.12) |
 | D14 | Also refine the older nodes the new ones link to | Widens the gap (prediction against): the oldest cohort gains most |
@@ -592,7 +592,7 @@ prediction committed before its run; records `docs/screen-d1-*.md` to `docs/scre
 | D17 | A search width calibrated once and kept, grown and repaired | Recall falls 1.1 points but ends at its 0.95 target, so the recall leg is not shown (prediction against); the drift is borne by later arrivals (excess 2.05 points); repaired: 0.20 |
 
 **The full-scale confirmation** (`LONGEVAL_ENGINE_ARM.md`; three runs, each with its design and decision
-margins recorded first). In Epzero's production path on all 1,661,900 documents, ef 200, three seeds. The
+margins recorded first). In Epzero's default build path on all 1,661,900 documents, ef 200, three seeds. The
 decision margins (decision 3 of 23 November): the newest cohort's within-query excess must fall, with
 the interval of the change excluding 0, to at most 1.0 point; the oldest cohort's miss rate may rise by
 at most 0.75 points and recall@100 fall by at most 0.5 (upper 95% bounds).
