@@ -787,7 +787,10 @@ novelty assessment, last checked on 26 November 2026, is in `docs/arrival-bias-r
   exploratory analysis reuses them. The pre-registered replications (confirmation queries, second
   encoder, the public stream) are the defence, with predictions fixed for the next release's new queries.
 - **A post-hoc measure.** The within-query ratio was chosen after the pooled result was seen, and it
-  averages over query groups whose ratios differ (§9).
+  averages over query groups whose ratios differ (§9). A logistic model with a fixed effect per query
+  (analysis R1.3, recorded first) gives the same ordering, with odds ratios as arrived / shuffled /
+  reversed of 1.77 / 1.02 / 0.77 (Epzero) and 1.53 / 1.06 / 0.78 (FAISS), the as-arrived intervals above 1;
+  and every replication since used the measure as pre-registered.
 - **Few seeds.** Three construction seeds cannot separate seed variation from Epzero's change; ten seeds
   (§6, §7) put every arm within the margin, but were exploratory.
 - **A coarse calibration.** 50 calibration queries and a coarse ef grid, a design choice that separates
