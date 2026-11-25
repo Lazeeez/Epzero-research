@@ -63,3 +63,8 @@ sha256sum longeval-bge-seeds-01-evidence.tar.gz
 
 The archive holds run files derived from LongEval data: copy it to the local `build` directory and never
 commit it.
+
+## Submitted (26 November 2026)
+
+The archive's SHA-256 on PACE matched the receipt (9601874904d87e62…6ae4ed) and the package checksums
+verified. Jobs 7325332–7325338, seeds 101, 211, 307, 401, 503, 601, 701 in that order.
