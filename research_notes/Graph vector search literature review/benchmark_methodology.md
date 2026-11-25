@@ -307,8 +307,8 @@ PVLDB Volume 20's rolling deadlines are the only confirmed live research route, 
 - Next Volume 20 deadlines by the stated rule: 1 Dec 2026 (abstract 25 Nov), 1 Jan, 1 Feb, 1 Mar 2027.
 - With a Round 5 and a re-run ahead, 1 Mar 2027 is realistic only if the redesign starts now. A rejected-without-revision outcome would still leave Volume 21.
 - By pattern alone: Volume 20 opened on 1 Apr 2026, so Volume 21 may open around Apr 2027, and SIGMOD 2027's rounds began 17 months ahead of the conference, so SIGMOD 2028 Round 1 could fall around Jan 2027. **Neither date is announced. Check [2028.sigmod.org](https://2028.sigmod.org/) monthly.**
-- Double-anonymous SIGMOD conflicts with a public site at epzero.dev under the same name. Check the anonymity rule on pre-existing systems before submitting; PVLDB's single-blind avoids this.
-- EA&B has "no excuses" on artifacts, which we can satisfy with a public repo. That sits awkwardly with the memory note that the demo site must not link the repo; those are separate surfaces, so a package link in the paper does not touch the site.
+- SIGMOD is double-anonymous: check its rule on named, public systems before submitting; PVLDB is single-blind.
+- EA&B has "no excuses" on artifacts, which we can satisfy with a public repo. A package link in the paper is enough.
 
 ### Gaps
 - SIGMOD 2027 workshop call URL returned 404; no workshop list was obtained. VLDB 2027 workshop list not found. VecDB 2027 not announced. DaMoN 2027 not checked.
