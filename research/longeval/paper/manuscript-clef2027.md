@@ -2,8 +2,8 @@
 
 **Draft for the CLEF 2027 conference track (LNCS, long paper: 12 pages plus references). Version 2026-11-25.**
 The second encoder's (BGE) order, engine-arm and held-out results are in (E4 complete).
-In the LNCS layout (`md2lncs.py`, then XeLaTeX) the body ends about 21 lines into page 12 of 13, references
-after it: about 11.4 of the 12 pages allowed.
+In the LNCS layout (`md2lncs.py`, then XeLaTeX) the body ends about 31 lines into page 12 of 13, references
+after it: about 11.6 of the 12 pages allowed.
 This version restructures and shortens [the full draft of 21 November](../docs/history/manuscript-full-draft-2026-11-23.md),
 which is kept unchanged and holds every analysis in more detail. Every number comes from verified
 evidence: `../HELDOUT_RESULTS.md`, `../HELDOUT_EXPLORATORY.md` and the development result files.
@@ -24,9 +24,10 @@ HNSW index built by appending misses later arrivals 1.25–1.33 times as often a
 the same query; rebuilding the full collection in three insertion orders shows that
 insertion position causes this, and a denser graph sharpens it. The effect appears in three HNSW
 implementations, with a second encoder, and, twice as strongly, on the Big-ANN streaming benchmark. Giving each insertion
-extra incoming links and refining each new batch removes it at a fraction of a rebuild's cost. The labels limit what the
-effectiveness numbers can show: they agree weakly with human grades, and most documents that an
-approximate index substitutes into the top 10 were never graded.
+extra incoming links and refining each new batch removes it at a fraction of a rebuild's cost. Most documents that an
+approximate index substitutes into the top 10 were never graded; grading them with a validated local judge
+halves the measured loss and leaves its change over time unchanged, though the LLM labels agree weakly with
+human grades.
 
 ## 1 Introduction
 
@@ -328,27 +329,32 @@ the excess falls from 3.31 to 0.36 points on the test queries (change −2.95 [�
 
 *(Exploratory.)* **Coverage.** The labels cover a depth-10 pool that includes the exact baseline, so
 99.5–99.6% of exact search's top 10 is graded, but 76–82% of the documents that an HNSW index
-substitutes into the top 10 are ungraded and count as non-relevant. Two rescoring rules bracket the
-effect without new judgments: *carried* gives an ungraded occurrence the grade the same pair has at
-another snapshot, and *condensed* removes ungraded documents from every ranking.
+substitutes into the top 10 are ungraded and count as non-relevant. *Condensed* scoring removes ungraded
+documents from every ranking; we also graded every pooled pair (6,298, with every arm's top 10 at every
+snapshot) with a local GPT-OSS-120B judge, the organisers' prompt and parser at temperature 0. On a
+1,000-pair validation sample drawn before grading, it met all three thresholds fixed in advance: binary
+agreement with the official grades 0.956 [0.941, 0.971] (required 0.90), linear-weighted kappa 0.884
+[0.853, 0.912] (0.80), and nDCG@10 of complete lists within 0.0026 of the official one at every snapshot (0.02).
 
-**Table 4.** Gap at snapshot 3 and D under three scoring rules.
+**Table 4.** Gap at snapshot 3 and D (snapshot 3 − 1) under three scoring rules.
 
-| Arm (calibrated) | Gap: official | carried | condensed | D: official | carried | condensed |
+| Arm (calibrated) | Gap: official | condensed | full grades | D: official | condensed | full grades |
 | --- | --- | --- | --- | --- | --- | --- |
-| Epzero HNSW | −0.0117 | −0.0089 | −0.0056 | −0.0059 | −0.0034 | −0.0048 |
-| FAISS HNSW | −0.0055 | −0.0033 | −0.0007 | −0.0007 | +0.0015 | +0.0004 |
-| IVF, frozen | −0.0080 | −0.0046 | −0.0017 | −0.0015 | +0.0019 | +0.0003 |
+| Epzero HNSW | −0.0117 | −0.0056 | −0.0082 | −0.0059 | −0.0048 | −0.0050 [−0.0117, +0.0008] |
+| FAISS HNSW | −0.0055 | −0.0007 | −0.0021 | −0.0007 | +0.0004 | −0.0002 [−0.0040, +0.0039] |
+| IVF, frozen | −0.0080 | −0.0017 | −0.0030 | −0.0015 | +0.0003 | +0.0001 [−0.0021, +0.0025] |
 
-With ungraded documents removed the gap halves or more, and the pattern over time is unchanged
-(only Epzero, whose search never widened, drifts). The carried rule adds 131 grades at snapshot 3 but
-only 2 at snapshot 1, so its D is biased upwards. **Leniency.** On the 29 test queries that also
+Graded in full, the gap is 0.002–0.008 at every snapshot, against 0.005–0.012 with the official labels:
+missing judgments made up 0.002–0.007 of it, for every arm and snapshot. The pattern over time is unchanged:
+coverage moves D by at most +0.0018 [−0.0004, +0.0041], so the equivalence results of §4.2 stand, with
+Epzero's arm still the inconclusive one. **Leniency.** On the 29 test queries that also
 have human grades (1,581 pairs), the LLM labels call 87% of the pairs relevant against 60%, with a
 linear-weighted kappa of 0.24 [0.14, 0.36]; exact search scores 0.93 nDCG@10 under the LLM labels
 and 0.56 under the human grades, uncorrelated per query.
 
-Under lenient labels a substitute costs little when it is graded and its full gain when it is not,
-so judgment coverage has a large part in the measured gap. Neither rescoring bounds the true loss.
+Under lenient labels a substitute costs little when it is graded and its full gain when it is not, so
+judgment coverage made up half of the measured gap; the local judge, validated against the same lenient
+labels, shares their leniency, so the full grades measure the loss under these labels, not under human ones.
 The results on neighbour recall, index history and arrival (§4.1, §4.3, §5) use no labels at all.
 
 ## 7 Discussion
@@ -369,15 +375,16 @@ content should measure recall on those documents, not only on average.
 
 **Why the loss is small.** Approximate search misses about 6.3% of the exact top 100 at ef 200 but
 only 3.4–3.7% of the top 10; the top-10 neighbours it misses are less relevant than those it keeps
-(mean grade 0.77–1.01 against 1.54); and most replacements are ungraded (§6).
+(mean grade 0.77–1.01 against 1.54); and many of the replacements are relevant documents the release
+never graded: graded in full, the loss halves (§6).
 
 ## 8 Limitations
 
 There is one collection and two embedding models, under which Epzero's small change in D did not
 reproduce, so whether its arm agrees across encoders within the margin is open; and the collection only grows, so the equivalence result does not cover deletions or rewritten
 documents; only the insertion-position effect was reproduced elsewhere (GloVe, SIFT, a third
-implementation and the Big-ANN stream). The effectiveness results rest on lenient LLM labels whose pool leaves most
-substitutes ungraded; human grades cover 29 queries at one snapshot. The test queries were used
+implementation and the Big-ANN stream). The effectiveness results rest on lenient LLM labels, which the local judge that graded the
+substitutes was validated against and shares; human grades cover 29 queries at one snapshot. The test queries were used
 once for the frozen analysis, and every exploratory analysis reuses them. The within-query ratio was
 chosen after the pooled result was seen and averages over query groups whose ratios differ. Three
 construction seeds are too few to separate seed variation from Epzero's change. Calibration used 50 queries and a coarse
@@ -392,8 +399,8 @@ labels, and the change in that loss as the collection nearly doubled stayed with
 three calibrated arms. Incremental maintenance was equivalent to rebuilding. At a fixed width recall
 fell by about a point, and an index built by appending missed its newest documents most; inserting
 the same documents first reversed that, and a denser graph made it stronger. Extra incoming links for
-each insertion and a refine of each new batch removed it, on LongEval and on the Big-ANN stream. How much of the
-measured loss is real depends on documents the release never graded, which our follow-up measures.
+each insertion and a refine of each new batch removed it, on LongEval and on the Big-ANN stream. Graded in
+full by a validated local judge, the loss is about half the official measure, 0.002–0.008, with the same trend.
 
 **Figure 1** (`figures/fig-gap-recall.pdf`). (a) ANN-minus-exact nDCG@10 by snapshot at calibrated
 settings, mean over 374 queries and three seeds, with 95% query-bootstrap intervals. (b) Mean
