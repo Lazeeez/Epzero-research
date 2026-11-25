@@ -53,7 +53,9 @@ def main():
     # The sample metadata of the order rerun; every one of its six jobs wrote the same files.
     jobs = sorted(p for p in (build / ORDER_JOBS).iterdir() if p.is_dir())
     for name in METADATA:
-        copies = {sha((job / name).read_bytes()) for job in jobs}
+        # Content, not bytes: each job's gzip header carries its own timestamp.
+        read = (lambda p: gzip.decompress(p.read_bytes())) if name.endswith('.gz') else (lambda p: p.read_bytes())
+        copies = {sha(read(job / name)) for job in jobs}
         if len(copies) != 1:
             raise ValueError(f'the order rerun jobs disagree on {name}')
         payload[f'inputs/qwen-sample/{name}'] = (build / ORDER_JOBS / '7253605' / name).read_bytes()
