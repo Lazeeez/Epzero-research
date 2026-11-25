@@ -55,7 +55,7 @@ same CPU type and do not overlap them with jobs on other CPU types.
 ## After completion
 
 ```bash
-sacct -X --name=longeval-bge-seeds -S 2026-11-26 --format=JobID,State,ExitCode,Elapsed
+sacct -X --name=longeval-bge-seeds -S 2026-11-25 --format=JobID,State,ExitCode,Elapsed
 grep -H '^PASS\|^exit_code' longeval-bge-seeds-*.log
 tar -czf longeval-bge-seeds-01-evidence.tar.gz build/pace-longeval-bge-seeds/jobs longeval-bge-seeds-*.log
 sha256sum longeval-bge-seeds-01-evidence.tar.gz
@@ -68,3 +68,5 @@ commit it.
 
 The archive's SHA-256 on PACE matched the receipt (9601874904d87e62…6ae4ed) and the package checksums
 verified. Jobs 7325332–7325338, seeds 101, 211, 307, 401, 503, 601, 701 in that order.
+All seven were pending on resources at first check. PACE's clock was still on 25 November (UTC), so `sacct`
+needs `-S 2026-11-25`; an evidence archive made before the jobs ran holds nothing and is deleted.
