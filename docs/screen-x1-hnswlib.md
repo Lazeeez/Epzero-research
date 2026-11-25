@@ -15,7 +15,7 @@ is a later screen.
 
 ## Design
 
-As the 300K development pilot (`Oryx/build/longeval-insertion-pilot-03-m16`, the same sample in WSL
+As the 300K development pilot (`BUILD_DIR/longeval-insertion-pilot-03-m16`, the same sample in WSL
 `~/epzero-longeval/pilot/sample`): M 16, efConstruction 100, one thread, one vector at a time in each
 order (`appended`, `reversed`, `shuffled`; `insertion_pilot.insertion_order`), seeds 11, 29 and 47
 (hnswlib's `random_seed`), inner-product space, full-precision vectors. Searched at ef 100, 200, 400 and
@@ -54,8 +54,8 @@ Run on 24 November 2026, after the design above was committed. hnswlib 0.8.0, bu
 source archive (SHA-256 `cb6d037e…c44c`) in its own environment (numpy 2.4.6, pybind11 3.1.0). The
 module's tests passed there, including the exact reproduction of `insertion_pilot run` on FAISS. Nine
 builds, 339–352 s each, single-threaded, recall@100 at ef 200 of 0.941–0.946 (FAISS on the same sample:
-0.946 as arrived). FAISS and Epzero are the pilot's own builds (`Oryx/build/longeval-insertion-pilot-03-m16`).
-Aggregates: `research/longeval/cross-pilot-x1-hnswlib.json`; raw builds in `Oryx/build/screen-x1/`.
+0.946 as arrived). FAISS and Epzero are the pilot's own builds (`BUILD_DIR/longeval-insertion-pilot-03-m16`).
+Aggregates: `research/longeval/cross-pilot-x1-hnswlib.json`; raw builds in `BUILD_DIR/screen-x1/`.
 
 Within-query (Mantel–Haenszel) miss ratio of snapshot-3 against snapshot-1 targets, ef 200, seeds
 averaged within query, 95% query-bootstrap intervals (5,000 draws):
