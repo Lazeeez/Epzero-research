@@ -56,3 +56,35 @@ position + 1); searched with complexity 100, 200, 400 and 800, k 100. In-degree 
 graph file (each location's neighbour list, the frozen point excluded) through the saved tags. Same data,
 orders, measures and predictions as above; the two backends' ratios are reported side by side. No DiskANN
 build or search had been run on study data when this was written.
+
+## Result (26 November 2026)
+
+Aggregates `research/longeval/m3-vamana.json`. Within-query miss ratio of snapshot-3 (or random cohort 3)
+against snapshot-1 targets at L 200, k 100, with 95% query-bootstrap intervals; mean in-degree of the first
+and last insertion tenths in shuffled builds.
+
+| Backend | Data | As arrived | Shuffled | Reversed | In-degree, first / last tenth | Recall@100 at L 200 |
+| --- | --- | --- | --- | --- | --- | --- |
+| independent driver | LongEval 300K | 1.32 [1.18, 1.47] | 0.94 [0.83, 1.04] | 0.65 [0.56, 0.74] | 51.9 / 17.4 | 0.937–0.943 |
+| independent driver | SIFT 300K | 1.99 [1.73, 2.28] | 0.99 [0.87, 1.12] | 0.42 [0.36, 0.49] | 44.4 / 18.6 | 0.987–0.988 |
+| DiskANN 0.7.0 | LongEval 300K | 0.99 [0.84, 1.16] | 0.97 [0.85, 1.11] | 0.89 [0.76, 1.03] | 47.0 / 28.1 | 0.962–0.965 |
+| DiskANN 0.7.0 | SIFT 300K | 1.43 [1.16, 1.76] | 0.90 [0.74, 1.08] | 0.47 [0.35, 0.60] | 45.4 / 26.4 | 0.994–0.995 |
+
+The driver's LongEval run has one shuffled seed (11): its second shuffled build was dropped to free the node
+for screen M2, as it would have taken over two hours (the driver builds at about a fifth of DiskANN's speed).
+Each saved DiskANN graph left out its first inserted vector (one in 300,000 in-degree counts).
+
+**Predictions.** Independent driver: **all held** on both datasets (as arrived above 1.10, shuffled within
+[0.90, 1.10], reversed below 0.95, first-tenth in-degree at least 1.3 times the last's: 2.4–3.0). DiskANN:
+**as arrived on LongEval failed** (0.99 against above 1.10; as arrived minus reversed +0.10 [−0.04, +0.25]);
+**shuffled on SIFT failed narrowly** (0.898 against at least 0.90; its interval contains 1); the other four
+ratio predictions and the in-degree prediction (1.68–1.72) held.
+
+**Reading.** The arrival gradient is not specific to HNSW: an independent implementation of FreshDiskANN's
+published insertion shows it as strongly as HNSW on both datasets. DiskANN's own library shows it on SIFT but
+hardly at all on LongEval. The visible difference is the floor of incoming links: DiskANN's newest tenth keeps
+26–28 of them (HNSW's about 12, the driver's 17–19), and DiskANN's recall is higher at the same L. One candidate
+cause, not tested here, is that DiskANN lets a neighbour list grow past R (the saved graphs report a maximum
+degree above 32) before pruning it, so a newcomer's reverse links are kept more often; the frozen start point
+is another difference from the driver. Which choice protects late arrivals is a question for a follow-up screen
+that varies them one at a time.
