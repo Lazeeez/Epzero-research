@@ -17,7 +17,7 @@ early, those nodes chose their links among every document present at the end. Th
 supply (section 7.3 of the research document: passive accumulation) the newest cohort is still
 missing.
 
-## Engine change (Epzero branch `min-backlinks`)
+## Engine option (Epzero development branch `min-backlinks`)
 
 `refine_links(threads, ef, first, around=False)`. With `around=True` it refines, in the same pass as the
 nodes inserted from `first` on, every older node (position below `first`) that one of them links to
@@ -29,13 +29,13 @@ nodes refined is returned.
 
 ## Design
 
-As D13 (product path on the 300K development sample: 8-bit codes, `fast_build`, M 16,
+As D13 (default build path on the 300K development sample: 8-bit codes, `fast_build`, M 16,
 efConstruction 100; snapshot 1 bulk-built and refined; snapshots 2 and 3 inserted one at a time;
 `extra_backlinks` 8; seeds 11, 29, 47; refine width 50; test queries; ef 100, 200, 400). Two arms, each
 run after each later snapshot:
 
 - **around:** `refine_links(first=position before the snapshot, around=True)`.
-- **all:** `refine_links(first=0)`: every node refined again. This needs no engine change. It is the
+- **all:** `refine_links(first=0)`: every node refined again. This needs no new option. It is the
   upper bound of what refining the older side can do, at a cost that grows with the index.
 
 Compared with D13's `8 links + refine new` arm (excess 0.28, oldest 4.45%, recall 0.9506) and the
