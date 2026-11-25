@@ -78,7 +78,7 @@ What would show commonality is a single protocol, the pairwise miss ratio by coh
 
 For the CLEF long paper, the strongest framing is **"The index is a hidden temporal-persistence factor."** As collections grow, dense first-stage retrieval with an incrementally built graph index systematically under-exposes late-arriving documents, while every metric LongEval and the ANN community report stays flat. The contributions would be a metric: the pairwise arrival-cohort miss ratio, reported at neighbour level and at relevance level, alongside retrievability Gini by cohort. Then evidence on LongEval-Sci's three snapshots plus a second real-timestamp collection. Then causal ablations (shuffle, reverse, rebuild). Then the IVF contrast. Then a remedy evaluation. Finally, an evaluation recommendation for LongEval: dense runs should report the index and its build history, and the exact-vs-ANN cohort ratio.
 
-The vector-engine contribution belongs in a separate systems paper or preprint so the two do not double-publish. It would be arrival-invariant linking plus per-age recall telemetry. The pitch is "zero-tuning" in the sense that the index stays equally fair to old and new items without rebuilds. That fits the product's goal, provided every gain is measured.
+An index-side repair belongs in a separate systems paper or preprint so the two do not double-publish: arrival-invariant linking plus per-age recall telemetry, so that an index stays equally fair to old and new items without rebuilds, with every gain measured.
 
 ### Competing work and timing risk
 
@@ -86,7 +86,7 @@ Timing risk is high. GRAB-ANNS's authors could add age stratification in a revis
 
 ### The biggest reviewer objections
 
-The first objection is the weak relevance-level within-query effect. For our engine the Mantel–Haenszel ratio is 1.28 [0.86, 1.96], and its interval includes 1. FAISS is at 1.70 [1.01, 3.12], barely excluding 1. The pooled 2–3x is therefore partly query composition: the queries whose relevant sets contain new documents are harder for HNSW overall. The answer is to lead with the neighbour-level within-query ratio under shuffle and reverse controls, which needs no qrels and has far more pairs, and to increase relevance-level power.
+The first objection is the weak relevance-level within-query effect. For Epzero the Mantel–Haenszel ratio is 1.28 [0.86, 1.96], and its interval includes 1. FAISS is at 1.70 [1.01, 3.12], barely excluding 1. The pooled 2–3x is therefore partly query composition: the queries whose relevant sets contain new documents are harder for HNSW overall. The answer is to lead with the neighbour-level within-query ratio under shuffle and reverse controls, which needs no qrels and has far more pairs, and to increase relevance-level power.
 
 The second is practical size. The absolute drop rates are 4.0% against 2.0%, and the nDCG gap is negligible. The answer is the exposure argument, plus a dose-response showing how the ratio scales with collection growth, lower ef and more snapshots.
 
@@ -129,7 +129,7 @@ What it establishes:
 - Outlier queries, defined as the slowest 50% on a brute-force KNNG, are those whose ground-truth neighbours have low in-degree (Table 6). The paper adds that reachability matters more than raw in-degree: "a target with a higher in-degree remains isolated if its incoming edges connect exclusively to other inaccessible anti-hubs" (Sec. 5.4.2).
 - It sorts HNSW, NSG, Vamana, τ-MG, LSG and Vista into a taxonomy of hubness-mitigation strategies (Table 1, Fig. 4).
 - It proposes a post-hoc hubness-aware pruning. A factor γ relaxes the MRNG rule (γ > 1) for low-in-degree nodes and tightens it (γ < 1) for high-in-degree nodes (Sec. 5.6). This lowers skewness (Table 7) at an indexing cost of +0.2% for HNSW (Fig. 14). The authors note it is limited by the initial graph: "severely isolated anti-hubs may rarely appear in candidate pools".
-- The future work names our engine target as open. Sec. 6.2.1 proposes "hubness-native construction" that maintains in-degree statistics during ingestion. Sec. 6.2.3 states that "naive insertions and deletions can introduce new degree imbalances ... Developing bounded-cost update mechanisms that preserve degree regularity and global reachability—without triggering full index rebuilds—remains an important open problem."
+- The future work names the construction-side target as open. Sec. 6.2.1 proposes "hubness-native construction" that maintains in-degree statistics during ingestion. Sec. 6.2.3 states that "naive insertions and deletions can introduce new degree imbalances ... Developing bounded-cost update mechanisms that preserve degree regularity and global reachability—without triggering full index rebuilds—remains an important open problem."
 
 What it does not do:
 - It never treats insertion order, insertion position or item age as a cause of in-degree. All skew is attributed to geometry.
