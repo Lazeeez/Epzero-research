@@ -80,7 +80,7 @@ targets, query and document IDs). Aggregates: `research/longeval/e4-bge-order.js
 reversed: Epzero 1.305 [1.207, 1.423] / 0.992 / 0.807; FAISS 1.240 [1.144, 1.354] / 0.980 / 0.839.
 Change in the newest cohort's excess miss risk, as arrived minus reversed: Epzero +4.8 [+3.9, +5.7]
 points, FAISS +4.0 [+3.1, +4.8]. **Prediction 1 held** for both implementations. Recall@100 spread
-between orders: 0.60 and 0.77 points at ef 200 (0.31-0.89 across ef 100-800). **Prediction 2 held.**
+between orders: 0.60 and 0.77 points at ef 200 (0.28-0.89 across ef 100-800). **Prediction 2 held.**
 Confirmation queries: the change is +4.1 [+2.0, +6.5] and +3.1 [+1.6, +4.9]; the recall spread
 between orders there is 1.18 points for Epzero and 0.96 for FAISS at ef 200, above 1 point for
 Epzero (a confirmation reading, not the prediction's test, reported as it is).
