@@ -45,3 +45,19 @@ tar -xzf longeval-grading-01.tar.gz
 (cd longeval-grading-01 && sha256sum --check --quiet --strict SHA256SUMS && echo package OK)
 sbatch longeval-grading-01/scripts/pace/longeval-grading.sbatch
 ```
+
+## Result (26 November 2026)
+
+Job 7298863 passed on an H200 node in 2 h 6 min; the evidence archive's SHA-256 matched the node's
+(aab1c7ad…76e0) and the grading files' checksums verified. Every pair got a usable answer on the first
+attempt: 22 of 22 substitutions, 7,135 of 7,135 primary pairs. `coverage analyze` on the primary folder
+(aggregates: `research/longeval/e1-grading-coverage.json`):
+
+- **Decision 2's gate: passed.** Binary agreement 0.956 [0.941, 0.971] (required 0.90), linear-weighted kappa
+  0.884 [0.853, 0.912] (0.80), nDCG@10 of complete lists within 0.0026 of the official at every snapshot (0.02).
+  The local grades are therefore compatible with the official assessor.
+- **Coverage.** With every pooled pair graded, the gap at snapshots 1 / 2 / 3 is −0.0032 / −0.0068 / −0.0082
+  (Epzero), −0.0019 / −0.0024 / −0.0021 (FAISS) and −0.0032 / −0.0031 / −0.0030 (frozen IVF), against −0.0057 /
+  −0.0102 / −0.0117, −0.0048 / −0.0049 / −0.0055 and −0.0065 / −0.0079 / −0.0080 with the official labels: missing
+  judgments made up 0.002–0.007 of the gap. D under full grades: −0.0050 [−0.0117, +0.0008], −0.0002 [−0.0040,
+  +0.0039], +0.0001 [−0.0021, +0.0025]; the coverage effect on D is at most +0.0018 [−0.0004, +0.0041].
