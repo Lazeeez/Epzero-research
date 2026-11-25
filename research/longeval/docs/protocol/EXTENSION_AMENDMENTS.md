@@ -171,3 +171,21 @@ edited.
 
 **Known at the time:** that all 15 jobs passed, their evidence checksums, and the identity of their inputs as
 above. No analysis of the BGE held-out runs had been run, and no D, miss rate or recall of them had been read.
+
+## 7. Ten construction seeds on the BGE vectors (26 November 2026)
+
+**What E4 says:** the BGE held-out arms use the frozen three seeds, 11, 29 and 47.
+
+**Why something has to be decided:** with three seeds, the encoder contrast for Epzero's arm, +0.0075
+[−0.0017, +0.0205], is not within the margin, and under Qwen ten seeds showed that one of the three (seed 29)
+had pulled Epzero's D down (`HELDOUT_EXPLORATORY.md` section 18). Three seeds cannot separate construction
+randomness from a difference between encoders.
+
+**What is done:** an exploratory follow-up (`scripts/pace/LONGEVAL_BGE_SEEDS.md`) runs the seven further seeds
+of the Qwen follow-up (101, 211, 307, 401, 503, 601, 701) through `bge_heldout.py`'s entry points, unchanged,
+for the three primary arms, and estimates ten-seed D and the encoder contrast with seeds resampled. E4's
+confirmatory results, with three seeds, are not changed and remain the ones reported as pre-registered; the
+ten-seed values are reported beside them as exploratory.
+
+**Known at the time:** E4's three-seed results on BGE (D, the encoder contrast, the neighbour-level ratios)
+and the Qwen ten-seed results. No BGE run with any of the seven seeds existed.
