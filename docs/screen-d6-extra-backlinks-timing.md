@@ -27,7 +27,7 @@ baseline and reach at least the baseline's queries per second (within 3%) on all
 
 Sequential, single thread, as arrived, seed 11. Change against `extra_backlinks` 0 at each recall@10
 target (work = distance computations; negative work and positive QPS are better). Raw curves:
-`Oryx/build/screen-d6/*.json`.
+`BUILD_DIR/screen-d6/*.json`.
 
 | Data | extra_backlinks | 0.90 work / QPS | 0.95 | 0.98 | 0.99 | Build |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -47,5 +47,5 @@ LongEval (−21.3%), but not at SIFT 0.98 (−4.8%) or LongEval 0.99 (−3.1%).
 **Reading:** with `extra_backlinks` 4, single-thread throughput is equal or higher at every recall
 target on all three datasets (−0.1% to +24%), the arrival excess is roughly halved (screen D3), and
 build time rises 0–5%. With 8 the arrival excess falls further (D3, D4) but the throughput gain is
-smaller and slightly negative in one cell. **4 is the candidate default**, pending three seeds,
+smaller and slightly negative in one cell. **4 is the candidate setting**, pending three seeds,
 timing on a PACE node, the compressed (SQ8) configuration, and the confirmation readings.
