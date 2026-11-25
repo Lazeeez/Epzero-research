@@ -29,7 +29,7 @@ confirmation reading.
 ## Part B: the engine arm on BGE (decision 2's remaining confirmation reading)
 
 As the third full-scale engine arm (`LONGEVAL_ENGINE_ARM.md`, package -03) on the BGE sample: Epzero's
-product path (8-bit codes, `fast_build`, M 16, efConstruction 100); snapshot 1 bulk-built on all cores
+default build path (8-bit codes, `fast_build`, M 16, efConstruction 100); snapshot 1 bulk-built on all cores
 and refined, snapshots 2 and 3 inserted one at a time in arrival order. Arms `grown`, `repaired8w`
 (`extra_backlinks` 8, each later snapshot's insertions refined at width 100) and `rebuilt`; seeds 11, 29,
 47; ef 100, 200, 400. `engine_arm.py` and `engine_arm_analysis.py --arm repaired8w` (and `--confirm`),
