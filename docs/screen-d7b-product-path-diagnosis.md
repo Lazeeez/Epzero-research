@@ -1,4 +1,4 @@
-# Development screen D7b: why `extra_backlinks` 4 under-performs in the product path
+# Development screen D7b: why `extra_backlinks` 4 under-performs in the default build path
 
 Recorded on 23 November 2026, before it was run, after screen D7 (whose prediction failed).
 
@@ -38,7 +38,7 @@ to half, but the oldest cohort's miss rate then rises 0.31 points, just above th
 in recall@10 (0.9793 and 0.9774) with only the construction distances changed, and 4 with full
 vectors raises it (+0.08).
 
-**Reading:** in the product path the grown excess is larger than in the plain configuration (2.27
+**Reading:** in the default build path the grown excess is larger than in the plain configuration (2.27
 against 1.62 points), and `extra_backlinks` removes a smaller share of it at the same setting. Two
 differences could explain the larger excess, neither yet tested: the refine pass makes the bulk-built
 part of the graph denser, so later insertions compete with better-linked incumbents; and the 8-bit
