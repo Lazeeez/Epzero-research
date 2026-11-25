@@ -58,7 +58,7 @@ claimed, and the paper reports it as a development result only.
 
 ## Submit
 
-Build the package locally (`python scripts/pace/package-longeval-engine-arm.py BUILD_DIR ORYX_DIR`),
+Build the package locally (`python scripts/pace/package-longeval-engine-arm.py BUILD_DIR EPZERO_SOURCE`),
 copy `longeval-engine-arm-01.tar.gz` to the PACE LongEval checkout, compare its SHA-256 with the
 receipt, then:
 
@@ -273,7 +273,7 @@ done
 All three jobs passed, and every evidence file verified against its job's checksums. The manifests
 match package -03 (engine commit `2d279c0e`). The prepared sample is byte-identical to the second
 run's, and the exact neighbours of both query sets matched the study's references. All 21 tests passed
-in each job. Evidence: `Oryx/build/longeval-engine-arm-03-evidence.tar.gz` (SHA-256 `35e2e007…f48f`),
+in each job. Evidence: `BUILD_DIR/longeval-engine-arm-03-evidence.tar.gz` (SHA-256 `35e2e007…f48f`),
 never committed. Aggregates: `research/longeval/engine-arm-03-test.json` and
 `engine-arm-03-confirm.json` (third run's `grown` and `repaired8w`, first run's `rebuilt`). Ef 200,
 seeds 11, 29, 47 averaged within query, 10,000 bootstrap draws.
