@@ -2,7 +2,7 @@
 
 Draft for advisor review, 2 November 2026. Evidence base:
 [the literature review](../reports/Graph%20vector%20search%20literature%20review.md) and
-[the performance log](https://github.com/Lazeeez/Epzero/blob/main/docs/performance.md).
+Epzero's public performance log (`docs/performance.md` in the Epzero repository).
 
 ## Summary
 
@@ -157,8 +157,7 @@ and LoRANN's code. Some need access we don't have; the library or your account w
 
 ## Timeline and venue
 
-Target: **PVLDB, Experiment, Analysis & Benchmark.** It takes monthly submissions, is single-blind (so the
-public epzero.dev name is fine), and needs a reproducibility package at first submission. All SIGMOD 2027
+Target: **PVLDB, Experiment, Analysis & Benchmark.** It takes monthly submissions, is single-blind, and needs a reproducibility package at first submission. All SIGMOD 2027
 research rounds have closed, and SIGMOD is double-anonymous.
 
 | When | Work |
