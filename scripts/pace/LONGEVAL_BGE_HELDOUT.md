@@ -66,3 +66,22 @@ Locally: check that every job prepared identical references (`prepared.json`), t
 research/longeval/trajectory-development.json --ivf-config research/longeval/ivf-development.json`, with
 PREPARED one job's copied `prepared` folder. The archive holds run files derived from LongEval data: never
 commit it.
+
+## Result (25 November 2026)
+
+All 15 jobs (7298272-7298286) passed on Gold 6226 nodes; the evidence archive's SHA-256 matched the node's
+(01416036…c02c3) and every job's evidence checksums verified. The jobs' `prepared.json` files differ (temporary
+folders, gzip timestamps) while their content is identical, so the inputs were checked by content
+(amendment 6, recorded before the analysis ran). Aggregates: `research/longeval/e4-bge-heldout.json`.
+
+- **History:** all 27 incremental-against-replay comparisons identical; no excluded attempt.
+- **Prediction 4 held.** D (GPT-OSS-120B, 374 queries, 10,000 draws): Epzero +0.0016 [−0.0040, +0.0084],
+  FAISS HNSW −0.0027 [−0.0093, +0.0028], frozen IVF +0.0005 [−0.0012, +0.0021]; all three negligible under
+  the frozen ±0.01 rule (Holm p 1.0), and Epzero's |D| is below 0.006.
+- **Prediction 3 held.** Frozen IVF's neighbour-level excess, snapshots 2+3 against 1 at snapshot 3: −0.02
+  [−0.32, +0.30] points (within-query ratio 0.995). HNSW at ef 200: Epzero 1.245 [1.163, 1.339], FAISS 1.193
+  [1.122, 1.279] (`bge_heldout strata`, the computation of `insertion_strata.heldout` with the BGE loader).
+- **Encoders (reported, BGE minus Qwen, same queries):** FAISS −0.0020 [−0.0097, +0.0048] and IVF +0.0020
+  [−0.0008, +0.0050], within the margin; Epzero +0.0075 [−0.0017, +0.0205], not within it (Qwen's D was
+  −0.0059, BGE's +0.0016).
+- **Exact search** loses 0.037 nDCG@10 [0.026, 0.048] from snapshot 1 to 3 with BGE (Qwen: +0.007).
