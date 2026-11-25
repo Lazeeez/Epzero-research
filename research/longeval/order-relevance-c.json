@@ -1,0 +1,266 @@
+{
+  "kind": "Analysis C of the order rerun (LONGEVAL_INSERTION_ORDER_IDS.md): relevance consequence, aggregates only",
+  "snapshot": 3,
+  "width": 200,
+  "top": 10,
+  "queries": 374,
+  "seeds": [
+    11,
+    29,
+    47
+  ],
+  "bootstrap": {
+    "draws": 10000,
+    "unit": "query, seeds averaged within query"
+  },
+  "backends": {
+    "epzero": {
+      "orders": {
+        "appended": {
+          "net_gain_ndcg10": {
+            "official": -0.011436760982784762,
+            "local_full": -0.008940661769614083
+          },
+          "relevant_dropped_share_by_arrival_group": {
+            "official": {
+              "1": 0.020476389469285417,
+              "2": 0.04439428141459744,
+              "3": 0.0429769392033543
+            },
+            "local_full": {
+              "1": 0.021781899943788645,
+              "2": 0.04080061585835258,
+              "3": 0.04024767801857585
+            }
+          },
+          "relevant_in_exact_top10_by_arrival_group": {
+            "official": [
+              2393,
+              443,
+              318
+            ],
+            "local_full": [
+              2372,
+              433,
+              323
+            ]
+          },
+          "substitutes_per_query": 0.3787878787878788,
+          "substitutes_officially_graded_share": 0.23294117647058823,
+          "substitutes_local_relevant_share": 0.37176470588235294,
+          "substitutes_mean_local_grade": 0.6070588235294118
+        },
+        "shuffled": {
+          "net_gain_ndcg10": {
+            "official": -0.008746472894089053,
+            "local_full": -0.006447800503944663
+          },
+          "relevant_dropped_share_by_arrival_group": {
+            "official": {
+              "1": 0.019779913636996795,
+              "2": 0.03686982693754703,
+              "3": 0.027253668763102725
+            },
+            "local_full": {
+              "1": 0.021219786396852163,
+              "2": 0.033102386451116246,
+              "3": 0.02786377708978328
+            }
+          },
+          "relevant_in_exact_top10_by_arrival_group": {
+            "official": [
+              2393,
+              443,
+              318
+            ],
+            "local_full": [
+              2372,
+              433,
+              323
+            ]
+          },
+          "substitutes_per_query": 0.35115864527629237,
+          "substitutes_officially_graded_share": 0.233502538071066,
+          "substitutes_local_relevant_share": 0.3883248730964467,
+          "substitutes_mean_local_grade": 0.6522842639593909
+        },
+        "reversed": {
+          "net_gain_ndcg10": {
+            "official": -0.010231338176595245,
+            "local_full": -0.010233616946672826
+          },
+          "relevant_dropped_share_by_arrival_group": {
+            "official": {
+              "1": 0.020476389469285417,
+              "2": 0.040632054176072234,
+              "3": 0.031446540880503145
+            },
+            "local_full": {
+              "1": 0.022344013490725127,
+              "2": 0.03695150115473441,
+              "3": 0.033023735810113516
+            }
+          },
+          "relevant_in_exact_top10_by_arrival_group": {
+            "official": [
+              2393,
+              443,
+              318
+            ],
+            "local_full": [
+              2372,
+              433,
+              323
+            ]
+          },
+          "substitutes_per_query": 0.36363636363636365,
+          "substitutes_officially_graded_share": 0.24019607843137256,
+          "substitutes_local_relevant_share": 0.35784313725490197,
+          "substitutes_mean_local_grade": 0.6274509803921569
+        }
+      },
+      "as_arrived_minus_reversed": {
+        "official": {
+          "mean_difference": -0.001205422806189517,
+          "percentile_interval": [
+            -0.0067725242285577745,
+            0.004133577707407144
+          ],
+          "two_sided_randomization_p": 0.6751432485675143
+        },
+        "local_full": {
+          "mean_difference": 0.0012929551770587443,
+          "percentile_interval": [
+            -0.005158343604803403,
+            0.007906011986348764
+          ],
+          "two_sided_randomization_p": 0.7037329626703733
+        }
+      }
+    },
+    "faiss_hnsw": {
+      "orders": {
+        "appended": {
+          "net_gain_ndcg10": {
+            "official": -0.0069475757354597895,
+            "local_full": -0.003205797475818395
+          },
+          "relevant_dropped_share_by_arrival_group": {
+            "official": {
+              "1": 0.01351163114639922,
+              "2": 0.035364936042136946,
+              "3": 0.03459119496855346
+            },
+            "local_full": {
+              "1": 0.01475548060708263,
+              "2": 0.03002309468822171,
+              "3": 0.02786377708978328
+            }
+          },
+          "relevant_in_exact_top10_by_arrival_group": {
+            "official": [
+              2393,
+              443,
+              318
+            ],
+            "local_full": [
+              2372,
+              433,
+              323
+            ]
+          },
+          "substitutes_per_query": 0.33333333333333337,
+          "substitutes_officially_graded_share": 0.20053475935828877,
+          "substitutes_local_relevant_share": 0.3716577540106952,
+          "substitutes_mean_local_grade": 0.6229946524064172
+        },
+        "shuffled": {
+          "net_gain_ndcg10": {
+            "official": -0.0077026618610203275,
+            "local_full": -0.006125962427874953
+          },
+          "relevant_dropped_share_by_arrival_group": {
+            "official": {
+              "1": 0.01838696197241956,
+              "2": 0.03912716328066215,
+              "3": 0.029350104821802937
+            },
+            "local_full": {
+              "1": 0.01967397414277684,
+              "2": 0.03387220939183987,
+              "3": 0.030959752321981424
+            }
+          },
+          "relevant_in_exact_top10_by_arrival_group": {
+            "official": [
+              2393,
+              443,
+              318
+            ],
+            "local_full": [
+              2372,
+              433,
+              323
+            ]
+          },
+          "substitutes_per_query": 0.33689839572192515,
+          "substitutes_officially_graded_share": 0.2751322751322751,
+          "substitutes_local_relevant_share": 0.3968253968253968,
+          "substitutes_mean_local_grade": 0.671957671957672
+        },
+        "reversed": {
+          "net_gain_ndcg10": {
+            "official": -0.009614492238489883,
+            "local_full": -0.007526971674149547
+          },
+          "relevant_dropped_share_by_arrival_group": {
+            "official": {
+              "1": 0.021172865301574036,
+              "2": 0.0398796087283672,
+              "3": 0.0220125786163522
+            },
+            "local_full": {
+              "1": 0.022344013490725127,
+              "2": 0.033102386451116246,
+              "3": 0.018575851393188854
+            }
+          },
+          "relevant_in_exact_top10_by_arrival_group": {
+            "official": [
+              2393,
+              443,
+              318
+            ],
+            "local_full": [
+              2372,
+              433,
+              323
+            ]
+          },
+          "substitutes_per_query": 0.3351158645276292,
+          "substitutes_officially_graded_share": 0.19680851063829788,
+          "substitutes_local_relevant_share": 0.35638297872340424,
+          "substitutes_mean_local_grade": 0.6170212765957447
+        }
+      },
+      "as_arrived_minus_reversed": {
+        "official": {
+          "mean_difference": 0.0026669165030300925,
+          "percentile_interval": [
+            -0.0012731352975167878,
+            0.0067652056629385945
+          ],
+          "two_sided_randomization_p": 0.1983380166198338
+        },
+        "local_full": {
+          "mean_difference": 0.004321174198331152,
+          "percentile_interval": [
+            -0.000355061486089375,
+            0.009501165231123737
+          ],
+          "two_sided_randomization_p": 0.08181918180818191
+        }
+      }
+    }
+  }
+}
