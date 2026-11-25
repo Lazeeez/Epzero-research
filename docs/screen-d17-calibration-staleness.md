@@ -60,7 +60,7 @@ reported as not shown on this collection at this scale.
 
 Run on 24 November 2026, after the design above was committed (Epzero `min-backlinks` at 2d279c0e).
 Evaluation queries (281), means over seeds 11, 29 and 47. At snapshot 3 the computed exact neighbours
-matched the sample's on every seed (overlap 1.0). Raw results are in `Oryx/build/screen-d17/*.json`.
+matched the sample's on every seed (overlap 1.0). Raw results are in `BUILD_DIR/screen-d17/*.json`.
 
 Calibrated width after each snapshot (the same on every seed): grown 200 / 250 / 250; repaired8w
 200 / 200 / 250. The fixed width is therefore 200 throughout.
