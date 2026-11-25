@@ -1,9 +1,9 @@
 # Does the Index Matter Over Time? Approximate Search, Index History and Collection Growth in Longitudinal Dense Retrieval
 
 **Draft for the CLEF 2027 conference track (LNCS, long paper: 12 pages plus references). Version 2026-11-25.**
-Passages marked **[E4]** wait for the second encoder's (BGE) held-out runs; its order and engine-arm runs are in.
-In the LNCS layout (`md2lncs.py`, then XeLaTeX) the body ends six lines into page 12 of 13, references after
-it: about 11.1 of the 12 pages allowed, leaving under a page for the held-out [E4] results.
+The second encoder's (BGE) order, engine-arm and held-out results are in (E4 complete).
+In the LNCS layout (`md2lncs.py`, then XeLaTeX) the body ends about 21 lines into page 12 of 13, references
+after it: about 11.4 of the 12 pages allowed.
 This version restructures and shortens [the full draft of 21 November](../docs/history/manuscript-full-draft-2026-11-23.md),
 which is kept unchanged and holds every analysis in more detail. Every number comes from verified
 evidence: `../HELDOUT_RESULTS.md`, `../HELDOUT_EXPLORATORY.md` and the development result files.
@@ -23,7 +23,7 @@ third, whose 50-query calibration missed a one-point drift in recall. In explora
 HNSW index built by appending misses later arrivals 1.25–1.33 times as often as first arrivals of
 the same query; rebuilding the full collection in three insertion orders shows that
 insertion position causes this, and a denser graph sharpens it. The effect appears in three HNSW
-implementations and, twice as strongly, on the Big-ANN streaming benchmark. Giving each insertion
+implementations, with a second encoder, and, twice as strongly, on the Big-ANN streaming benchmark. Giving each insertion
 extra incoming links and refining each new batch removes it at a fraction of a rebuild's cost. The labels limit what the
 effectiveness numbers can show: they agree weakly with human grades, and most documents that an
 approximate index substitutes into the top 10 were never graded.
@@ -166,6 +166,14 @@ large as the trend it protects: the collection can show that the loss to approxi
 by more than the margin, not that a longitudinal trend is preserved. The loss is also concentrated:
 82–89% of queries lose nothing at snapshot 3, and the worst 5% carry 71–85% of it.
 
+**A second encoder.** With BGE-base-en-v1.5 vectors and the same design, all three arms are negligible:
+D is +0.0016 [−0.0040, +0.0084] for Epzero, −0.0027 [−0.0093, +0.0028] for FAISS and +0.0005 [−0.0012,
++0.0021] for IVF, and the 27 history comparisons are again identical. Paired with Qwen on the same 374
+queries, D differs by −0.0020 [−0.0097, +0.0048] for FAISS and +0.0020 [−0.0008, +0.0050] for IVF, within
+the margin; for Epzero by +0.0075 [−0.0017, +0.0205], so its small Qwen loss did not reproduce, and whether
+the encoders agree for it is not settled. Exact search with BGE loses 0.037 nDCG@10 [0.026, 0.048] over the
+same snapshots (Qwen: +0.007): the approximation's change stays within the margin under either trend.
+
 ### 4.3 Why the two HNSW arms differ: calibration
 
 At fixed ef 200 both implementations lose neighbour recall at the same rate as the collection grows
@@ -285,7 +293,9 @@ model family), under predictions recorded before any BGE vector existed, the wit
 and 0.84 for FAISS. As arrived minus reversed, the newest group's excess miss rate changes by +4.8
 [+3.9, +5.7] and +4.0 [+3.1, +4.8] points (+4.3 and +3.4 with Qwen), while recall@100 differs by
 less than 1 point between orders (0.6 and 0.8 at ef 200). On the 100 training queries the change is +4.1 [+2.0, +6.5] and +3.1
-[+1.6, +4.9]. The effect is not specific to one representation.
+[+1.6, +4.9]. In the held-out arms at snapshot 3 later arrivals are missed 1.25 [1.16, 1.34] times as
+often for Epzero and 1.19 [1.12, 1.28] for FAISS (1.33 and 1.25 with Qwen), and frozen IVF shows no excess
+(−0.02 [−0.32, +0.30] points; Qwen +0.44). The effect is not specific to one representation.
 
 **Effect on effectiveness.** On the 77 queries whose exact top 10 is at least half new content,
 Epzero's calibrated arm, which stayed at ef 200, loses 0.026 nDCG@10 [0.006, 0.055], against 0.008
@@ -363,9 +373,8 @@ only 3.4–3.7% of the top 10; the top-10 neighbours it misses are less relevant
 
 ## 8 Limitations
 
-There is one collection; the arrival effect and its repair were reproduced with a second encoder,
-but until its held-out runs return **[E4]** the arm comparisons rest on one embedding model; and
-the collection only grows, so the equivalence result does not cover deletions or rewritten
+There is one collection and two embedding models, under which Epzero's small change in D did not
+reproduce, so whether its arm agrees across encoders within the margin is open; and the collection only grows, so the equivalence result does not cover deletions or rewritten
 documents; only the insertion-position effect was reproduced elsewhere (GloVe, SIFT, a third
 implementation and the Big-ANN stream). The effectiveness results rest on lenient LLM labels whose pool leaves most
 substitutes ungraded; human grades cover 29 queries at one snapshot. The test queries were used
