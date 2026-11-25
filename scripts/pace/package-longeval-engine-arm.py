@@ -3,10 +3,10 @@ Package -01 held grown, repaired and rebuilt; -02 held grown and repaired8 (8 li
 -03 holds grown and repaired8w (refine width 100, screen D15).
 
 Usage, from the repository root:
-    python scripts/pace/package-longeval-engine-arm.py BUILD_DIR ORYX_DIR
+    python scripts/pace/package-longeval-engine-arm.py BUILD_DIR EPZERO_SOURCE
 
 BUILD_DIR holds `longeval-heldout-inputs-01` (encoded test and training queries and exact
-references). ORYX_DIR is the Epzero checkout: the `engine` folder of its `min-backlinks` branch is
+references). EPZERO_SOURCE is an Epzero source checkout: the `engine` folder of its `min-backlinks` branch is
 packaged (tracked files only, via git archive) and its commit recorded. No judgments. The archive is
 derived from LongEval data and is never committed.
 """
