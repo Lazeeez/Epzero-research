@@ -14,7 +14,7 @@ is evaluated as built.
 
 ## Design
 
-- Epzero development build (Oryx working tree with `min_backlinks`), uncompressed, M 16,
+- Epzero development build (with `min_backlinks`), uncompressed, M 16,
   efConstruction 100, inner product, one thread, seed 11, the pilot's configuration.
 - Orders: as arrived, shuffled, reversed blocks; `min_backlinks` 0 (baseline) and 4 in every order,
   and 2 and 8 in the as-arrived order (dose).
