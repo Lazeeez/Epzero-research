@@ -36,7 +36,7 @@ cause. If neither does, the walk's candidate set itself is the limit.
 
 On the LongEval 300K sample the automatic build chose 8-bit codes, a walk on 448 principal directions,
 `rerank` 300, `rerank_z` 3, refine and free-slot filling (build 634 s, one thread). Raw:
-`Oryx/build/screen-d12/sample.json`. One thread; QPS from one timed pass per cell.
+`BUILD_DIR/screen-d12/sample.json`. One thread; QPS from one timed pass per cell.
 
 | ef | k = 100 recall: default / deep / full | k = 100 QPS: default / deep / full | k = 10 recall: default / deep / full | k = 10 QPS: default / deep / full |
 | --- | --- | --- | --- | --- |
