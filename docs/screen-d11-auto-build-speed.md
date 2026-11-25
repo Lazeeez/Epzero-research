@@ -45,7 +45,7 @@ The automatic build chose 8-bit codes, building on the codes, and refine in ever
 direction walk on SIFT and GloVe; on LongEval a walk on 448 directions, re-rank 300 and free-slot filling.
 Change against arm A (today's default) in single-thread queries per second at recall@10 0.90 / 0.95 / 0.98
 / 0.99, by interpolation ("—" where the arm does not reach the target), and in build time. Raw:
-`Oryx/build/screen-d11/*.json`.
+`BUILD_DIR/screen-d11/*.json`.
 
 | Arm | SIFT build | SIFT QPS | GloVe build | GloVe QPS | LongEval build | LongEval QPS |
 | --- | --- | --- | --- | --- | --- | --- |
