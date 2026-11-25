@@ -46,8 +46,8 @@ snapshot 3, ef 200, top 10, seeds 11, 29, 47 averaged within query.
 | repaired8w | −0.0082 / −0.0064 | 1.6 / 3.4 / 2.1% | 0.30; 23%; 32% |
 | rebuilt | −0.0065 / −0.0051 | 1.4 / 4.0 / 2.4% | 0.31; 29%; 35% |
 
-Repaired minus grown: +0.0008 [−0.0028, +0.0041] (official), +0.0003 [−0.0033, +0.0035] (full grades), +0.0002
-lower with the 11 ungraded pairs set to grade 3. Rebuilt minus grown: +0.0025 [−0.0001, +0.0055] and +0.0016
+Repaired minus grown: +0.0008 [−0.0028, +0.0041] (official), +0.0003 [−0.0033, +0.0035] (full grades), −0.0002
+[−0.0036, +0.0025] with the 11 ungraded pairs set to grade 3. Rebuilt minus grown: +0.0025 [−0.0001, +0.0055] and +0.0016
 [−0.0005, +0.0042].
 
 **Predictions: all three held.** Both intervals of repaired minus grown lie within ±0.01 (within ±0.004); the
