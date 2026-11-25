@@ -39,3 +39,40 @@ Pooling seeds 29 and 47 was rejected because it changes the population the runbo
 
 **Known at the time:** the counts of eligible pairs by group (46 for snapshot 3); no pair had been
 drawn, no page written, and no grade or official label of any eligible pair inspected.
+
+## 3. Running E4 on the BGE vectors (25 November 2026)
+
+**What the frozen protocol says** (section E4, `docs/protocol/E4_SECOND_ENCODER.md`): the held-out design
+"with the BGE vectors in place of the released ones", and "the arrival-order reversal of E2 on BGE
+vectors" (as arrived, shuffled, reversed; three seeds; M 16, efConstruction 100; ef 100–800; the full
+snapshot 3).
+
+**Why something has to be added:** every frozen module that reads vectors (`mapped.py`, `dense.py`,
+`heldout.py`, `insertion_pilot.prepare_full`) accepts only the released Qwen archives, by their pinned
+hashes, and frozen files are not edited.
+
+**What is done for the arrival-order reversal:**
+
+- A new module, `research/longeval/bge_sample.py`, writes the sample that `insertion_pilot run` reads,
+  as `insertion_pilot.prepare_full` does: the same files, the same lexical order key, and exact
+  neighbours by the same rule (float64 inner products, descending score, then descending document ID).
+  Only the vectors differ: the verified BGE document and query vectors (job 7290861, files pinned by the
+  SHA-256 its report records).
+- The document order, each document's arrival snapshot and the query order are taken from the Qwen
+  order rerun's saved sample metadata (job 7253605: `doc-ids.txt.gz`, `cohort.npy`, `query-ids.json`,
+  `confirm-query-ids.json`), which `prepare_full` wrote from the released snapshots. The BGE document
+  IDs must equal that order exactly, and the query ID sets must match.
+- `prepare_full` checks its exact neighbours against the study's held-out references, which do not exist
+  for BGE. In its place, the exact neighbours of a fixed subset of queries are recomputed by a full sort
+  and must agree exactly.
+- A test runs `prepare_full` (the frozen code) and the new module on the same stand-in data and requires
+  identical outputs.
+- Builds, searches and analyses are the frozen ones: `insertion_pilot run`, `insertion_strata` and
+  `order_pairs`, unchanged.
+
+**The held-out design on BGE** needs the frozen query-provenance chain (query records, representation
+contracts, development references) rebuilt for BGE. It is recorded in its own amendment before it runs.
+
+**Known at the time:** the BGE vectors and the checks in `LONGEVAL_BGE.md` (file hashes, shapes, unit
+norms, document order, 22.1% of documents truncated, CPU re-encoding agreement). No BGE neighbour, exact
+or approximate, had been computed, and no retrieval outcome on BGE existed.
