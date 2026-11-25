@@ -17,7 +17,7 @@ cohort.
 ## Design
 
 The 300K development sample (snapshots 1, 2 and 3: 156,741 / 81,467 / 61,792 documents), Epzero's
-product path as in screens D13 and D15 (8-bit codes, `fast_build`, M 16, efConstruction 100). Snapshot 1
+default build path as in screens D13 and D15 (8-bit codes, `fast_build`, M 16, efConstruction 100). Snapshot 1
 is bulk-built and refined at width 50. Snapshots 2 and 3 are inserted one at a time in arrival order.
 Two arms:
 
