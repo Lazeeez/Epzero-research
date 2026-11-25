@@ -1,0 +1,240 @@
+{
+  "kind": "E4 on BGE-base-en-v1.5: the held-out design (amendments 4 and 6), aggregates only",
+  "design": "scripts/pace/LONGEVAL_BGE_HELDOUT.md; package longeval-bge-heldout-01; jobs 7298272-7298286",
+  "inputs": {
+    "bge_encoder": "BAAI/bge-base-en-v1.5@a5beb1e3e68b9ab74eb54cfd186867f64f240e1a",
+    "calibration_count": 50,
+    "evaluation_count": 381,
+    "jobs_checked_by_content": 15
+  },
+  "conditions": 21,
+  "runs": 153,
+  "excluded_attempts": 0,
+  "equality": {
+    "all_identical": true,
+    "comparisons": 27
+  },
+  "margin": 0.01,
+  "alpha": 0.05,
+  "bootstrap_draws": 10000,
+  "primary_family": "gpt-oss-120b",
+  "primary": {
+    "epzero_hnsw": {
+      "arm": [
+        "epzero",
+        "incremental",
+        "matched_recall"
+      ],
+      "mean_difference": 0.0015583096007555028,
+      "percentile_interval": [
+        -0.003981195225038967,
+        0.008373204041700798
+      ],
+      "label": "negligible",
+      "holm_p": 1.0,
+      "query_count": 374,
+      "seed_count": 3
+    },
+    "faiss_hnsw": {
+      "arm": [
+        "faiss_hnsw",
+        "incremental",
+        "matched_recall"
+      ],
+      "mean_difference": -0.002734790193180509,
+      "percentile_interval": [
+        -0.009293836334413443,
+        0.002773261505120046
+      ],
+      "label": "negligible",
+      "holm_p": 1.0,
+      "query_count": 374,
+      "seed_count": 3
+    },
+    "ivf_frozen": {
+      "arm": [
+        "faiss_ivf",
+        "frozen_incremental",
+        "current_calibration"
+      ],
+      "mean_difference": 0.00047334861538311253,
+      "percentile_interval": [
+        -0.0011752045225558703,
+        0.002133682280236269
+      ],
+      "label": "negligible",
+      "holm_p": 1.0,
+      "query_count": 374,
+      "seed_count": 3
+    }
+  },
+  "exact_trend_primary_family": {
+    "judged@10_mean": {
+      "1": 0.6336898395721925,
+      "2": 0.6080213903743316,
+      "3": 0.5941176470588235
+    },
+    "nDCG@10_mean": {
+      "1": 0.5976783035394936,
+      "2": 0.5739197589449849,
+      "3": 0.5603078707189767
+    },
+    "snapshot3_minus_snapshot1": {
+      "mean_difference": -0.03737043282051684,
+      "percentile_interval": [
+        -0.04829346181777455,
+        -0.026408171766743534
+      ],
+      "query_count": 374
+    }
+  },
+  "neighbour_level": {
+    "kind": "E4 prediction 3: neighbour-level ratios of the BGE held-out arms (aggregates only)",
+    "snapshot": 3,
+    "queries": 381,
+    "later_group": "snapshots 2 and 3 together",
+    "bootstrap": {
+      "draws": 10000,
+      "seed": 20261120,
+      "unit": "query, seeds averaged within query"
+    },
+    "arms": {
+      "epzero_hnsw_ef200": {
+        "pooled_ratio": {
+          "value": 1.4842742363441264,
+          "interval_95": [
+            1.3677863132227646,
+            1.61719518504097
+          ]
+        },
+        "within_query_ratio": {
+          "value": 1.2446279943850553,
+          "interval_95": [
+            1.1625061917134747,
+            1.3391731284715849
+          ]
+        },
+        "within_query_rate_difference": {
+          "value": 0.021224875475348032,
+          "interval_95": [
+            0.014804329171020607,
+            0.02789524689596113
+          ]
+        }
+      },
+      "faiss_hnsw_ef200": {
+        "pooled_ratio": {
+          "value": 1.4222617120770629,
+          "interval_95": [
+            1.3159440104350406,
+            1.5429087440518559
+          ]
+        },
+        "within_query_ratio": {
+          "value": 1.193088653865898,
+          "interval_95": [
+            1.1221467123736633,
+            1.2791315822842226
+          ]
+        },
+        "within_query_rate_difference": {
+          "value": 0.01739713961488543,
+          "interval_95": [
+            0.011521317513203476,
+            0.023490985971358992
+          ]
+        }
+      },
+      "ivf_frozen_training": {
+        "pooled_ratio": {
+          "value": 1.0117789256196785,
+          "interval_95": [
+            0.8951323651712159,
+            1.1454654334625542
+          ]
+        },
+        "within_query_ratio": {
+          "value": 0.9948420969403218,
+          "interval_95": [
+            0.9016088178768734,
+            1.1005541134979484
+          ]
+        },
+        "within_query_rate_difference": {
+          "value": -0.00018338402765690796,
+          "interval_95": [
+            -0.0031826177779722834,
+            0.0029523729102060854
+          ]
+        }
+      },
+      "ivf_refreshed_training": {
+        "pooled_ratio": {
+          "value": 0.9557019834523555,
+          "interval_95": [
+            0.848279939185558,
+            1.083434546140857
+          ]
+        },
+        "within_query_ratio": {
+          "value": 0.9586996486341114,
+          "interval_95": [
+            0.8694332980309889,
+            1.0603111546510169
+          ]
+        },
+        "within_query_rate_difference": {
+          "value": -0.0013540800714710848,
+          "interval_95": [
+            -0.004503772054706889,
+            0.001809432086362595
+          ]
+        }
+      }
+    }
+  },
+  "encoder_contrast": {
+    "kind": "E4: paired contrast of D between encoders (BGE minus Qwen), primary family, aggregates only",
+    "margin": 0.01,
+    "bootstrap": {
+      "draws": 10000,
+      "seed": 20261125,
+      "unit": "query"
+    },
+    "arms": {
+      "epzero_hnsw": {
+        "queries": 374,
+        "bge_D": 0.0015583096007555032,
+        "qwen_D": -0.005937861255448933,
+        "bge_minus_qwen": 0.007496170856204434,
+        "interval_95": [
+          -0.0017387843855838896,
+          0.02048105997351593
+        ],
+        "within_margin": false
+      },
+      "faiss_hnsw": {
+        "queries": 374,
+        "bge_D": -0.002734790193180509,
+        "qwen_D": -0.0007075744271236293,
+        "bge_minus_qwen": -0.0020272157660568804,
+        "interval_95": [
+          -0.00968222150292314,
+          0.00478340893043626
+        ],
+        "within_margin": true
+      },
+      "ivf_frozen": {
+        "queries": 374,
+        "bge_D": 0.0004733486153831128,
+        "qwen_D": -0.0015482715418061984,
+        "bge_minus_qwen": 0.002021620157189311,
+        "interval_95": [
+          -0.0008262060388810351,
+          0.00500848350115369
+        ],
+        "within_margin": true
+      }
+    }
+  }
+}
