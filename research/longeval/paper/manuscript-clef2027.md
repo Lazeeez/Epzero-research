@@ -84,7 +84,8 @@ concurrent updates; we break recall down by when each target arrived. PLAID SHIR
 current by changing the model or the representation; we hold the representation fixed.
 
 **Insertion order and repair.** Elliott and Clark [20] show that HNSW recall depends on the order of
-insertion; we show which documents bear the loss when a collection grows by appending. NGFix/RFix
+insertion, and CleanANN [26] that incremental Vamana insertion is not robust to the order; we show which
+documents bear the loss when a collection grows by appending. NGFix/RFix
 [17] and RoarGraph [18] add query-driven edges; we screen this family against equal-work controls.
 
 **LLM labels.** The lab's overview [6] reports that its LLM assessors grade far more documents
@@ -161,7 +162,8 @@ IVF the intervals are much narrower than the margin: they rule out a change larg
 redrawn with the repeat behaviour of an LLM assessor (D moves by a standard deviation of at most
 0.0007). Construction randomness matters more: Epzero's change comes mostly from one of its three
 seeds (−0.011 against −0.003 and −0.004), and with seeds resampled as well as queries its interval
-is [−0.0146, +0.0011]. *(Exploratory.)* Exact search's
+is [−0.0146, +0.0011]; over ten seeds (seven more, recorded in advance) it is −0.0034 [−0.0092,
++0.0015], within the margin. *(Exploratory.)* Exact search's
 own nDCG@10 changes by +0.0070 [−0.0000, +0.0139] over the same snapshots, so the ±0.01 margin is as
 large as the trend it protects: the collection can show that the loss to approximation did not move
 by more than the margin, not that a longitudinal trend is preserved. The loss is also concentrated:
@@ -201,7 +203,8 @@ test detects the fall in recall from snapshot 1.
 | Paired test detects the fall | 35% / 33% | 51% / 51% | 73% / 73% | 89% / 90% | 96% / 98% |
 
 Sampling noise alone explains why Epzero's calibration stayed at ef 200. A one-point safety margin
-(96% instead of 95%) on 50 queries cuts the risk from 21% to 5.5%, at a wider mean width (416 to 522).
+(96% instead of 95%) on 50 queries cuts the risk from 21% to 5.5%, at a wider mean width (416 to 522);
+applied to the frozen runs, it moves both HNSW arms to ef 400, halves the loss and keeps D within ±0.01.
 
 ### 4.4 Search width, cost and repair
 
@@ -269,7 +272,9 @@ insertion position.
 **Position alone.** In a shuffled build a document's position is independent of the document and
 the query, yet the miss rate still rises steadily with position, from 4.9–5.0% in the first tenth
 of insertions to 7.4–7.8% in the last (Figure 4a), while base-layer incoming links fall from about
-29 to about 12. Late insertions are weakly connected, not unreachable: at most 0.06% of documents
+29 to about 12. Reading each node's links right after its insertion shows why: a later arrival chooses an
+existing node with probability k/(j − 1) whatever its age, to within 1% per insertion tenth, so incoming
+links accumulate as about k ln(n/i), only time, no preferential attachment. Late insertions are weakly connected, not unreachable: at most 0.06% of documents
 have no incoming link. On GloVe and SIFT, with arrival groups assigned at random, the same design
 gives shuffled ratios of 0.92–1.03, reversed ratios whose intervals lie below 1, and the same decile
 curves (Figure 4b, c): the effect belongs to building an HNSW graph by insertion.
@@ -328,7 +333,9 @@ screens whose designs and predictions were recorded before they ran; refining th
 around each batch, or two narrow refine passes, made the gap worse or no better. On the BGE vectors
 the excess falls from 3.31 to 0.36 points on the test queries (change −2.95 [−3.64, −2.27]; rebuild
 0.38) and from 1.01 to −1.03 on the training queries, the oldest arrivals' miss rate changes by +0.08
-[−0.29, +0.42] points and recall@100 rises by 0.90 points.
+[−0.29, +0.42] points and recall@100 rises by 0.90 points. Scored with the full grades, the repair halves the
+share of the newest arrivals' relevant documents dropped from the top 10 (4.3% to 2.1%; rebuild 2.4%) and
+leaves nDCG@10 unchanged (+0.0003 [−0.0033, +0.0035]).
 
 ## 6 What the Labels Can Support
 
@@ -393,10 +400,9 @@ implementation and the Big-ANN stream). The effectiveness results rest on lenien
 substitutes was validated against and shares; human grades cover 29 queries at one snapshot. The test queries were used
 once for the frozen analysis, and every exploratory analysis reuses them. The within-query ratio was
 chosen after the pooled result was seen and averages over query groups whose ratios differ. Three
-construction seeds are too few to separate seed variation from Epzero's change. Calibration used 50 queries and a coarse
+construction seeds are too few for Epzero's change; the ten-seed result is exploratory. Calibration used 50 queries and a coarse
 grid, a design choice that separates the two HNSW arms. The query-driven repair results come from
-development screens; the arrival repair was confirmed at full scale and on the stream, by neighbour
-recall, not by judged effectiveness.
+development screens; the arrival repair's effect on nDCG@10 is too small to detect with 374 queries.
 
 ## 9 Conclusion
 
@@ -456,3 +462,4 @@ redistributed; the scripts rebuild them from the official release.
 23. Greenland and Robins. Estimation of a Common Effect Parameter from Sparse Follow-Up Data. Biometrics 41(1), pp. 55–68, 1985. https://doi.org/10.2307/2530643
 24. Simhadri et al. Results of the Big ANN: NeurIPS'23 Competition. NeurIPS 2025 Datasets and Benchmarks Track, 2025. arXiv:2409.17424.
 25. Wang, Dong, Liao and Jin. CANDOR-Bench: Benchmarking In-Memory Continuous ANNS under Dynamic Open-World Streams. SIGMOD 2026. https://doi.org/10.1145/3786630
+26. Zhang, Wei, Engels and Shun. CleanANN: Efficient and Robust Full Dynamism in Graph-Based Approximate Nearest Neighbor Search. SPAA 2026. https://doi.org/10.1145/3816782.3819219
