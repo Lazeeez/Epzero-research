@@ -29,7 +29,7 @@ in place of snapshot 3, the first in place of snapshot 1, and the new test queri
    (target 0.96) keeps all three intervals within ±0.01.
 5. **Concentration.** At the newest snapshot, at least 75% of queries lose nothing to approximate search
    at nDCG@10, and the worst 5% of queries carry at least half of the loss.
-6. **The repair.** Epzero's production path with `extra_backlinks` 8 and each new batch refined at width
+6. **The repair.** Epzero's default build path with `extra_backlinks` 8 and each new batch refined at width
    100 removes at least half of the newest group's within-query excess, with the oldest group's miss rate
    rising by at most 0.75 points and recall@100 falling by at most 0.5 (upper 95% bounds).
 7. **Calibration optimism.** At the calibrated width, the calibration queries' mean recall exceeds the new
