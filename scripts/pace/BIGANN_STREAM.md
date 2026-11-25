@@ -109,7 +109,7 @@ contrast is reported as across jobs.
 
 ## Submit
 
-Build the package locally (`python scripts/pace/package-bigann-stream.py BUILD_DIR ORYX_DIR`), copy
+Build the package locally (`python scripts/pace/package-bigann-stream.py BUILD_DIR EPZERO_SOURCE`), copy
 `bigann-stream-02.tar.gz` to the PACE LongEval checkout, compare its SHA-256 with the receipt, then:
 
 ```bash
@@ -150,7 +150,7 @@ All twelve downloaded byte-identical files (sizes, MD5s and the pinned runbook's
 computed byte-identical `sample.json`. Their exact neighbours matched the track's ground truth (9,998 of
 10,000 queries identical as sets, mean overlap 0.999998). The sample was prepared again locally from
 the same files, and its `sample.json` is byte-identical to the jobs'. Evidence:
-`Oryx/build/bigann-stream-evidence.tar.gz` (SHA-256 `d27efac3…a3d`). Aggregates:
+`BUILD_DIR/bigann-stream-evidence.tar.gz` (SHA-256 `d27efac3…a3d`). Aggregates:
 `research/longeval/bigann-stream-analysis.json`. Ef 200, k 100, 10,000 queries, seeds 11, 29, 47
 averaged within query, 5,000 bootstrap draws.
 
