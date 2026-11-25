@@ -5,7 +5,7 @@ Recorded on 24 November 2026, before it was run, after the full-scale engine arm
 
 ## Design
 
-As D10 (product path on the 300K development sample: 8-bit codes, `fast_build` on, M 16,
+As D10 (default build path on the 300K development sample: 8-bit codes, `fast_build` on, M 16,
 efConstruction 100; snapshot 1 bulk-built and refined; snapshots 2 and 3 inserted one at a time,
 each snapshot's insertions refined with `refine_links(threads=all, ef=50, first=...)`), with
 `extra_backlinks` 8 instead of 4, seeds 11, 29 and 47. Compared with the grown, repaired (4 links)
