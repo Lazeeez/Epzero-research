@@ -1,10 +1,10 @@
-# Development screen D9: refining recent insertions in the product path
+# Development screen D9: refining recent insertions in the default build path
 
 Recorded on 23 November 2026, before it was run, after screen D8.
 
 ## Question
 
-Screen D8 showed that in Epzero's product path the refine pass after the bulk build is itself a
+Screen D8 showed that in Epzero's default build path the refine pass after the bulk build is itself a
 source of arrival bias: it treats only the documents present at the bulk build. D9 tests refining the
 documents inserted since the last refine, once per snapshot (as a checkpoint would), using the new
 `refine_links(first=...)` (Epzero branch `min-backlinks`), alone and with `extra_backlinks` 4.
