@@ -815,10 +815,10 @@ from-scratch rebuild:
 
 ---
 
-## 8. How we plan to fix it in Epzero
+## 8. Repairing it inside the index
 
-The engine may be redesigned at its core if that is what solving the problem takes. Every change is
-kept only if measured gains justify it.
+A repair may have to change how the index is built at its core. A change counts only if measured gains
+justify it.
 
 ### 8.1 Goals and success criteria (to be fixed in writing before the confirmatory runs)
 
@@ -833,14 +833,14 @@ kept only if measured gains justify it.
    second entry point, and the exact-buffer and fixed-router baselines at equal measured query work,
    and then at matched held-out recall.
 3. **No loss on standard metrics**: recall and queries per second at matched recall no worse than the
-   current engine (VIBE-style curves).
+   unrepaired index (VIBE-style curves).
 4. **A stated resource envelope**: insertion cost defined precisely (CPU time per upsert, latency, or
    sustainable throughput at a stated query load; target ≤ 1.3×), a peak-memory cap including
    overlapping versions, a p99 query budget, all on the same hardware; bytes per vector also checked
    on a compressed embedding, where a 4-byte counter is proportionally large.
 5. **Serving correctness**: identical results to exact live-set search after insert, upsert, delete,
    flush, merge, concurrent queries and recovery; ties, duplicates, repeated labels, empty cohorts.
-6. **Observability from real queries**: per-age miss estimates in `health()` from sampled real queries
+6. **Observability from real queries**: per-age miss estimates in the index's health report, from sampled real queries
    against independently computed exact references, with denominators and intervals. Self-queries
    only catch gross connectivity defects. Training, monitoring and evaluation queries stay disjoint.
 7. **A decision rule that permits a negative result**: if a simpler configuration or a partition
@@ -854,7 +854,7 @@ final reading.
 
 **0. Same graph, different search policy (first baseline).** Wider search, a second entry point, or a
 matched-work restart on the unchanged graph. If this meets the gates at negligible ingestion cost,
-ship the configuration and report the larger redesign as unnecessary for that regime.
+use the configuration and report the larger redesign as unnecessary for that regime.
 
 **A. Arrival-aware reverse linking.** When a full neighbour would reject the newcomer, evict instead
 the existing link that is most *redundant* — for example, one whose target has high in-degree or is
@@ -895,7 +895,7 @@ per-partition rebuilds published atomically) is the next step if exhaustive part
 
 **F. Per-age recall telemetry and self-repair.** Estimate misses by age from sampled real queries
 against independent exact references and expose them, with sample sizes and intervals, through the
-existing `health()` report; trigger local repair (B) when the absolute excess crosses a threshold.
+existing health report; trigger local repair (B) when the absolute excess crosses a threshold.
 No engine reports this today. A cheap per-batch audit (from the second review): for a sampled query
 with graph answer A and a batch B, rescore A ∪ B exactly and count the members of B in that union's
 top k that A missed (U). U is an upper bound on the true misses from B on that query: any global
@@ -923,8 +923,8 @@ to `docs/screen-d17-*.md` (D12 and D16 are speed work, section 12).
 | D4 | `extra_backlinks` 8 on SIFT, GloVe and two more LongEval seeds | Excess cut 67–87% everywhere; oldest +0.05 to +0.21 pp; recall +0.25 to +0.75 pp; work +0.6% to +5.2% (SIFT just above the predicted 5%) |
 | D5 | Recall against work over the whole width range | Not a uniform speed-up: 1–5% more work at low recall, 6–21% less at recall@10 ≥ 0.98; neutral to slightly positive overall |
 | D6 | Clean sequential timing, 17 widths, `extra_backlinks` 0 / 4 / 8 | With 4: single-thread throughput −0.1% to +24% across recall@10 0.90–0.99 on all three datasets (+24% at 0.98 on LongEval, +13% at 0.99 on SIFT); build +0–5%. With 8: smaller throughput gain, −2.3% in one cell. **4 is the candidate default** |
-| D7 | Default build path: 8-bit codes, refined bulk build of snapshot 1, later snapshots inserted one at a time; against a full rebuild | The bias reaches users: excess 2.27 pp grown against 0.22 rebuilt. `extra_backlinks` 4 cut it only 37% (prediction against) |
-| D7b | Diagnosis | Not the 8-bit construction (full-vector build: same excess, −32%). 8 links cut it 49%, but the oldest cohort rises 0.31 pp (limit 0.3). The larger product-path excess may come from the refine pass or 8-bit ranges trained on snapshot 1 only; untested |
+| D7 | Default build path: 8-bit codes, refined bulk build of snapshot 1, later snapshots inserted one at a time; against a full rebuild | The bias appears in the default build path too: excess 2.27 pp grown against 0.22 rebuilt. `extra_backlinks` 4 cut it only 37% (prediction against) |
+| D7b | Diagnosis | Not the 8-bit construction (full-vector build: same excess, −32%). 8 links cut it 49%, but the oldest cohort rises 0.31 pp (limit 0.3). The larger default-path excess may come from the refine pass or 8-bit ranges trained on snapshot 1 only; untested |
 | D8 | Refine pass or stale 8-bit ranges? | The refine pass: without it the grown excess is 0.91 pp smaller; snapshot-1 ranges add only 0.27 pp (quantizer staleness small without drift) |
 | D9 | Refine each snapshot's insertions (new `refine_links(first=...)`), alone and with `extra_backlinks` 4 | Alone −31% (prediction against). **Together −77%** (2.27 → 0.53 pp); recall@100 0.9509 against the rebuild's 0.9522; oldest +0.29 pp; 8 s of refine on all cores instead of a 49 s rebuild. **Lead product design** |
 | D10 | D9's combination on two more seeds | Cut 66–77% on every seed (mean 2.22 → 0.63 pp); recall@100 +0.33 to +0.36 points; oldest +0.20 to +0.29. Within 0.5 pp of the rebuild failed narrowly (0.502) |
@@ -935,9 +935,8 @@ to `docs/screen-d17-*.md` (D12 and D16 are speed work, section 12).
 | D17 | A search width calibrated once on snapshot 1 and kept (the calibration leg), grown and repaired | Recall@100 falls 1.1 points (0.961 → 0.950) but ends at its 0.95 target, so the recall leg is **not shown** (prediction against). The drift is borne by later arrivals: snapshot-1 miss rate flat (3.89 → 3.82%), later cohorts 6.5–6.6%, excess 2.05 pp; recalibrating (200 → 250) restores the mean but leaves 1.68 pp. Repaired: excess 0.20 pp at the fixed width |
 
 `extra_backlinks` (design A in its online form: a stand-in for the later arrivals a new node has not
-had) plus refining each batch of new insertions is the lead repair. Both are on the Epzero branch
-`min-backlinks`, off by default; D11 shows they should stay off by default for a one-off build and be
-used for indexes that keep growing.
+had) plus refining each batch of new insertions is the lead repair. Both are options of Epzero's development branch
+`min-backlinks`, off by default; D11 shows they suit indexes that keep growing, not one-off builds.
 
 **Full-scale engine arm** (`scripts/pace/LONGEVAL_ENGINE_ARM.md`; jobs 7254793–95, 24 November 2026;
 8-bit codes, refined bulk build of snapshot 1, snapshots 2–3 inserted one at a time; three seeds; ef
@@ -1003,13 +1002,11 @@ whole-index shuffle uses future data); an exact-scan buffer alone; the fixed-rou
 (E). All at equal memory and edge budgets, first at equal measured query work, then at matched
 held-out recall. Every comparison also reports harm to the oldest cohort and to graph-wide recall.
 
-### 8.4 Where Epzero stands on standard benchmarks today
+### 8.4 Epzero on standard benchmarks (context)
 
-Honesty matters here: winning every public leaderboard is a goal, not a given. On a Gold 6226,
-Epzero with AVX2 kernels is 1.08–1.41× Glass on Yandex at recall 0.90–0.98, but 0.86–0.88× on
-ImageNet-CLIP at 0.90, where its per-step cost is 17–20% higher. Round 10 (kernels on more datasets,
-the speed sweep on ImageNet) and the VIBE submission address that gap separately. The arrival-bias
-work must not cost speed; ideally the better-linked graph also helps average recall (the free-slot
+On a Gold 6226, Epzero with AVX2 kernels is 1.08–1.41× Glass on Yandex at recall 0.90–0.98, but
+0.86–0.88× on ImageNet-CLIP at 0.90, where its per-step cost is 17–20% higher. A repair must not cost
+speed; ideally the better-linked graph also helps average recall (the free-slot
 pass raised recall@100 at ef 200 from 0.946 to 0.965).
 
 ---
