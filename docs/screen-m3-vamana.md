@@ -84,7 +84,7 @@ ratio predictions and the in-degree prediction (1.68–1.72) held.
 published insertion shows it as strongly as HNSW on both datasets. DiskANN's own library shows it on SIFT but
 hardly at all on LongEval. The visible difference is the floor of incoming links: DiskANN's newest tenth keeps
 26–28 of them (HNSW's about 12, the driver's 17–19), and DiskANN's recall is higher at the same L. One candidate
-cause, not tested here, is that DiskANN lets a neighbour list grow past R (the saved graphs report a maximum
-degree above 32) before pruning it, so a newcomer's reverse links are kept more often; the frozen start point
+cause, not tested here, is that DiskANN lets a neighbour list grow past R before pruning it (all eight saved graphs report a
+maximum degree of 41, 1.3 × 32), so a newcomer's reverse links are kept more often; the frozen start point
 is another difference from the driver. Which choice protects late arrivals is a question for a follow-up screen
 that varies them one at a time.
