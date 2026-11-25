@@ -25,7 +25,7 @@ does not fall; distance computations rise by at most 5%. On SIFT, where the orde
 ## Result (run 23 November 2026, after the design above was committed)
 
 `extra_backlinks` 8 against 0, as arrived, ef 200 (full rows, including ef 100 and 400, shuffled and
-reversed builds, and `extra_backlinks` 4, are in `Oryx/build/screen-d4/*/eb*/*/report.json`):
+reversed builds, and `extra_backlinks` 4, are in `BUILD_DIR/screen-d4/*/eb*/*/report.json`):
 
 | Data | Newest-cohort excess (pp) | Oldest-cohort miss | Recall@100 | Distance computations | Build | In-degree, first → last tenth |
 | --- | --- | --- | --- | --- | --- | --- |
