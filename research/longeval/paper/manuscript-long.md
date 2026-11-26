@@ -554,8 +554,25 @@ documents tombstoned before each later cohort arrived (37,927 in all), the grown
 has a within-query excess of +1.88 [+1.30, +2.49] points, against +1.64 [+1.08, +2.24] for a rebuild of the
 same live set: −0.24 [−0.52, +0.06], within the predicted ±1. Sparse deletions neither worsen nor relieve the
 bias. The repair (§13) removes it under deletions too (−1.93 [−2.36, −1.52] points), with the oldest cohort no
-worse and recall@100 0.8 points higher. Big-ANN's deletion runbook (10 million vectors, 5.4 million deleted)
-is the larger test; it is running.
+worse and recall@100 0.8 points higher.
+
+**With heavy deletions** (screen M2 Part A; recorded first). Big-ANN's deletion runbook inserts the 10 million
+clustered MSTuring vectors in 32 steps and deletes 5.4 million of them in 10 ranges. At ef 200:
+
+| Arm | Newest cohort's excess | Miss rate, oldest / newest third | Recall@100 |
+| --- | --- | --- | --- |
+| Epzero grown (tombstones; three seeds) | +8.37 [+7.99, +8.74] points | 13.5 / 18.6% | 0.772 |
+| Epzero rebuilt from the live set | +4.22 [+3.81, +4.62] | 20.1 / 21.6% | 0.731 |
+| Epzero repaired | +6.20 [+5.86, +6.53] | 11.4 / 14.5% | 0.827 |
+| hnswlib grown / rebuilt (seed 11) | +8.31 / +4.25 | 13.7 / 18.5%, 19.9 / 21.4% | 0.773 / 0.733 |
+
+Heavy deletion doubles the arrival gap in both implementations (+4.15 and +4.06 points against a rebuild).
+Tombstoned nodes keep routing searches, which lifts recall by 4 points, but the lift goes mostly to the old
+documents built around them; new arrivals cannot link to them. The repair here removes only a quarter of
+the excess (−2.17 [−2.37, −1.97] points), against the predicted half, a failed prediction, while raising
+recall by 5.5 points for every cohort. Under heavy deletion, the repair helps everyone but closes the gap
+only in part; compacting away the tombstones would remove the old documents' advantage and its recall
+together.
 
 ---
 
@@ -840,8 +857,9 @@ novelty assessment, last checked on 26 November 2026, is in `docs/arrival-bias-r
   snapshot 1, and the 100 documents put in their place, presented blind to role, arrival group and order,
   on the organisers' 0–2 scale. It is the human check on §12. A second annotator is sought for a blind
   50-pair overlap.
-- **Deletions and updates.** Sparse synthetic deletions leave the arrival bias unchanged (§11); Big-ANN's
-  deletion runbook is running, and rewritten documents are untested (LongEval Web would test both).
+- **Deletions and updates.** Sparse deletions leave the arrival bias unchanged; heavy deletion with tombstones
+  doubles it, and the repair closes only a quarter of that (§11). A repair aimed at tombstoned
+  neighbourhoods, and rewritten documents (LongEval Web), are untested.
 - **Which Vamana choice protects late arrivals.** DiskANN's 1.3 R slack on neighbour lists, its frozen start
   point, or something else: a screen varying them one at a time.
 - **A second longitudinal collection,** such as LongEval Web, for the effectiveness results; the
