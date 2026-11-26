@@ -71,3 +71,37 @@ minus grown is −0.24 [−0.52, +0.06] points, within the predicted ±1: sparse
 the bias. (3) The repair changes the excess by −1.93 [−2.36, −1.52] points (all of it), with the oldest cohort's
 miss rate changing by −0.08 points (upper 95% bound +0.08, against the 0.75 allowed) and recall@100 rising by
 0.8 points.
+
+## Result, Part A: Big-ANN's deletion runbook (26 November 2026)
+
+Eleven builds: Epzero 0.5.0 (`~/epzero-main-venv`) grown, rebuilt and repaired with seeds 11, 29, 47; hnswlib
+0.8.0 (`~/hnswlib-venv`, the screen X1 build; the package exposes no version attribute) grown and rebuilt with
+seed 11. 10,000,000 vectors inserted, 5,400,000 deleted, 4,600,000 live at the end (1.5 / 1.8 / 1.3 million
+by cohort); 10,000 queries; ef 200; aggregates `research/longeval/m2-deletions-bigann.json`. Intervals resample
+queries (seeds averaged within query); the three Epzero seeds agree to within 0.2 points in every arm.
+
+| Arm | Newest cohort's within-query excess | Miss rate, oldest / middle / newest third | Recall@100 | Build (one thread) |
+| --- | --- | --- | --- | --- |
+| Epzero grown (tombstones) | +8.37 [+7.99, +8.74] points | 13.5 / 30.0 / 18.6% | 0.772 | 37–44 min |
+| Epzero rebuilt (live set only) | +4.22 [+3.81, +4.62] | 20.1 / 33.2 / 21.6% | 0.731 | 11 min |
+| Epzero repaired | +6.20 [+5.86, +6.53] | 11.4 / 21.8 / 14.5% | 0.827 | 52 min, of which refine 9 min on 6 threads |
+| hnswlib grown (tombstones) | +8.31 [+7.92, +8.69] | 13.7 / 29.7 / 18.5% | 0.773 | 71 min |
+| hnswlib rebuilt (live set only) | +4.25 [+3.81, +4.69] | 19.9 / 32.8 / 21.4% | 0.733 | 24 min |
+
+**Predictions.** (1) **Held**, for both implementations: the grown arm's excess is positive, its interval
+far from 0. (2) The open question, with the author's low-confidence expectation that grown minus rebuilt is
+positive: **positive** — heavy deletion doubles the arrival gap, by +4.15 [+3.83, +4.47] points (Epzero) and
++4.06 [+3.68, +4.44] (hnswlib). Tombstoned nodes keep routing searches, so the grown graph reaches 4 points more
+recall than a rebuild of its live set, but the gain goes mostly to the oldest third (20.1% to 13.5% missed) and
+little to the newest (21.6% to 18.6%), which cannot link to the deleted nodes around which the old survivors
+were built. (3) **Failed**: the repair removes about a quarter of the grown arm's excess (−2.17 [−2.37, −1.97]
+points), not half. It is no harm to anyone: the oldest third's miss rate falls by 2.17 points (upper bound
+−2.05) and recall@100 rises by 5.5 points, above both the grown and the rebuilt arms. The middle third is the
+worst served in every arm (22–33%), rebuilt included, so that comes from where its live vectors lie, not from
+the deletion history.
+
+**Reading.** Under append-only growth (Parts A and B of the earlier screens) and sparse deletions (Part B
+here), the arrival bias is set by insertion position and the repair removes it. Under heavy deletion with
+tombstones, deleted nodes add a second advantage for old documents that the repair, which only adds incoming
+links to new ones, closes only in part. Compaction (rebuilding without the tombstones) would remove that
+advantage and the recall it brings together.
