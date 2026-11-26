@@ -100,8 +100,8 @@ points), not half. It is no harm to anyone: the oldest third's miss rate falls b
 worst served in every arm (22–33%), rebuilt included, so that comes from where its live vectors lie, not from
 the deletion history.
 
-**Reading.** Under append-only growth (Parts A and B of the earlier screens) and sparse deletions (Part B
-here), the arrival bias is set by insertion position and the repair removes it. Under heavy deletion with
+**Reading.** Under append-only growth (the order rerun, the engine arms, the Big-ANN stream) and sparse
+deletions (Part B), the arrival bias is set by insertion position and the repair removes it. Under heavy deletion with
 tombstones, deleted nodes add a second advantage for old documents that the repair, which only adds incoming
 links to new ones, closes only in part. Compaction (rebuilding without the tombstones) would remove that
 advantage and the recall it brings together.
