@@ -174,8 +174,8 @@ by more than the margin, not that a longitudinal trend is preserved. The loss is
 D is +0.0016 [−0.0040, +0.0084] for Epzero, −0.0027 [−0.0093, +0.0028] for FAISS and +0.0005 [−0.0012,
 +0.0021] for IVF, and the 27 history comparisons are again identical. Paired with Qwen on the same 374
 queries, D differs by −0.0020 [−0.0097, +0.0048] for FAISS and +0.0020 [−0.0008, +0.0050] for IVF, within
-the margin; for Epzero by +0.0075 [−0.0017, +0.0205], so its small Qwen loss did not reproduce, and whether
-the encoders agree for it is not settled. Exact search with BGE loses 0.037 nDCG@10 [0.026, 0.048] over the
+the margin; for Epzero by +0.0075 [−0.0017, +0.0205], so its small Qwen loss did not reproduce; with ten
+seeds per encoder *(exploratory)* the difference is +0.0054 [−0.0030, +0.0165], still open. Exact search with BGE loses 0.037 nDCG@10 [0.026, 0.048] over the
 same snapshots (Qwen: +0.007): the approximation's change stays within the margin under either trend.
 
 ### 4.3 Why the two HNSW arms differ: calibration
