@@ -70,3 +70,45 @@ The archive's SHA-256 on PACE matched the receipt (9601874904d87e62…6ae4ed) an
 verified. Jobs 7325332–7325338, seeds 101, 211, 307, 401, 503, 601, 701 in that order.
 All seven were pending on resources at first check. PACE's clock was still on 25 November (UTC), so `sacct`
 needs `-S 2026-11-25`; an evidence archive made before the jobs ran holds nothing and is deleted.
+
+## Result (27 November 2026)
+
+All seven jobs passed (1 h 22 min to 1 h 24 min each, 34 of 34 environment tests in every job). Evidence
+archive SHA-256 ee5e5ad6…a6850cb54, checked locally, then unpacked and run with `bge_seeds_analysis.py`;
+aggregates `research/longeval/e4-bge-seeds-ten.json`. All 22 BGE jobs (15 held-out, 7 seed) passed the content
+check against the same prepared inputs, and no report was excluded. The three frozen seeds reproduce E4's D for
+every arm. D is the change from snapshot 1 to 3 in the ANN-minus-exact nDCG@10 gap (GPT-OSS-120B labels,
+374-query panel); intervals resample queries and seeds (10,000 draws).
+
+| Arm | D, three frozen seeds | **D, ten seeds** | 95% interval (queries and seeds) | SD across seeds | Per seed, range |
+| --- | --- | --- | --- | --- | --- |
+| Epzero HNSW | +0.0016 | **+0.0020** | [−0.0034, +0.0085] | 0.0021 | −0.0020 to +0.0049 |
+| FAISS HNSW | −0.0027 | **+0.0000** | [−0.0057, +0.0061] | 0.0022 | −0.0050 to +0.0019 |
+| IVF, frozen training | +0.0005 | **+0.0002** | [−0.0015, +0.0018] | 0.0008 | −0.0012 to +0.0010 |
+
+**Encoder contrast** (BGE minus Qwen, ten seeds each, per query with seeds averaged within each encoder; queries
+resampled jointly and seeds within each encoder):
+
+| Arm | BGE D | Qwen D | **BGE minus Qwen** | 95% interval |
+| --- | --- | --- | --- | --- |
+| Epzero HNSW | +0.0020 | −0.0034 | **+0.0054** | [−0.0030, +0.0165] |
+| FAISS HNSW | +0.0000 | −0.0021 | **+0.0021** | [−0.0055, +0.0106] |
+| IVF, frozen training | +0.0002 | −0.0009 | **+0.0011** | [−0.0020, +0.0043] |
+
+**Predictions.** (1) Ten-seed BGE D within ±0.006 for every arm: **held** (+0.0020, +0.0000, +0.0002), and
+every interval lies within ±0.01. (2) Epzero's encoder contrast smaller in magnitude than the three-seed
++0.0075: **held** (+0.0054). (3) Its interval within ±0.01: **failed**; the upper end is +0.0165. Whether
+Epzero's arm agrees across encoders within the margin is still not settled. With seed variation included,
+FAISS's contrast interval also reaches just past the margin (+0.0106); E4's three-seed contrasts resampled
+queries only, so the two are not directly comparable.
+
+**Calibration.** Under BGE, calibration chose ef 400 for both HNSW arms and nprobe 128 for IVF at all three
+snapshots of all ten seeds: the width never changed as the collection grew. (Under Qwen, Epzero stayed at ef
+200 on nine of ten seeds and FAISS moved from 200 to 400 on six.) The analysis's "widened" count, defined as
+"beyond ef 200 at any snapshot", is therefore ten of ten for both HNSW arms, but none of them widened over
+time.
+
+**Reading** (after the result, not tested): under BGE the two HNSW arms ran at the same width throughout, and
+their ten-seed D agrees (+0.0020 and +0.0000). Under Qwen, at a fixed ef 400, Epzero's frozen D was −0.0026
+against FAISS's −0.0022. So Epzero's encoder contrast is partly a contrast between search widths (200 under
+Qwen, 400 under BGE), not only between encoders.
