@@ -230,8 +230,8 @@ its point estimate but not its interval, so with seed variation included the def
 is about 0.006 rather than 0.004 (IVF: 0.0035). FAISS's calibration moved from ef 200 to 400 on six of ten
 seeds, with D −0.0005 on those six against −0.0045 on the four that stayed at 200; Epzero stayed at ef 200
 on nine seeds; IVF never needed more probes. The frozen, confirmatory result for Epzero remains
-"inconclusive"; the ten-seed result is exploratory. The same seven seeds on the BGE vectors are prepared
-as a follow-up (amendment 7, §15).
+"inconclusive"; the ten-seed result is exploratory. The same seven seeds on the BGE vectors follow below
+(amendment 7, §15).
 
 **The margin is as large as the trend** *(exploratory)*. Exact search's own nDCG@10 changes by +0.0070
 [−0.0000, +0.0139] over the same snapshots. So the collection can show that the loss to approximation did
@@ -248,6 +248,23 @@ for IVF. Paired with Qwen on the same 374 queries, D differs by −0.0020 [−0.
 small loss under Qwen did not reproduce, and whether the two encoders agree for it is not settled. Exact
 search with BGE *loses* 0.037 nDCG@10 [0.026, 0.048] over the same snapshots (Qwen: +0.007): the
 approximation's change stays within the margin under either trend.
+
+**Ten BGE seeds** *(exploratory; amendment 7, design and predictions recorded before submission)*. The same
+seven further seeds on the BGE vectors (`LONGEVAL_BGE_SEEDS.md`), with queries and seeds resampled:
+
+| Arm | D, three frozen seeds | D, ten seeds | 95% interval (queries and seeds) | BGE minus Qwen, ten seeds each |
+| --- | --- | --- | --- | --- |
+| Epzero HNSW | +0.0016 | +0.0020 | [−0.0034, +0.0085] | +0.0054 [−0.0030, +0.0165] |
+| FAISS HNSW | −0.0027 | +0.0000 | [−0.0057, +0.0061] | +0.0021 [−0.0055, +0.0106] |
+| IVF, frozen training | +0.0005 | +0.0002 | [−0.0015, +0.0018] | +0.0011 [−0.0020, +0.0043] |
+
+Every arm's ten-seed D is within ±0.006, and every interval within ±0.01 (predicted for the points: held).
+Epzero's encoder contrast shrank from +0.0075 to +0.0054 (predicted: held), but its interval still reaches
++0.0165 (predicted within ±0.01: failed), so whether its arm agrees across encoders within the margin
+remains open. Under BGE, calibration chose ef 400 for both HNSW arms (nprobe 128 for IVF) at every snapshot
+of every seed, and at that common width the two HNSW arms agree (+0.0020 and +0.0000); under Qwen, Epzero
+mostly stayed at ef 200. Part of Epzero's contrast is therefore a contrast of search widths rather than of
+encoders (a reading after the result: at a fixed ef 400 under Qwen its D was −0.0026, §7).
 
 ---
 
@@ -756,8 +773,8 @@ second encoder's three within-encoder arm tests form one Holm family at 0.05.
   inputs but wrote different gzip timestamps and temporary paths, which the byte-level check would have
   refused. Checked before any analysis ran.
 - **7.** Seven further construction seeds on the BGE vectors (`LONGEVAL_BGE_SEEDS.md`), as an exploratory
-  follow-up beside E4's confirmatory three-seed results, which it does not change. Package
-  `longeval-bge-seeds-01` is built; the jobs have not run.
+  follow-up beside E4's confirmatory three-seed results, which it does not change. Run on 25–26
+  November; result in §6.
 
 **Predictions for the next release** (`NEXT_RELEASE_PREDICTIONS.md`, fixed on 26 November 2026, before any
 2027 data or schedule existed): seven predictions (index history, the arrival ratio and its reversal, IVF's
@@ -825,9 +842,10 @@ novelty assessment, last checked on 26 November 2026, is in `docs/arrival-bias-r
   deletions or rewritten documents. The insertion-position effect was reproduced elsewhere (GloVe, SIFT,
   a third HNSW implementation, an independent Vamana, the Big-ANN stream, and with synthetic deletions);
   the effectiveness results were not. DiskANN's own library shows it on SIFT but hardly on LongEval (§11).
-- **Two encoders, one disagreement.** Epzero's small change in D under Qwen did not reproduce under BGE;
-  with three seeds, whether its arm agrees across encoders within the margin is open. Ten Qwen seeds put
-  its D at −0.0034, within the margin; ten BGE seeds are prepared (amendment 7).
+- **Two encoders, one open contrast.** Epzero's small change in D under Qwen did not reproduce under BGE.
+  With ten seeds on each encoder its D is −0.0034 (Qwen) and +0.0020 (BGE), both within the margin, but
+  the paired difference, +0.0054 [−0.0030, +0.0165], is not shown to be within ±0.01; part of it is a
+  difference in the calibrated width (ef 200 under Qwen, 400 under BGE).
 - **Lenient labels.** The effectiveness results rest on lenient LLM labels, which the local judge was
   validated against and shares; human grades cover 29 queries at one snapshot, and agree weakly.
 - **Reused test queries.** The test queries were used once for the frozen analysis, and every
@@ -839,7 +857,7 @@ novelty assessment, last checked on 26 November 2026, is in `docs/arrival-bias-r
   reversed of 1.77 / 1.02 / 0.77 (Epzero) and 1.53 / 1.06 / 0.78 (FAISS), the as-arrived intervals above 1;
   and every replication since used the measure as pre-registered.
 - **Few seeds.** Three construction seeds cannot separate seed variation from Epzero's change; ten seeds
-  (§6, §7) put every arm within the margin, but were exploratory.
+  on each encoder (§6, §7) put every arm's D within the margin, but were exploratory.
 - **A coarse calibration.** 50 calibration queries and a coarse ef grid, a design choice that separates
   the two HNSW arms.
 - **Development-only screens.** The query-driven repair results come from development screens.
@@ -864,7 +882,8 @@ novelty assessment, last checked on 26 November 2026, is in `docs/arrival-bias-r
   point, or something else: a screen varying them one at a time.
 - **A second longitudinal collection,** such as LongEval Web, for the effectiveness results; the
   neighbour-level arrival test needs no labels and is the cheap first step.
-- **The ten BGE seeds** (amendment 7), packaged and ready to submit.
+- **Epzero's encoder contrast.** Ten seeds per encoder narrowed it but did not settle it (§6). Running
+  both encoders at the same fixed width would separate the encoder from the calibrated width.
 - **The next release**, against the predictions fixed for it (§15).
 - **Why the disadvantage fades at the rate it does.** Screen M1 measured the rate (the in-degree gap
   closes by about a third over the second half of a build) and that pruning of the oldest nodes' links
