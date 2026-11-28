@@ -32,7 +32,7 @@ time. Epzero is presented as one HNSW implementation among others, as in the exi
 **A1. A second real stream with real arrival times** (the main gap: LongEval is one collection, Big-ANN's
 stream is synthetic in its order). arXiv abstracts in submission order: the arXiv ID encodes the month,
 and arXiv's metadata (abstracts included) is CC0 and available through OAI-PMH without an account.
-Every abstract to the end of 2026 (about 2.8 million), embedded once with BGE-base-en-v1.5 on a PACE GPU (the LongEval pipeline),
+Every abstract to 25 November 2026 (3,259,971 after the held-out queries), embedded once with BGE-base-en-v1.5 on a PACE GPU (the LongEval pipeline),
 inserted month by month. Queries: held-out abstracts from the last months (new content) and from across
 the range, kept out of the index. The VIBE arXiv set cannot be used: its source has text only, no IDs or
 dates, and its row count does not match. Design and predictions are recorded in `screen-a1-arxiv-stream.md`
