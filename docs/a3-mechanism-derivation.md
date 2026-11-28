@@ -168,3 +168,21 @@ nodes' incoming links (S and R in the first fifth), and the small age effect spa
 **Next test (to be recorded before it runs).** Replace the constant rate with the measured one: λ = k / (mean size
 of a saturated list), with the hazard scaled by the measured age profile, and predict S and R by tenth at M 16 and
 M 32 from quantities measured in a different build (seed 29) than the one scored.
+
+## 8. The measured-rate model: design (recorded 28 November 2026, before its builds)
+
+**Rate.** L̄ is the mean layer-0 list size, at the end of a build, of the nodes whose list was pruned at least
+once; it is measured in link-history builds with seed 29 (M 16 / efConstruction 100 and M 32 / efConstruction 200,
+the SIFT sample, shuffled), never in the builds scored. A link in a saturated list is removed at rate 1/L̄ per
+addition, so λ = k/L̄ replaces k/(M₀ + 1), and a list saturates once it holds L̄ links (t* = (L̄ − k)/k).
+Each node uses its own number of choices k_i and the later arrivals' mean k for the additions, as in section 5.
+
+**Scored builds.** The seed-11 shuffled builds already made: M1's `public-sift-shuffled-11` (M 16) and
+`sift-m32-shuffled-11` (M 32).
+
+**Predictions.**
+
+1. S within 1.5 links of the model in every tenth, the first included, at both M.
+2. R within 1.5 links of the model in every tenth, at both M.
+3. The model's first-tenth S is within 15% of the measured value at both M (the random-displacement model was
+   28% and 22% too high).
