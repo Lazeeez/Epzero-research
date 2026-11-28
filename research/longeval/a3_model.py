@@ -55,6 +55,117 @@ def compare_measured(build, L):
                             '3_first_tenth_S_within_15pct': abs(model['S'][0] - S[0]) <= 0.15 * S[0]}}
 
 
+def list_profile(links_dir):
+    """Section 10: from a link-history build, the number of candidates removed per pruning event (its empirical
+    distribution) and the removal probability by age-rank tenth within an event (youngest first)."""
+    links_dir = Path(links_dir)
+    report = json.loads((links_dir / 'report.json').read_text())
+    t = np.load(links_dir / 'events.npy')
+    event, age, removed = t[:, 0].astype(np.int64), t[:, 4], t[:, 6].astype(bool)
+    counts, by_tenth = [], np.zeros((10, 2))
+    for e in np.unique(event):
+        rows = np.flatnonzero(event == e)
+        counts.append(int(removed[rows].sum()))
+        order = np.argsort(age[rows], kind='stable')
+        tenth = np.empty(len(rows), dtype=np.int64)
+        tenth[order] = np.arange(len(rows)) * 10 // len(rows)
+        np.add.at(by_tenth, (tenth, 0), 1)
+        np.add.at(by_tenth, (tenth, 1), removed[rows])
+    return {'M0': 2 * report['M'], 'removed_per_event': np.bincount(counts).tolist(),
+            'removal_by_age_tenth': (by_tenth[:, 1] / by_tenth[:, 0]).tolist()}
+
+
+def _prune(born, profile, rng, counts):
+    """One pruning event on a list of creation stamps (len M0 + 1): remove r, weighted by age-rank tenth."""
+    r = rng.choice(len(counts), p=counts)
+    ages = -np.asarray(born, dtype=np.float64)                   # larger stamp = younger
+    order = np.argsort(ages, kind='stable')                      # youngest first
+    tenth = np.empty(len(born), dtype=np.int64)
+    tenth[order] = np.arange(len(born)) * 10 // len(born)
+    w = np.asarray(profile['removal_by_age_tenth'])[tenth]
+    gone = rng.choice(len(born), size=min(r, len(born)), replace=False, p=w / w.sum()) if r else []
+    keep = np.ones(len(born), dtype=bool)
+    keep[gone] = False
+    return [b for b, k in zip(born, keep) if k]
+
+
+def survival_curves(profile, ks, horizon, *, sims=400, burn=400, seed=20261128):
+    """Survival after a additions (0..horizon) of a chooser's own links (per initial size k) and of a reverse link
+    entering a list in its steady state, from the simulated list process."""
+    rng = np.random.default_rng(seed)
+    counts = np.asarray(profile['removed_per_event'], dtype=np.float64)
+    counts /= counts.sum()
+    full = profile['M0'] + 1
+    own = {}
+    for k in ks:
+        alive = np.zeros(horizon + 1)
+        for _ in range(sims):
+            born, stamp = list(range(-k, 0)), 0                  # the k own links, stamps below 0
+            for a in range(horizon + 1):
+                alive[a] += sum(1 for b in born if b < 0) / k
+                born.append(stamp)
+                stamp += 1
+                if len(born) >= full:
+                    born = _prune(born, profile, rng, counts)
+        own[k] = alive / sims
+    alive = np.zeros(horizon + 1)
+    for _ in range(sims * 4):
+        born, stamp = [], 0
+        for _ in range(burn):                                   # reach the steady state
+            born.append(stamp)
+            stamp += 1
+            if len(born) >= full:
+                born = _prune(born, profile, rng, counts)
+        tag = stamp
+        born.append(stamp)
+        stamp += 1
+        if len(born) >= full:
+            born = _prune(born, profile, rng, counts)
+        for a in range(horizon + 1):
+            alive[a] += tag in born
+            born.append(stamp)
+            stamp += 1
+            if len(born) >= full:
+                born = _prune(born, profile, rng, counts)
+    return own, alive / (sims * 4)
+
+
+def model_list_process(choices, profile, **kw):
+    k = np.asarray(choices, dtype=np.int64)
+    n = len(k)
+    w = np.zeros(n)
+    w[1:] = k[1:] / np.arange(1, n)
+    after = np.concatenate([np.cumsum(w[::-1])[::-1][1:], [0.0]])
+    horizon = int(np.ceil(after.max())) + 1
+    ks = [int(v) for v in np.unique(k) if (k == v).mean() >= 0.001 and v > 0]
+    own, reverse = survival_curves(profile, ks, horizon, **kw)
+    grid = np.arange(horizon + 1)
+    nearest = np.array([min(ks, key=lambda v: abs(v - x)) for x in range(k.max() + 1)])
+    surv_own = np.empty(n)
+    for v in ks:
+        rows = nearest[k] == v
+        surv_own[rows] = np.interp(after[rows], grid, own[v])
+    S = np.concatenate([np.cumsum((w * surv_own)[::-1])[::-1][1:], [0.0]])
+    R = k * np.interp(after, grid, reverse)
+    tenth = lambda a: [float(a[d * n // 10:(d + 1) * n // 10].mean()) for d in range(10)]
+    return {'S': tenth(S), 'R': tenth(R)}
+
+
+def compare_list_process(build, links_dir, measured_rate_r_error=None):
+    m = measures(build)
+    profile = list_profile(links_dir)
+    model = model_list_process(np.load(Path(build) / 'choices.npy'), profile)
+    S, R = m['later_by_tenth'], m['earlier_by_tenth']
+    worst_r = max(abs(a - b) for a, b in zip(R, model['R']))
+    out = {'build': Path(build).name, 'profile': profile, 'measured': {'S': S, 'R': R}, 'model': model,
+           'largest_R_error': worst_r,
+           'predictions': {'1_S_within_1.5_every_tenth': all(abs(a - b) <= 1.5 for a, b in zip(S, model['S'])),
+                           '2_R_within_1.5_every_tenth': all(abs(a - b) <= 1.5 for a, b in zip(R, model['R']))}}
+    if measured_rate_r_error is not None:
+        out['predictions']['3_R_error_below_half_the_measured_rate_model'] = worst_r < 0.5 * measured_rate_r_error
+    return out
+
+
 def compare(build):
     m = measures(build)
     report = json.loads((Path(build) / 'report.json').read_text())
@@ -81,7 +192,25 @@ def main():
     parser.add_argument('builds', type=Path, nargs='*')
     parser.add_argument('--measured-rate', nargs='+', metavar='BUILD=LINKS_REPORT',
                         help='section 8: score BUILD with L from a link-history report.json')
+    parser.add_argument('--list-process', nargs='+', metavar='BUILD=LINKS_DIR',
+                        help='section 10: score BUILD with the list process measured in LINKS_DIR')
+    parser.add_argument('--measured-rate-results', type=Path, help="section 8's aggregates, for prediction 3")
     a = parser.parse_args()
+    if a.list_process:
+        earlier = {}
+        if a.measured_rate_results:
+            for b in json.loads(a.measured_rate_results.read_text())['builds']:
+                earlier[b['build']] = max(abs(x - y) for x, y in zip(b['measured']['R'], b['model']['R']))
+        out = {'kind': 'EXPLORATORY A3 list-process model (docs/a3-mechanism-derivation.md section 10), aggregates only',
+               'builds': []}
+        for pair in a.list_process:
+            build, links = pair.split('=', 1)
+            name = Path(build).name
+            out['builds'].append(compare_list_process(build, links, earlier.get(name) if 'm32' in name else None))
+        a.output.write_text(json.dumps(out, indent=2) + '\n')
+        for b in out['builds']:
+            print(b['build'], json.dumps(b['predictions']), round(b['largest_R_error'], 2))
+        return
     if a.measured_rate:
         out = {'kind': 'EXPLORATORY A3 measured-rate model (docs/a3-mechanism-derivation.md section 8), aggregates only',
                'builds': []}
