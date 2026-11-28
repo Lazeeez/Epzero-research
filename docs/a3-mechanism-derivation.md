@@ -112,3 +112,26 @@ first would do; the instrumented build (section 4) is the test.
 makes the newest nodes the least linked; it held at M 16 and M 32 without a fitted parameter. Random displacement
 gives the size of the pruning term to within about a link except in the oldest fifth, where pruning is stronger
 than random, and it is stated as an approximation.
+
+## 6. Which links pruning removes: design (recorded 28 November 2026, before the build)
+
+**Build.** M1's SIFT sample (300,000 vectors, L2), shuffled, seed 11, M 16, efConstruction 100, Epzero 0.5.0
+uncompressed and single-threaded, as M1. After each insertion j, the layer-0 lists of j and of every node it
+chose are read and compared with their previous state, which gives each link's creation step and the step it is
+pruned. A **pruning event** is an insertion that removes at least one link from a chosen node's list, or whose
+reverse link is refused. A random 2% of pruning events (seed 2026) are recorded with every candidate in the
+list: its age (steps since the link was made), its squared distance to the list's owner, and whether it was
+removed. Code: `research/longeval/a3_links.py`.
+
+**Measures.** Within each event, the age rank and the distance rank of each candidate (0 youngest or closest, 1
+oldest or farthest); the removed candidates' mean ranks; the mean within-event Spearman correlation of age and
+distance; a logistic model of removal on age rank alone, distance rank alone and both; the share of events that
+remove exactly one link.
+
+**Predictions** (from the reading in section 5):
+
+1. Removed links are older than kept ones: their mean within-event age rank is above 0.6.
+2. Removed links are longer: their mean within-event distance rank is above 0.6.
+3. Older links are longer: the mean within-event Spearman correlation of age and distance is above 0.1.
+4. Age acts through length: with both ranks in the model, the age coefficient is less than half its value alone.
+5. At least 80% of pruning events remove exactly one link.
