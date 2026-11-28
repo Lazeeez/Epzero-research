@@ -68,3 +68,35 @@ def test_scoring_matches_the_frozen_runner_and_the_repair_runs(tmp_path):
     assert fixed["months"] == 30 and fixed["refined_nodes"] > 0
     assert set(fixed["widths"]) == {"100", "200", "400", "800"} and set(fixed["confirm"]["widths"]) == set(fixed["widths"])
     assert fixed["widths"]["800"]["recall_at_100"] >= fixed["widths"]["100"]["recall_at_100"]
+
+
+def test_analysis_reads_jobs_and_scores_every_prediction(tmp_path):
+    pytest.importorskip("faiss")
+    pytest.importorskip("epzero")
+    from research.arxiv_stream import analyze
+    from research.longeval import insertion_pilot
+    vectors, prepared = fake_encoding(tmp_path)
+    stream.sample(vectors, prepared, tmp_path / "sample")
+    jobs = tmp_path / "jobs"
+    job = 0
+    for backend in ("epzero", "faiss_hnsw"):
+        for order in ("appended", "reversed", "shuffled"):
+            job += 1
+            (jobs / str(job)).mkdir(parents=True)
+            (jobs / str(job) / "arm.txt").write_text(f"arm={order}-{backend}-11\n")
+            insertion_pilot.run(tmp_path / "sample", jobs / str(job) / "build", order=order, seed=11, backend=backend,
+                                efs=(100, 200))
+    (jobs / "99").mkdir()
+    (jobs / "99" / "arm.txt").write_text("arm=repaired-epzero-11\n")
+    stream.repaired(tmp_path / "sample", jobs / "99" / "build", seed=11, threads=2, widths=(100, 200))
+    out = analyze.analyze(tmp_path / "sample", jobs)
+    assert len(out["builds"]) == 7
+    for name in ("new-content", "uniform"):
+        e = out["by_set"][name]["epzero"]
+        assert {"appended_excess_pp", "reversed_minus_appended_pp", "repaired_minus_appended_pp",
+                "shuffled_last_minus_first_tenth_pp"} <= set(e)
+    p = out["predictions"]
+    assert set(p["1_appended_excess_above_1pp_interval_above_0"]) == {"new-content/epzero", "new-content/faiss_hnsw",
+                                                                      "uniform/epzero", "uniform/faiss_hnsw"}
+    assert set(p["4_repair"]) == {"new-content", "uniform"} and set(p["5_exposure_r2_at_least_0.9"]) == {"epzero-11", "faiss_hnsw-11"}
+    assert sum(v["targets"] for v in out["age_curve"]["epzero"].values()) == 40 * 100
