@@ -60,3 +60,9 @@ first=…)` after each calendar month's insertions). Searched at ef 100, 200, 40
 5. The exposure model fits the decile means with R² of at least 0.9.
 
 A result against a prediction is reported as such. Aggregates only, in `research/arxiv_stream/`.
+
+**Prepared (28 November 2026, before any vector).** The harvest finished with 2,516 pages and 3,269,971 records
+(none without an abstract, no duplicate ID, no unreadable date), first versions from 25 April 1986 to 25 November
+2026; more than the plan's estimate of 2.8 million. Seed 2027 drew 5,000 new-content queries from after 25 November
+2025 and 5,000 uniform queries; the corpus holds 3,259,971 abstracts. `research/arxiv_stream/prepare.py`, outside
+the repository in `~/arxiv-stream/prepared-01`.
