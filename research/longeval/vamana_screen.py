@@ -51,7 +51,7 @@ def write_matrix(path, array):
         array.tofile(f)
 
 
-def run(sample, output, *, order, seed, cache, widths=WIDTHS):
+def run(sample, output, *, order, seed, cache, widths=WIDTHS, slack=None, frozen=False):
     sample, output = Path(sample), Path(output)
     vectors = np.load(sample / 'vectors.npy', mmap_mode='r')
     cohort = np.load(sample / 'cohort.npy')
@@ -73,7 +73,8 @@ def run(sample, output, *, order, seed, cache, widths=WIDTHS):
         np.array([n], dtype='<u4').tofile(f)
         sequence.astype('<u4').tofile(f)
     result = subprocess.run([str(driver(cache)), str(output / 'vectors.bin'), str(output / 'order.bin'), str(output / 'queries.bin'),
-                             str(output), str(R), str(L_BUILD), str(ALPHA), ','.join(map(str, widths))],
+                             str(output), str(R), str(L_BUILD), str(ALPHA), ','.join(map(str, widths))]
+                            + ([str(slack or 1.0), '1' if frozen else '0'] if (slack or frozen) else []),
                             check=True, capture_output=True, text=True)
     timing = json.loads(result.stdout.strip().splitlines()[-1])
     for name in ('vectors.bin', 'queries.bin'):
@@ -82,6 +83,7 @@ def run(sample, output, *, order, seed, cache, widths=WIDTHS):
     report = {'backend': 'vamana', 'implementation': 'research/longeval/vamana_driver.cpp (independent, FreshDiskANN Algorithms 1-3)',
               'driver_sha256': hashlib.sha256(SOURCE.read_bytes()).hexdigest(), 'order': order, 'seed': seed, 'ef': 200,
               'R': R, 'L_build': L_BUILD, 'alpha': ALPHA, 'count': int(n), 'metric': metric, **timing,
+              'slack': slack or 1.0, 'frozen_start': bool(frozen),
               'indegree_by_insertion_decile': [float(indegree[(position * 10 // n) == d].mean()) for d in range(10)],
               'indegree_zero_share': float((indegree == 0).mean()), 'widths': {}}
     for width in widths:
@@ -195,6 +197,8 @@ def main():
     r.add_argument('--seed', type=int, required=True)
     r.add_argument('--cache', type=Path, default=Path.home() / '.cache' / 'ann-longeval-research')
     r.add_argument('--backend', choices=('driver', 'diskann'), default='driver')
+    r.add_argument('--slack', type=float, help='screen A4: prune a list only past floor(slack * R)')
+    r.add_argument('--frozen', action='store_true', help='screen A4: start every search from a frozen node at the mean')
     a = sub.add_parser('analyze')
     a.add_argument('output', type=Path)
     a.add_argument('folder', type=Path)
@@ -203,7 +207,8 @@ def main():
         if args.backend == 'diskann':
             run_diskann(args.sample, args.output, order=args.order, seed=args.seed)
         else:
-            run(args.sample, args.output, order=args.order, seed=args.seed, cache=args.cache)
+            run(args.sample, args.output, order=args.order, seed=args.seed, cache=args.cache, slack=args.slack,
+                frozen=args.frozen)
     else:
         out = analyze(args.folder)
         args.output.write_text(json.dumps(out, indent=2) + '\n')
