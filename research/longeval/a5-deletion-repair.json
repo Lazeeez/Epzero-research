@@ -1,0 +1,175 @@
+{
+  "kind": "EXPLORATORY screen M2 (docs/screen-m2-deletions.md), aggregates only",
+  "ef": 200,
+  "prepared": {
+    "kind": "bigann",
+    "dataset": "msturing-10M-clustered",
+    "metric": "l2",
+    "count": 10000000,
+    "dimension": 100,
+    "queries": 10000,
+    "runbook_sha256": "c146fb5cde1920c90a86e045d534f776d9541747669b0a2fe915eac4a50fb48e",
+    "live": 4600000,
+    "cohort_live": {
+      "1": 1500000,
+      "2": 1800000,
+      "3": 1300000
+    }
+  },
+  "backends": {
+    "epzero": {
+      "arms": {
+        "grown": {
+          "seeds": [
+            11,
+            29,
+            47
+          ],
+          "excess_pp": 8.3664088286122,
+          "excess_interval_95_pp": [
+            7.986721070799642,
+            8.740154977825645
+          ],
+          "oldest_miss_rate": 0.13548891535250743
+        },
+        "rebuilt": {
+          "seeds": [
+            11,
+            29,
+            47
+          ],
+          "excess_pp": 4.216864756018482,
+          "excess_interval_95_pp": [
+            3.8120929120967455,
+            4.622281724154158
+          ],
+          "oldest_miss_rate": 0.20101764642199846
+        },
+        "repaired": {
+          "seeds": [
+            11,
+            29,
+            47
+          ],
+          "excess_pp": 6.1961241124828295,
+          "excess_interval_95_pp": [
+            5.856904583545179,
+            6.534769135304982
+          ],
+          "oldest_miss_rate": 0.11381521176909289
+        },
+        "rebuilt-repaired": {
+          "seeds": [
+            11,
+            29,
+            47
+          ],
+          "excess_pp": 1.2268782149598776,
+          "excess_interval_95_pp": [
+            0.8686377893959719,
+            1.597881041228748
+          ],
+          "oldest_miss_rate": 0.16980741703054142
+        }
+      },
+      "contrasts": {
+        "rebuilt_minus_grown": {
+          "seeds": [
+            11,
+            29,
+            47
+          ],
+          "excess_change_pp": -4.149544072593718,
+          "interval_95_pp": [
+            -4.470429825614596,
+            -3.827463854566599
+          ],
+          "oldest_miss_change_pp": 6.552873106949103,
+          "oldest_upper_95_pp": 6.813418456382326
+        },
+        "repaired_minus_grown": {
+          "seeds": [
+            11,
+            29,
+            47
+          ],
+          "excess_change_pp": -2.1702847161293706,
+          "interval_95_pp": [
+            -2.371933843138351,
+            -1.9660957052714598
+          ],
+          "oldest_miss_change_pp": -2.1673703583414543,
+          "oldest_upper_95_pp": -2.0457412908254202
+        },
+        "rebuilt-repaired_minus_grown": {
+          "seeds": [
+            11,
+            29,
+            47
+          ],
+          "excess_change_pp": -7.139530613652322,
+          "interval_95_pp": [
+            -7.462545609068593,
+            -6.81519419513887
+          ],
+          "oldest_miss_change_pp": 3.431850167803399,
+          "oldest_upper_95_pp": 3.634260980589752
+        },
+        "rebuilt-repaired_minus_rebuilt": {
+          "seeds": [
+            11,
+            29,
+            47
+          ],
+          "excess_change_pp": -2.989986541058604,
+          "interval_95_pp": [
+            -3.2371113794492703,
+            -2.7384969388307066
+          ],
+          "oldest_miss_change_pp": -3.121022939145704,
+          "oldest_upper_95_pp": -2.9340456416266987
+        }
+      }
+    },
+    "hnswlib": {
+      "arms": {
+        "grown": {
+          "seeds": [
+            11
+          ],
+          "excess_pp": 8.306808397562238,
+          "excess_interval_95_pp": [
+            7.915197909065844,
+            8.691837981392828
+          ],
+          "oldest_miss_rate": 0.13692396521237055
+        },
+        "rebuilt": {
+          "seeds": [
+            11
+          ],
+          "excess_pp": 4.246757292252043,
+          "excess_interval_95_pp": [
+            3.812645988520427,
+            4.689509675714034
+          ],
+          "oldest_miss_rate": 0.19899678827902276
+        }
+      },
+      "contrasts": {
+        "rebuilt_minus_grown": {
+          "seeds": [
+            11
+          ],
+          "excess_change_pp": -4.060051105310195,
+          "interval_95_pp": [
+            -4.4379733641482275,
+            -3.680405780893344
+          ],
+          "oldest_miss_change_pp": 6.207282306665221,
+          "oldest_upper_95_pp": 6.52040425739622
+        }
+      }
+    }
+  }
+}
