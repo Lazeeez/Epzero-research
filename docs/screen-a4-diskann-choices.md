@@ -38,3 +38,6 @@ tenths in the shuffled builds; recall@100 at L 200.
 4. With both, LongEval's as-arrived ratio is within 0.15 of DiskANN's 0.99.
 
 A result against a prediction is reported as such. Aggregates only, in `research/longeval/`.
+
+**Check (28 November 2026).** With both switches off, the changed driver rebuilt M3's SIFT as-arrived seed-11
+build in 224 s; its returned labels at every width and its in-degrees are byte-identical to M3's.
