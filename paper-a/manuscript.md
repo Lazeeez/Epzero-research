@@ -135,12 +135,12 @@ The independent Vamana driver and DiskANN's library differ in two known ways: Di
 list would exceed ⌊1.3 R⌋ before pruning it back to R, and it starts searches from a frozen node. Adding each to the
 driver (R 32, L 100, α 1.2):
 
-| Driver variant | SIFT, as arrived | LongEval, as arrived | Newest tenth's in-degree, SIFT |
+| Driver variant | SIFT, as arrived | LongEval, as arrived | Newest tenth's in-degree, SIFT / LongEval |
 | --- | --- | --- | --- |
-| as published (FreshDiskANN) | 1.99 | 1.32 | 18.6 |
-| + list slack 1.3 | 1.29 [1.07, 1.56] | 1.04 [0.92, 1.17] | 25.0 |
+| as published (FreshDiskANN) | 1.99 | 1.32 | 18.6 / 17.4 |
+| + list slack 1.3 | 1.29 [1.07, 1.56] | 1.04 [0.92, 1.17] | 25.0 / 27.4 |
 | + frozen start, copy of the first vector | *pending* | *pending* | *pending* |
-| DiskANN's library | 1.43 | 0.99 | 26.4 |
+| DiskANN's library | 1.43 | 0.99 | 26.4 / 28.1 |
 
 Slack alone moves the driver to DiskANN's behaviour on both datasets: a newcomer's reverse links are kept until a
 list holds 41 links, so its incoming links are not pruned away as the build continues. (A frozen node at the data's
