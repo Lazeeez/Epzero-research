@@ -29,6 +29,32 @@ def model_tenths(k, M0, n):
     return {'C': tenth(C), 'S': tenth(S), 'R': tenth(R)}
 
 
+def model_measured(choices, L):
+    """Section 8: S and R by insertion tenth from each insertion's own number of choices (`choices`, by insertion
+    position) and the measured mean size L of a saturated list, removal rate 1/L per addition."""
+    k = np.asarray(choices, dtype=np.float64)
+    n = len(k)
+    w = np.zeros(n)
+    w[1:] = k[1:] / np.arange(1, n)                            # insertion q chooses a given earlier node w.p. k_q/q
+    after = np.concatenate([np.cumsum(w[::-1])[::-1][1:], [0.0]])   # A(p): additions to a list after position p
+    survive = np.exp(-np.maximum(0.0, after - (L - k)) / L)    # a link made at q, in q's own list
+    S = np.concatenate([np.cumsum((w * survive)[::-1])[::-1][1:], [0.0]])
+    R = k * np.exp(-after / L)
+    tenth = lambda a: [float(a[d * n // 10:(d + 1) * n // 10].mean()) for d in range(10)]
+    return {'S': tenth(S), 'R': tenth(R)}
+
+
+def compare_measured(build, L):
+    m = measures(build)
+    choices = np.load(Path(build) / 'choices.npy')
+    model = model_measured(choices, L)
+    S, R = m['later_by_tenth'], m['earlier_by_tenth']
+    return {'build': Path(build).name, 'L': L, 'measured': {'S': S, 'R': R}, 'model': model,
+            'predictions': {'1_S_within_1.5_every_tenth': all(abs(a - b) <= 1.5 for a, b in zip(S, model['S'])),
+                            '2_R_within_1.5_every_tenth': all(abs(a - b) <= 1.5 for a, b in zip(R, model['R'])),
+                            '3_first_tenth_S_within_15pct': abs(model['S'][0] - S[0]) <= 0.15 * S[0]}}
+
+
 def compare(build):
     m = measures(build)
     report = json.loads((Path(build) / 'report.json').read_text())
@@ -52,8 +78,21 @@ def compare(build):
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('output', type=Path)
-    parser.add_argument('builds', type=Path, nargs='+')
+    parser.add_argument('builds', type=Path, nargs='*')
+    parser.add_argument('--measured-rate', nargs='+', metavar='BUILD=LINKS_REPORT',
+                        help='section 8: score BUILD with L from a link-history report.json')
     a = parser.parse_args()
+    if a.measured_rate:
+        out = {'kind': 'EXPLORATORY A3 measured-rate model (docs/a3-mechanism-derivation.md section 8), aggregates only',
+               'builds': []}
+        for pair in a.measured_rate:
+            build, links = pair.split('=', 1)
+            L = json.loads(Path(links).read_text())['mean_list_size_pruned']
+            out['builds'].append(compare_measured(build, L))
+        a.output.write_text(json.dumps(out, indent=2) + '\n')
+        for b in out['builds']:
+            print(b['build'], f"L={b['L']:.2f}", json.dumps(b['predictions']))
+        return
     out = {'kind': 'EXPLORATORY A3 model check (docs/a3-mechanism-derivation.md), aggregates only',
            'builds': [compare(b) for b in a.builds]}
     a.output.write_text(json.dumps(out, indent=2) + '\n')
