@@ -184,10 +184,14 @@ implementations measured:
 | grown, tombstones | +8.37 [+7.99, +8.74] | 13.5 / 18.6% | 0.772 |
 | rebuilt from the live set | +4.22 [+3.81, +4.62] | 20.1 / 21.6% | 0.731 |
 | repaired, tombstones kept | +6.20 [+5.86, +6.53] | 11.4 / 14.5% | 0.827 |
-| rebuilt and repaired | *pending (screen A5)* | | |
+| rebuilt and repaired | +1.23 [+0.87, +1.60] | 17.0 / 16.2% | 0.797 |
 
 Tombstoned nodes keep routing searches, which raises recall by 4 points but mostly for the old documents built around
-them; new arrivals cannot link to them. The repair helps every cohort but closes only a quarter of the gap.
+them; new arrivals cannot link to them. The repair alone helps every cohort but closes only a quarter of the gap.
+Compaction and the repair address the two causes separately: rebuilding the live set removes the tombstones' routing
+(+8.37 → +4.22), and growing it with the repair removes the arrival order's (+4.22 → +1.23), 85% of the grown index's
+excess in all, with recall 2.5 points above it. Keeping the tombstones gives the highest recall (0.827) but most of
+the bias.
 
 **Against published repairs.** CleanANN's GuidedBridgeBuild links nodes of the same depth in an insertion's search
 tree, at depths ⌊log₂|D|⌋ + 2 to + 4. With the authors' code at that window (R 32, L 100, α 1.2), the bridges barely
