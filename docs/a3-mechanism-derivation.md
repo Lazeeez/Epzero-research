@@ -233,3 +233,35 @@ in section 8. No parameter comes from the scored builds (seed 11, both M).
 
 **Predictions.** (1) S within 1.5 links in every tenth at both M. (2) R within 1.5 links in every tenth at both
 M. (3) At M 32, the largest R error is less than half the measured-rate model's (4.3 links).
+
+## 11. Result of the list-process model (28 November 2026)
+
+Profiles from the seed-29 link-history builds: an event removes 11.5 of 33 candidates on average at M 16 and
+40.4 of 65 at M 32; removal by age-rank tenth, youngest to oldest, 0.25 to 0.45 (M 16) and 0.40 to 0.80 (M 32).
+Survival curves from the simulated list (fixed seed); scored on the seed-11 builds; aggregates
+`research/longeval/a3-list-process.json`.
+
+| | 1st | 2nd | 3rd | 4th | 5th | 6th | 7th | 8th | 9th | 10th |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| M 16 S, model | 27.6 | 21.4 | 16.8 | 12.8 | 9.8 | 7.3 | 5.3 | 3.5 | 2.0 | 0.6 |
+| M 16 S, measured | 26.0 | 20.0 | 15.8 | 12.4 | 9.6 | 7.3 | 5.2 | 3.5 | 2.0 | 0.6 |
+| M 16 R, model | 2.4 | 4.7 | 6.3 | 7.7 | 8.8 | 9.7 | 10.4 | 10.9 | 11.4 | 11.8 |
+| M 16 R, measured | 2.6 | 5.3 | 7.0 | 8.3 | 9.4 | 10.2 | 10.9 | 11.4 | 11.8 | 12.0 |
+| M 32 S, model | 45.9 | 30.9 | 22.9 | 17.5 | 13.4 | 10.1 | 7.3 | 4.9 | 2.8 | 0.9 |
+| M 32 S, measured | 42.0 | 29.9 | 22.6 | 17.4 | 13.3 | 10.0 | 7.2 | 4.9 | 2.8 | 0.9 |
+| M 32 R, model | 4.5 | 8.5 | 10.9 | 12.4 | 13.5 | 14.4 | 15.3 | 15.9 | 16.3 | 16.7 |
+| M 32 R, measured | 5.8 | 10.3 | 12.6 | 14.0 | 15.0 | 15.6 | 16.1 | 16.6 | 16.8 | 17.0 |
+
+**Predictions.** (1) S within 1.5 links in every tenth: **failed** at both M, only in the first tenth (+1.6 at M 16,
++3.9 at M 32; every other tenth within 1.4). (2) R within 1.5: **held** at M 16 (largest error 0.66), **failed**
+at M 32 (1.76). (3) At M 32 the largest R error is below half the measured-rate model's: **held** (1.76 against
+4.3).
+
+**Where the model stands.** Exposure is exact. Pruning has two parts that the two models each capture: its bulk
+rhythm and its mild age preference account for the reverse links that newer nodes keep (the list-process model,
+R within 0.7 links at M 16 and 1.8 at M 32), and a removal rate set by the mean saturated list accounts for the
+oldest nodes' lost incoming links (the measured-rate model, S within 0.3 at M 16). Neither alone gets both; the
+oldest tenth loses more of its own early links than its age rank predicts, consistent with pruning being mainly
+by length and those links being the longest. For paper A the mechanism is stated as exposure, exact, plus pruning
+that the two models bound to within 4 links in the oldest tenth and 1.8 elsewhere; a length-dependent hazard is
+the remaining term and is left as stated.
