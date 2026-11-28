@@ -1,0 +1,73 @@
+{
+  "kind": "EXPLORATORY A3 link-history build (docs/a3-mechanism-derivation.md section 6), aggregates only",
+  "build": {
+    "design": "docs/a3-mechanism-derivation.md section 6",
+    "count": 300000,
+    "M": 16,
+    "ef_construction": 100,
+    "seed": 11,
+    "order": "shuffled",
+    "epzero": "0.5.0",
+    "event_rate": 0.02,
+    "event_seed": 2026,
+    "pruning_events": 120405,
+    "recorded_events": 2464,
+    "refused_reverse_links": 31395,
+    "removed_per_event": [
+      0,
+      16707,
+      3930,
+      2995,
+      2741,
+      2640,
+      2777,
+      88615
+    ],
+    "untracked_links": 0,
+    "lists_differing_from_tracking_at_end": 0,
+    "seconds": 63.608647885999744
+  },
+  "recorded_candidates": 81312,
+  "removed_mean_age_rank": 0.536717144896751,
+  "kept_mean_age_rank": 0.4799523481319517,
+  "removed_mean_distance_rank": 0.583228684228854,
+  "kept_mean_distance_rank": 0.4545569326932218,
+  "mean_within_event_spearman_age_distance": 0.13086981453706567,
+  "logistic": {
+    "age_only": [
+      -0.9494356041096714,
+      0.6770967702386391
+    ],
+    "distance_only": [
+      -1.3825377992253378,
+      1.4971469546982208
+    ],
+    "both": [
+      -1.6145354757055874,
+      0.5126050534871538,
+      1.4411589942221115
+    ]
+  },
+  "share_of_events_removing_exactly_one": 0.13875669615049208,
+  "removed_share_by_age_rank_fifth": [
+    0.2700602968460111,
+    0.3380005411255411,
+    0.37192662937426824,
+    0.39363050596809973,
+    0.3934678065722682
+  ],
+  "removed_share_by_distance_rank_fifth": [
+    0.17946635730858468,
+    0.32765612327656124,
+    0.3833526682134571,
+    0.41841287008246586,
+    0.46259134671151836
+  ],
+  "predictions": {
+    "1_removed_age_rank_above_0.6": false,
+    "2_removed_distance_rank_above_0.6": false,
+    "3_spearman_age_distance_above_0.1": true,
+    "4_age_coefficient_halves_with_distance": false,
+    "5_at_least_80pct_remove_exactly_one": false
+  }
+}
