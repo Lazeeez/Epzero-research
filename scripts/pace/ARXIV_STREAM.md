@@ -63,3 +63,11 @@ sha256sum arxiv-stream-01-evidence.tar.gz
 ```
 
 The evidence holds reports, per-query tables and returned labels (no vectors).
+
+## Package built (28 November 2026)
+
+`arxiv-stream-01.tar.gz` in the local `build` directory: 1,224,781,297 bytes, 110 files, SHA-256
+`c674fab87456dc38924bb20331f8b3a03f4fd262ec94f39c76cf03d9cd803f6b` (receipt `arxiv-stream-01-receipt.json`); corpus
+3,259,971 abstracts, 5,000 + 5,000 queries. Checked locally: every package checksum verifies after unpacking; the
+encoder's and preparation's tests pass in the encoder environment; the stream's tests pass in a clean environment
+holding exactly the build job's packages (Epzero 0.6.0, FAISS 1.16.0, numpy 2.4.6, pytest 8.3.5).
