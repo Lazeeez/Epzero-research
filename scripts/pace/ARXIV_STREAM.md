@@ -71,3 +71,8 @@ The evidence holds reports, per-query tables and returned labels (no vectors).
 3,259,971 abstracts, 5,000 + 5,000 queries. Checked locally: every package checksum verifies after unpacking; the
 encoder's and preparation's tests pass in the encoder environment; the stream's tests pass in a clean environment
 holding exactly the build job's packages (Epzero 0.6.0, FAISS 1.16.0, numpy 2.4.6, pytest 8.3.5).
+
+## Submitted (29 November 2026)
+
+Encoding job 7403002 (`arxiv-bge`, one H200), pending on resources at first check. When it passes, the sample job
+takes its ID: `sbatch --parsable arxiv-stream-01/scripts/pace/arxiv-stream.sbatch sample 7403002`.
