@@ -37,3 +37,29 @@ sha256sum arxiv-bge-01-evidence.tar.gz
 
 The vectors (about 8.6 GB) are derived from CC0 metadata but stay outside the repository like every other
 input; only aggregates are committed.
+
+## Builds (after the encoding passed)
+
+`arxiv-stream.sbatch` makes its own environment on the node (Epzero 0.6.0, FAISS 1.16.0 from PyPI) and runs the
+package's tests first. One job writes the sample, with the exact top 100 of both query sets; then one job per
+build, each on an exclusive Gold 6226 node (16-hour limit), reading a copy of the sample on node disk:
+
+```bash
+S=$(sbatch --parsable arxiv-stream-01/scripts/pace/arxiv-stream.sbatch sample ENCODING_JOB_ID)
+for order in appended reversed shuffled; do for backend in epzero faiss_hnsw; do for seed in 11 29 47; do
+  sbatch --dependency=afterok:$S arxiv-stream-01/scripts/pace/arxiv-stream.sbatch build $order $backend $seed
+done; done; done
+for seed in 11 29 47; do sbatch --dependency=afterok:$S arxiv-stream-01/scripts/pace/arxiv-stream.sbatch repaired $seed; done
+```
+
+That is 22 jobs: the sample, 18 order builds (the frozen order runner, `insertion_pilot.py run`, unchanged) and
+3 repaired builds. Keep every job of the screen on Gold 6226 and do not overlap it with jobs on other CPU types.
+
+```bash
+sacct -X --name=arxiv-stream -S 2026-11-28 --format=JobID,State,ExitCode,Elapsed
+grep -H '^PASS\|^exit_code' arxiv-stream-*.log
+tar -czf arxiv-stream-01-evidence.tar.gz build/pace-arxiv-stream/jobs arxiv-stream-*.log
+sha256sum arxiv-stream-01-evidence.tar.gz
+```
+
+The evidence holds reports, per-query tables and returned labels (no vectors).
