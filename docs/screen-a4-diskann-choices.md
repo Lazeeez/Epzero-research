@@ -88,3 +88,10 @@ graph (amendment above: recall 0.685, the oldest tenth's in-degree 2.9). (4) Wit
 links (DiskANN 28.1) and the as-arrived ratio to 1.04 (DiskANN 0.99); on SIFT to 25.0 links (26.4) and 1.29 (1.43).
 A newcomer's reverse links are appended to its neighbours' lists until they would exceed 41 links, so they are not
 pruned away as the build continues; the bias in Vamana is mostly a consequence of pruning lists back to R at once.
+
+**Result of the frozen-copy arm (28 November 2026).** SIFT: as arrived 1.98 [1.72, 2.28], shuffled 0.95, newest
+tenth's in-degree 18.6, recall@100 0.987; LongEval: 1.31 [1.17, 1.47], shuffled 0.94, 17.4, 0.942 (the driver: 1.99,
+18.6; 1.32, 17.4). **Prediction held** on both samples: DiskANN's own frozen start, a copy of the first inserted
+vector, changes nothing (only one node links to it; pruning treats it as a duplicate). Aggregates added to
+`research/longeval/a4-diskann-choices.json`. **A4's conclusion:** of DiskANN's two differences from the published
+insertion, the list slack alone accounts for its protection of late arrivals; the frozen start plays no part.
