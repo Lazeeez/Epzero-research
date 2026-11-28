@@ -39,8 +39,11 @@ dates, and its row count does not match. Design and predictions are recorded in 
 before any vector is embedded.
 
 **A2. Against the published repairs, at equal insertion cost.** CleanANN's bridge edges (SPAA 2026) and
-NGFix (already run on LongEval, `LONGEVAL_NGFIX.md`). CleanANN's code is not public as of 28 November
-2026: ask the authors, otherwise reimplement its bridge rule in the independent Vamana driver and say so.
+NGFix (already run on LongEval, `LONGEVAL_NGFIX.md`). CleanANN's code is public (`github.com/SylviaZiyuZhang/CleANN`,
+MIT, a fork of DiskANN with Python bindings, linked from the paper's §6.1; an earlier note here that it was not
+public came from a search that missed it). Its own implementation is the baseline, at the paper's settings (R 64,
+α 1.2, L 75, L_I 64) and at R 32 beside the other Vamana arms; its bridge rule is GuidedBridgeBuild (same-depth
+pairs of the insertion's search tree at depths log₂|D| + 2 to + 4).
 Measured by the newest cohort's within-query excess and by overall recall, as everywhere else.
 
 **A3. The mechanism, derived.** A closed form for the incoming links from later nodes, s(i), and from
