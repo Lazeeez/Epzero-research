@@ -118,8 +118,23 @@ def read_diskann_graph(folder, prefix):
     return lists, tags, int(frozen)
 
 
-def run_diskann(sample, output, *, order, seed, widths=WIDTHS):
-    """The same build with DiskANN's own DynamicMemoryIndex (design addendum of docs/screen-m3-vamana.md)."""
+# Screen A2 (docs/screen-a2-cleanann.md): CleanANN's GuidedBridgeBuild depth windows (start, end). 'on' is the
+# paper's rule, both windows [floor(log2 n) + 2, floor(log2 n) + 5); 'off' is a pair its equal-depth rule can
+# never satisfy, adding no bridge. The first 1% of the order is bulk-built: CleanANN refuses inserts before a build.
+CLEANANN_START_SHARE = 0.01
+
+
+def cleanann_bridges(setting, n):
+    import math
+    if setting == 'off':
+        return (3, 5, 9, 64)
+    b = int(math.floor(math.log2(n)))
+    return (b + 2, b + 5, b + 2, b + 5)
+
+
+def run_diskann(sample, output, *, order, seed, widths=WIDTHS, bridges=None):
+    """The same build with DiskANN's own DynamicMemoryIndex (design addendum of docs/screen-m3-vamana.md); with
+    `bridges` ('on' or 'off'), with CleanANN's DiskANN fork instead (screen A2), whose module is also diskannpy."""
     import diskannpy
     sample, output = Path(sample), Path(output)
     vectors = np.load(sample / 'vectors.npy', mmap_mode='r')
@@ -137,13 +152,36 @@ def run_diskann(sample, output, *, order, seed, widths=WIDTHS):
     position[sequence] = np.arange(n)
     # Scratch sized for the widest search up front: growing it during a multi-threaded search corrupted the
     # heap in diskannpy 0.7.0 ("corrupted size vs. prev_size" after "Attempting to expand query scratch_space").
-    index = diskannpy.DynamicMemoryIndex('l2', np.float32, dim, n + 1, L_BUILD, R, alpha=ALPHA, num_threads=1,
-                                         initial_search_complexity=max(widths), search_threads=8)
+    if bridges is None:
+        index = diskannpy.DynamicMemoryIndex('l2', np.float32, dim, n + 1, L_BUILD, R, alpha=ALPHA, num_threads=1,
+                                             initial_search_complexity=max(widths), search_threads=8)
+        implementation = 'diskannpy 0.7.0 DynamicMemoryIndex'
+    else:
+        if 'cleann' not in diskannpy.__file__:
+            raise ValueError(f'the CleanANN backend needs its own environment; diskannpy is {diskannpy.__file__}')
+        window = cleanann_bridges(bridges, n)
+        sl, sh, el, eh = window
+        index = diskannpy.DynamicMemoryIndex(distance_metric='l2', vector_dtype=np.float32, dimensions=dim,
+                                             max_vectors=n + 1, complexity=L_BUILD, insert_complexity=L_BUILD,
+                                             graph_degree=R, bridge_start_lb=sl, bridge_start_hb=sh, bridge_end_lb=el,
+                                             bridge_end_hb=eh, bridge_prob=0.1, cleaning_threshold=7, alpha=ALPHA,
+                                             num_threads=1, initial_search_complexity=max(widths), search_threads=8)
+        implementation = f'CleanANN 6bee643 DynamicMemoryIndex, bridges {bridges} {window}'
+
     output.mkdir(parents=True, exist_ok=False)
     started = time.perf_counter()
-    for label in sequence:
+    first = 0
+    if bridges is not None:
+        first = max(1, int(n * CLEANANN_START_SHARE))
+        start = sequence[:first]
+        index._index.build(np.ascontiguousarray(vectors[start], dtype=np.float32), first, (start + 1).astype(np.uint32))
+    for label in sequence[first:]:
         index.insert(np.ascontiguousarray(vectors[label], dtype=np.float32), np.uint32(label + 1))
     build_seconds = time.perf_counter() - started
+    if bridges is not None:
+        return _score_cleann(index, output, sample=sample, order=order, seed=seed, n=n, metric=metric, queries=queries,
+                             exact=exact, cohort=cohort, widths=widths, build_seconds=build_seconds, first=first,
+                             implementation=implementation, bridges=bridges)
     index.save(str(output), 'graph')
     lists, tags, frozen = read_diskann_graph(output, 'graph')
     location_label = tags.astype(np.int64) - 1                    # location -> sample position; -1: no vector
@@ -161,7 +199,8 @@ def run_diskann(sample, output, *, order, seed, widths=WIDTHS):
         np.add.at(indegree, location_label[links[tagged[links]]], 1)
     for name in ('graph.data',):
         (output / name).unlink(missing_ok=True)
-    report = {'backend': 'diskann', 'implementation': 'diskannpy 0.7.0 DynamicMemoryIndex', 'order': order, 'seed': seed,
+    report = {'backend': 'diskann' if bridges is None else f'cleann-bridges-{bridges}', 'implementation': implementation,
+              'order': order, 'seed': seed,
               'ef': 200, 'R': R, 'L_build': L_BUILD, 'alpha': ALPHA, 'count': int(n), 'metric': metric,
               'build_seconds': build_seconds, 'frozen_points': frozen,
               'indegree_by_insertion_decile': [float(indegree[(position * 10 // n) == d].mean()) for d in range(10)],
@@ -175,6 +214,25 @@ def run_diskann(sample, output, *, order, seed, widths=WIDTHS):
             'miss_rate': {str(c): float(table[:, c - 1, :, 1].sum() / table[:, c - 1, :, 0].sum()) for c in (1, 2, 3)}}
     (output / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps({k: report[k] for k in ('order', 'seed', 'build_seconds', 'indegree_by_insertion_decile')} | {'recall_ef200': report['widths']['200']['recall_at_100']}))
+    return report
+
+
+def _score_cleann(index, output, *, sample, order, seed, n, metric, queries, exact, cohort, widths, build_seconds, first,
+                  implementation, bridges):
+    """A2: CleanANN's graph cannot be saved after inserts (an assertion in reposition_points), so it is scored
+    from searches alone, without in-degrees."""
+    report = {'backend': f'cleann-bridges-{bridges}', 'implementation': implementation, 'order': order, 'seed': seed,
+              'ef': 200, 'R': R, 'L_build': L_BUILD, 'alpha': ALPHA, 'count': int(n), 'metric': metric,
+              'bulk_start': int(first), 'build_seconds': build_seconds, 'widths': {}}
+    for width in widths:
+        found = np.asarray(index.batch_search(queries, 100, max(width, 100), 8).identifiers, dtype=np.int64) - 1
+        table = miss_table(found, exact, cohort.astype(np.int64) - 1, 3)
+        np.save(output / f'per-query-ef{width}.npy', table)
+        report['widths'][str(width)] = {
+            'recall_at_100': float(np.mean([np.isin(exact[q], found[q]).mean() for q in range(len(queries))])),
+            'miss_rate': {str(c): float(table[:, c - 1, :, 1].sum() / table[:, c - 1, :, 0].sum()) for c in (1, 2, 3)}}
+    (output / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
+    print(json.dumps({k: report[k] for k in ('order', 'seed', 'build_seconds')} | {'recall_ef200': report['widths']['200']['recall_at_100']}))
     return report
 
 
@@ -196,7 +254,8 @@ def main():
     r.add_argument('--order', choices=('appended', 'shuffled', 'reversed'), required=True)
     r.add_argument('--seed', type=int, required=True)
     r.add_argument('--cache', type=Path, default=Path.home() / '.cache' / 'ann-longeval-research')
-    r.add_argument('--backend', choices=('driver', 'diskann'), default='driver')
+    r.add_argument('--backend', choices=('driver', 'diskann', 'cleann'), default='driver')
+    r.add_argument('--bridges', choices=('on', 'off'), help='screen A2: CleanANN with or without its bridges')
     r.add_argument('--slack', type=float, help='screen A4: prune a list only past floor(slack * R)')
     r.add_argument('--frozen', action='store_true', help='screen A4: start every search from a frozen node at the mean')
     a = sub.add_parser('analyze')
@@ -206,6 +265,8 @@ def main():
     if args.command == 'run':
         if args.backend == 'diskann':
             run_diskann(args.sample, args.output, order=args.order, seed=args.seed)
+        elif args.backend == 'cleann':
+            run_diskann(args.sample, args.output, order=args.order, seed=args.seed, bridges=args.bridges or 'on')
         else:
             run(args.sample, args.output, order=args.order, seed=args.seed, cache=args.cache, slack=args.slack,
                 frozen=args.frozen)
