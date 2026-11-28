@@ -129,6 +129,8 @@ def cleanann_bridges(setting, n):
     if setting == 'off':
         return (3, 5, 9, 64)
     b = int(math.floor(math.log2(n)))
+    if setting == 'shallow':                                   # A2 amendment 2: a window the searches do reach
+        return (b - 4, b - 1, b - 4, b - 1)
     return (b + 2, b + 5, b + 2, b + 5)
 
 
@@ -255,7 +257,7 @@ def main():
     r.add_argument('--seed', type=int, required=True)
     r.add_argument('--cache', type=Path, default=Path.home() / '.cache' / 'ann-longeval-research')
     r.add_argument('--backend', choices=('driver', 'diskann', 'cleann'), default='driver')
-    r.add_argument('--bridges', choices=('on', 'off'), help='screen A2: CleanANN with or without its bridges')
+    r.add_argument('--bridges', choices=('on', 'off', 'shallow'), help='screen A2: CleanANN with or without its bridges')
     r.add_argument('--slack', type=float, help='screen A4: prune a list only past floor(slack * R)')
     r.add_argument('--frozen', action='store_true', help='screen A4: start every search from a frozen node at the mean')
     r.add_argument('--frozen-copy', action='store_true', help='screen A4: a frozen node copying the first inserted vector')
