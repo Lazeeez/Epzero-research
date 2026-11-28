@@ -186,3 +186,36 @@ Each node uses its own number of choices k_i and the later arrivals' mean k for 
 2. R within 1.5 links of the model in every tenth, at both M.
 3. The model's first-tenth S is within 15% of the measured value at both M (the random-displacement model was
    28% and 22% too high).
+
+## 9. Result of the measured-rate model (28 November 2026)
+
+L̄ from the seed-29 link-history builds (tracking exact in both): **23.4** at M 16 (58,829 nodes ever pruned; mean
+list 19.1 over all nodes) and **36.4** at M 32 (19,670 pruned; 29.0 over all). Scored on the seed-11 builds by
+`a3_model.py --measured-rate`; aggregates `research/longeval/a3-measured-rate.json`.
+
+| | 1st | 2nd | 3rd | 4th | 5th | 6th | 7th | 8th | 9th | 10th |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| M 16 S, model | 26.3 | 20.0 | 15.9 | 12.5 | 9.7 | 7.3 | 5.3 | 3.5 | 2.0 | 0.6 |
+| M 16 S, measured | 26.0 | 20.0 | 15.8 | 12.4 | 9.6 | 7.3 | 5.2 | 3.5 | 2.0 | 0.6 |
+| M 16 R, model | 2.3 | 4.4 | 5.8 | 6.9 | 8.0 | 8.9 | 9.7 | 10.6 | 11.3 | 12.0 |
+| M 16 R, measured | 2.6 | 5.3 | 7.0 | 8.3 | 9.4 | 10.2 | 10.9 | 11.4 | 11.8 | 12.0 |
+| M 32 S, model | 39.1 | 28.6 | 22.2 | 17.3 | 13.3 | 10.1 | 7.3 | 4.9 | 2.8 | 0.9 |
+| M 32 S, measured | 42.0 | 29.9 | 22.6 | 17.4 | 13.3 | 10.0 | 7.2 | 4.9 | 2.8 | 0.9 |
+| M 32 R, model | 3.6 | 6.4 | 8.4 | 9.9 | 11.3 | 12.6 | 13.7 | 14.8 | 15.7 | 16.7 |
+| M 32 R, measured | 5.8 | 10.3 | 12.6 | 14.0 | 15.0 | 15.6 | 16.1 | 16.6 | 16.8 | 17.0 |
+
+**Predictions.** At M 16 all three **held**: S within 0.3 links in every tenth (the first-tenth error falls from
++7.7 under random displacement to +0.3), R within 1.4. At M 32: (1) S within 1.5 **failed** (first tenth 2.9
+low), (2) R within 1.5 **failed** (up to 4.3 low), (3) the first-tenth S within 15% **held** (7%).
+
+**Reading (after the result).** Measuring the pruning rhythm instead of assuming full lists accounts for the
+oldest nodes' lost incoming links at M 16, with nothing fitted to the scored build. What remains is one-sided:
+the model removes too many reverse links, the young links that newer nodes receive in older lists, and more so at
+M 32. That is the direction of the age effect the link-history build measured (the youngest fifth of a list is
+removed at 0.27 against 0.39 for the oldest), which the measured-rate model leaves out. A hazard that depends on a
+link's age rank is the next term, to be fitted on seed-29 builds and scored on seed 11 as here.
+
+**For the paper so far.** In incremental HNSW a node's in-degree is exposure, Σ_{j>i} k_j/(j − 1), which makes
+the newest nodes the least linked, minus pruning, which takes links in bulk, mainly by length, at a rate set by the
+mean size of a saturated list. That rate explains the oldest nodes' losses at M 16 exactly. Newer nodes keep more
+reverse links than a uniform rate predicts.
