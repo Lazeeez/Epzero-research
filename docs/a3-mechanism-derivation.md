@@ -135,3 +135,8 @@ remove exactly one link.
 3. Older links are longer: the mean within-event Spearman correlation of age and distance is above 0.1.
 4. Age acts through length: with both ranks in the model, the age coefficient is less than half its value alone.
 5. At least 80% of pruning events remove exactly one link.
+
+**Seen before the full build (28 November 2026).** A pipeline test on the first 20,000 insertions (event rate
+5%) checked the tracking (no untracked link; every list matched the tracking at the end) and showed that most
+pruning events remove 7 links or more (3,252 of 3,348), against prediction 5. The predictions above are unchanged
+and are scored on the full build as recorded.
