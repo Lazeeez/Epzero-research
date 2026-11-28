@@ -39,6 +39,7 @@ def run(sample, output, *, seed=11, rate=0.02, M=16, ef_construction=100, limit=
                          half_vectors=False)
     rng = np.random.default_rng(EVENT_SEED)
     born = {}                                  # owner -> {target: creation step}
+    pruned = set()                             # owners whose list was pruned at least once
     rows = []                                  # (event, step, owner_position, candidate_position, age, distance, removed)
     events = recorded = refused = untracked = 0
     removed_counts = np.zeros(8, dtype=np.int64)     # links removed per pruning event (7 = 7 or more)
@@ -60,6 +61,7 @@ def run(sample, output, *, seed=11, rate=0.02, M=16, ef_construction=100, limit=
                 refused += 1
             if gone or not accepted:
                 events += 1
+                pruned.add(x)
                 removed_counts[min(len(gone) + (not accepted), 7)] += 1
                 if rng.random() < rate:
                     candidates = list(before) + [label]
@@ -76,6 +78,8 @@ def run(sample, output, *, seed=11, rate=0.02, M=16, ef_construction=100, limit=
         if (p + 1) % 50_000 == 0:
             print(json.dumps({"inserted": p + 1, "events": events, "recorded": recorded,
                               "seconds": round(time.perf_counter() - started, 1)}), flush=True)
+    sizes = {node: len(links) for node, links in born.items()}
+    saturated = [sizes[x] for x in pruned]
     mismatched = sum(1 for node, links in born.items() if set(links) != set(int(y) for y in index.neighbors(node, 0)))
     output.mkdir(parents=True, exist_ok=False)
     table = np.array(rows, dtype=np.float64)
@@ -84,7 +88,9 @@ def run(sample, output, *, seed=11, rate=0.02, M=16, ef_construction=100, limit=
               "ef_construction": ef_construction, "seed": seed, "order": "shuffled", "epzero": epzero.__version__,
               "event_rate": rate, "event_seed": EVENT_SEED, "pruning_events": int(events), "recorded_events": int(recorded),
               "refused_reverse_links": int(refused), "removed_per_event": removed_counts.tolist(),
-              "untracked_links": int(untracked), "lists_differing_from_tracking_at_end": int(mismatched),
+              "untracked_links": int(untracked),
+              "pruned_nodes": len(pruned), "mean_list_size_pruned": float(np.mean(saturated)) if saturated else None,
+              "mean_list_size_all": float(np.mean(list(sizes.values()))), "lists_differing_from_tracking_at_end": int(mismatched),
               "seconds": time.perf_counter() - started}
     (output / "report.json").write_text(json.dumps(report, indent=2) + "\n")
     return report
@@ -163,12 +169,15 @@ def main():
     r.add_argument("--seed", type=int, default=11)
     r.add_argument("--rate", type=float, default=0.02)
     r.add_argument("--limit", type=int)
+    r.add_argument("--M", type=int, default=16)
+    r.add_argument("--ef-construction", type=int, default=100)
     a = sub.add_parser("analyze")
     a.add_argument("output", type=Path)
     a.add_argument("summary", type=Path)
     args = parser.parse_args()
     if args.command == "run":
-        print(json.dumps(run(args.sample, args.output, seed=args.seed, rate=args.rate, limit=args.limit), indent=2))
+        print(json.dumps(run(args.sample, args.output, seed=args.seed, rate=args.rate, limit=args.limit, M=args.M,
+                             ef_construction=args.ef_construction), indent=2))
     else:
         out = analyze(args.output)
         args.summary.write_text(json.dumps(out, indent=2) + "\n")
