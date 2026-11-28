@@ -191,8 +191,11 @@ them; new arrivals cannot link to them. The repair helps every cohort but closes
 
 **Against published repairs.** CleanANN's GuidedBridgeBuild links nodes of the same depth in an insertion's search
 tree, at depths ⌊log₂|D|⌋ + 2 to + 4. With the authors' code at that window (R 32, L 100, α 1.2), the bridges barely
-act on SIFT 300K and change the as-arrived ratio by +0.03 (1.47 without, 1.50 with), at no extra build time; the
-ratio CleanANN inherits from DiskANN, through its list slack, is what sets it. *Pending: LongEval; NGFix.*
+act: the as-arrived ratio is 1.47 without and 1.50 with them on SIFT 300K, and 1.01 with and without on LongEval
+300K, at no extra build time, because the insertions' search trees rarely reach depth 20. CleanANN's arrival
+behaviour is DiskANN's (1.43 and 0.99), set by the list slack it inherits (§5). In a depth probe on 50,000 SIFT
+vectors, shallower windows that do fire lowered recall@10 by about a point at 1.1–3.6× the build time. *Pending: a
+shallow-window arm at 300K; NGFix, which needs new builds scored by arrival.*
 
 ## 7. Related work
 
