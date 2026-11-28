@@ -153,14 +153,16 @@ def run(prepared, output, *, backend, arm, seed, M=16, ef_construction=100, thre
     exact = np.load(prepared / 'exact-top100.npy')
     cohort = np.load(prepared / 'cohort.npy')
     n, dim = meta['count'], meta['dimension']
-    if arm == 'repaired' and backend != 'epzero':
+    repairing = arm in ('repaired', 'rebuilt-repaired')          # screen A5 adds the repaired rebuild
+    rebuilding = arm in ('rebuilt', 'rebuilt-repaired')
+    if repairing and backend != 'epzero':
         raise ValueError('the repair is an Epzero arm')
     if backend == 'epzero':
         import epzero
         index = epzero.Index(dim=dim, metric=meta['metric'], max_elements=n, M=M, ef_construction=ef_construction, seed=seed,
                              quantization='none', keep_vectors=True, nav_dim=0, fill_links=False,
                              fast_build=False, half_vectors=False)
-        if arm == 'repaired':
+        if repairing:
             index.set_extra_backlinks(REPAIR_LINKS)
 
         def add(labels):
@@ -202,15 +204,15 @@ def run(prepared, output, *, backend, arm, seed, M=16, ef_construction=100, thre
     for op, start, end in meta['steps']:
         labels = sequence[start:end]
         if op == 'insert':
-            if arm == 'rebuilt':
+            if rebuilding:
                 labels = labels[live[labels]]
             add(labels)
-            if arm == 'repaired' and added > 0:
+            if repairing and added > 0:
                 t0 = time.perf_counter()
                 index.refine_links(threads=threads, ef=REPAIR_EF, first=added)
                 refine_seconds += time.perf_counter() - t0
             added += len(labels)
-        elif arm != 'rebuilt':
+        elif not rebuilding:
             delete(labels)
     build_seconds = time.perf_counter() - started
     output.mkdir(parents=True, exist_ok=False)
@@ -235,7 +237,10 @@ def run(prepared, output, *, backend, arm, seed, M=16, ef_construction=100, thre
 
 def _tables(builds, backend, arm, ef):
     found = {}
-    for path in sorted(Path(builds).glob(f'{backend}-{arm}-*')):
+    prefix = f'{backend}-{arm}-'
+    for path in sorted(Path(builds).glob(prefix + '*')):
+        if not path.name[len(prefix):].isdigit():               # 'rebuilt-' must not match 'rebuilt-repaired-'
+            continue
         if (path / f'per-query-ef{ef}.npy').exists():
             found[int(path.name.rsplit('-', 1)[1])] = np.load(path / f'per-query-ef{ef}.npy')
     return found
@@ -257,7 +262,7 @@ def analyze(prepared, builds, *, ef=200):
     queries = meta['queries']
     draws = rng.integers(0, queries, (DRAWS, queries))
     for backend in ('epzero', 'hnswlib'):
-        arms = {arm: _tables(builds, backend, arm, ef) for arm in ('grown', 'rebuilt', 'repaired')}
+        arms = {arm: _tables(builds, backend, arm, ef) for arm in ('grown', 'rebuilt', 'repaired', 'rebuilt-repaired')}
         if not arms['grown']:
             continue
         block = {'arms': {}, 'contrasts': {}}
@@ -269,15 +274,16 @@ def analyze(prepared, builds, *, ef=200):
             block['arms'][arm] = {'seeds': sorted(tables), 'excess_pp': 100 * risk_difference(mean, 3, 1),
                                   'excess_interval_95_pp': (100 * np.quantile(boot, [.025, .975])).tolist(),
                                   'oldest_miss_rate': float(_oldest(mean))}
-        for other in ('rebuilt', 'repaired'):
-            seeds = sorted(set(arms['grown']) & set(arms[other]))
+        for other, base in (('rebuilt', 'grown'), ('repaired', 'grown'), ('rebuilt-repaired', 'grown'),
+                            ('rebuilt-repaired', 'rebuilt')):
+            seeds = sorted(set(arms[base]) & set(arms[other]))
             if not seeds:
                 continue
-            a, b = _mean(arms[other], seeds), _mean(arms['grown'], seeds)
+            a, b = _mean(arms[other], seeds), _mean(arms[base], seeds)
             diff = 100 * (risk_difference(a, 3, 1) - risk_difference(b, 3, 1))
             boot = np.array([100 * (risk_difference(a[r], 3, 1) - risk_difference(b[r], 3, 1)) for r in draws])
             old = np.array([100 * (_oldest(a[r]) - _oldest(b[r])) for r in draws])
-            block['contrasts'][f'{other}_minus_grown'] = {
+            block['contrasts'][f'{other}_minus_{base}'] = {
                 'seeds': seeds, 'excess_change_pp': diff, 'interval_95_pp': np.quantile(boot, [.025, .975]).tolist(),
                 'oldest_miss_change_pp': 100 * float(_oldest(a) - _oldest(b)), 'oldest_upper_95_pp': float(np.quantile(old, .975))}
         out['backends'][backend] = block
@@ -298,7 +304,7 @@ def main():
     r.add_argument('prepared', type=Path)
     r.add_argument('output', type=Path)
     r.add_argument('--backend', choices=('epzero', 'hnswlib'), required=True)
-    r.add_argument('--arm', choices=('grown', 'rebuilt', 'repaired'), required=True)
+    r.add_argument('--arm', choices=('grown', 'rebuilt', 'repaired', 'rebuilt-repaired'), required=True)
     r.add_argument('--seed', type=int, required=True)
     r.add_argument('--threads', type=int, default=0)
     a = sub.add_parser('analyze')
