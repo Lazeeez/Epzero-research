@@ -19,8 +19,10 @@ NAME = 'arxiv-stream-01'
 # Every LongEval module, as the BGE packager includes them: the encoder imports storage, which imports dense.
 CODE = ('research/__init__.py', 'research/longeval/encoder-requirements.txt',
         'research/longeval/tests/test_bge_encoder.py', 'research/arxiv_stream/__init__.py',
-        'research/arxiv_stream/prepare.py', 'research/arxiv_stream/encode.py', 'research/arxiv_stream/tests/test_prepare.py',
+        'research/arxiv_stream/prepare.py', 'research/arxiv_stream/encode.py', 'research/arxiv_stream/stream.py',
+        'research/arxiv_stream/tests/test_prepare.py', 'research/arxiv_stream/tests/test_stream.py',
         'docs/screen-a1-arxiv-stream.md', 'scripts/pace/longeval-node-env.sh', 'scripts/pace/arxiv-bge.sbatch',
+        'scripts/pace/arxiv-stream.sbatch',
         'scripts/pace/ARXIV_STREAM.md', 'scripts/pace/package-arxiv-stream.py')
 INPUTS = ('manifest.json', 'corpus.jsonl.gz', 'queries-new.jsonl.gz', 'queries-uniform.jsonl.gz')
 
@@ -47,7 +49,7 @@ def main():
     for name, raw in payload.items():
         if name.endswith(('.sh', '.sbatch')) and b'\r' in raw:
             raise ValueError(f'CRLF line endings in {name}')
-    if f'PACKAGE="$ROOT/{NAME}"' not in payload['scripts/pace/arxiv-bge.sbatch'].decode():
+    if any(f'PACKAGE="$ROOT/{NAME}"' not in payload[f'scripts/pace/{job}.sbatch'].decode() for job in ('arxiv-bge', 'arxiv-stream')):
         raise ValueError('job script does not reference this package')
     package_manifest = {'package': NAME, 'purpose': 'screen A1: BGE vectors of arXiv abstracts in submission order',
                         'prepared_manifest_sha256': sha(payload['inputs/manifest.json']),
