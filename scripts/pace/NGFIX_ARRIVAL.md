@@ -36,3 +36,10 @@ sha256sum ngfix-arrival-01-evidence.tar.gz
 ```
 
 The evidence holds scored aggregates, timings and resource reports only (no vectors or rankings).
+
+## Package built (29 November 2026)
+
+`ngfix-arrival-01.tar.gz` in the local `build` directory: 1,835,649,252 bytes, 503 files, SHA-256
+`6bafe22ee34534fdb1c918b397822cb7fff1ed08f1159ec30ee43947ec01e48b`. Checked locally: every checksum verifies after
+unpacking; the screen's tests pass inside the package; the adapter compiles for `skylake-avx512` against the
+packaged headers (syntax and types; it cannot run on the laptop); `prepare` on the GloVe sample takes 3 s and 1 GB.
