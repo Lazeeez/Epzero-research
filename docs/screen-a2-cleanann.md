@@ -58,3 +58,28 @@ A result against a prediction is reported as such. Aggregates only, in `research
   so the bridge code changes the graph whenever its window is reached.
 - **No in-degree.** `save()` fails an assertion in `reposition_points` after inserts, so the graph cannot be read
   back; the in-degree measure is dropped for A2. The miss ratios and recall come from searches, as for every arm.
+
+## Amendment 2 (28 November 2026, after the paper-window builds and a depth probe, before any shallow-window build)
+
+**The paper's window hardly fires here.** With both windows at [⌊log₂|D|⌋ + 2, + 5) = [20, 23), CleanANN's builds
+on the 300,000-vector samples gave the same build time as without bridges and nearly the same recall (SIFT as
+arrived 1.50 against 1.47; LongEval 1.011 against 1.011, recall@100 0.9630 against 0.9629): the insertions' search
+trees rarely reach depth 20.
+
+**Depth probe** (first 50,000 SIFT vectors, the sample's first 500 queries, 1% bulk start, R 32, L 100, α 1.2;
+recall@10 at L 10 / 20; `~/a2/probe`):
+
+| Window | Build vs off | Recall@10 | Results identical to off (L 10) |
+| --- | --- | --- | --- |
+| off | 1.00× | 0.888 / 0.962 | |
+| [16, 19) (the paper's rule at 50,000) | 0.99× | 0.887 / 0.963 | 96% |
+| [12, 15) | 1.08× | 0.879 / 0.959 | 74% |
+| [8, 11) | 2.82× | 0.881 / 0.958 | 55% |
+| [4, 7) | 3.60× | 0.879 / 0.958 | 58% |
+
+Bridges that act lower SIFT's recall by about a point here (on random 64-dimensional vectors they raised it).
+
+**Added arm `shallow`:** both windows [⌊log₂|D|⌋ − 4, ⌊log₂|D|⌋ − 1), the probe's [12, 15) scaled to the samples'
+size, which is [14, 17) for 300,000; as arrived and shuffled, seed 11, both samples. **Predictions:** (a) the
+as-arrived ratio changes by less than 0.15 from bridges off on both samples; (b) recall@100 at L 200 is within 0.5
+points of bridges off; (c) the build takes at most 1.5× as long.
