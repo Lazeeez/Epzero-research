@@ -28,3 +28,28 @@ oldest's at ef 200, seeds averaged within query, 5,000-draw query bootstrap; the
 3. The oldest cohort's miss rate is no higher than `rebuilt`'s (20.1%).
 
 A result against a prediction is reported as such. Aggregates only, in `research/longeval/`.
+
+## Result (28 November 2026)
+
+Three builds of `rebuilt-repaired` (Epzero 0.5.0, seeds 11, 29 and 47; 16 min each single-threaded, of which the
+refine 3 min on 6 threads), scored with M2's builds by `deletion_screen.py analyze`; aggregates
+`research/longeval/a5-deletion-repair.json`. ef 200, 10,000 queries, seeds averaged within query.
+
+| Arm | Newest cohort's excess | Miss rate, oldest / middle / newest third | Recall@100 |
+| --- | --- | --- | --- |
+| grown (tombstones) | +8.37 [+7.99, +8.74] points | 13.5 / 30.0 / 18.6% | 0.772 |
+| rebuilt (live set) | +4.22 [+3.81, +4.62] | 20.1 / 33.2 / 21.6% | 0.731 |
+| repaired (tombstones kept) | +6.20 [+5.86, +6.53] | 11.4 / 21.8 / 14.5% | 0.827 |
+| **rebuilt-repaired** | **+1.23 [+0.87, +1.60]** | **17.0 / 24.0 / 16.2%** | **0.797** |
+
+**Predictions.** (1) The newest cohort's excess below +1.5 points with the upper end below +2.5: **held** (+1.23,
+upper +1.60). (2) Recall@100 at least 3 points above `rebuilt`'s: **held** (0.797, +6.6 points). (3) The oldest
+cohort's miss rate no higher than `rebuilt`'s: **held** (−3.12 points, upper bound −2.93). The three seeds agree to
+0.1 points in every cohort.
+
+**Reading.** Under heavy deletion the bias has two causes, and each remedy addresses one: compaction removes the
+tombstones that route searches towards the old survivors (+8.37 → +4.22), the repair the arrival order of the live
+set's links (+4.22 → +1.23). Together they remove 85% of the grown index's excess and raise recall by 2.5 points
+over it. Keeping the tombstones and repairing gives the highest recall (0.827, tombstones still route searches)
+but leaves three quarters of the bias: the trade-off between recall over the collection and fairness to new data
+is a choice an operator can now see.
