@@ -105,3 +105,20 @@ barely fire (amendment 2). The shallow-window arm is pending.
 
 **Reading.** At its stated bridge setting, CleanANN's arrival behaviour is DiskANN's, which the list slack sets
 (screen A4); its bridges neither cause nor remove the bias here.
+
+## Result, the shallow window (28 November 2026)
+
+Both windows [14, 17); aggregates added to `research/longeval/a2-cleanann.json`.
+
+| Sample | Bridges | As arrived | Shuffled | Recall@100 at L 200 | Build vs off |
+| --- | --- | --- | --- | --- | --- |
+| SIFT | off | 1.47 [1.19, 1.81] | 0.95 | 0.9944 | 1.00× |
+| SIFT | shallow | 1.53 [1.23, 1.88] | 0.91 | 0.9938 | 0.74× |
+| LongEval | off | 1.01 [0.86, 1.18] | 0.99 | 0.9629 | 1.00× |
+| LongEval | shallow | 1.00 [0.85, 1.16] | 0.97 | 0.9625 | 1.11× |
+
+**Predictions (amendment 2):** (a) the as-arrived ratio changes by less than 0.15: **held** (+0.05, −0.01); (b)
+recall@100 within 0.5 points of bridges off: **held** (−0.06, −0.04); (c) build at most 1.5×: **held** (0.74×,
+1.11×; the faster SIFT build was not predicted). **A2's conclusion:** with the authors' code, at the paper's window
+and at a window where the bridges act, GuidedBridgeBuild neither causes nor removes the arrival bias; CleanANN's
+arrival behaviour is the list slack it inherits from DiskANN.
