@@ -15,7 +15,8 @@ the same query and rank band. Inserting the same cohorts in reverse order revers
 recall moves by less than half a point. The mechanism is exposure: each later insertion links to an existing
 node with probability k_j/(j − 1), so a node's incoming links grow with ln(n/i), and pruning removes them at a
 rate set by the mean size of a full neighbour list; a model with no parameter fitted to the build it predicts
-reproduces in-degree by insertion position to within 0.3 links. DiskANN's 1.3× slack on neighbour lists, not
+reproduces, by insertion position at M 16, the links each node keeps from later insertions to within 0.3 links and
+its reverse links to within 1.4. DiskANN's 1.3× slack on neighbour lists, not
 its frozen start point, is what protects its late arrivals. A repair that asks each insertion's closest unchosen
 candidates for a link and refines each batch removes the bias for about 9% more insertion work. Heavy deletion
 with tombstones doubles the bias; compaction together with the repair removes 85% of it.
@@ -109,7 +110,7 @@ grows over the build (13.1 to 17.1 at M 32, 10.6 to 12.3 at M 16), and the sum m
 **Pruning.** A node's in-degree is the links kept from later choosers, S(i), plus reverse links in earlier nodes'
 lists, R(i). Recording every link's creation and removal in a 300,000-insertion build shows how lists are pruned:
 in bulk (a full list of 33 candidates is cut to about 21), mainly by length (the farthest fifth of a list is removed
-2.6 times as often as the closest), with a smaller effect of a link's age of its own (1.4 times, oldest against
+2.6 times as often as the closest), with a smaller effect of a link's age of its own (1.5 times, oldest against
 youngest fifth).
 
 **A model with nothing fitted to the build it predicts.** Let L̄ be the mean size of a list that has been pruned at
@@ -232,7 +233,8 @@ preferential term, which we model in §4.
 - **The measure was chosen after the first pooled result.** Every replication since (order rerun, second encoder,
   Big-ANN stream, hnswlib, Vamana, deletions, A1-A5) used it as recorded before its run.
 - **The pruning model is an approximation.** Exposure is exact without a fitted parameter; the measured-rate model
-  predicts in-degree within 0.3 links at M 16 but under-predicts newer nodes' reverse links at M 32 by up to 4.3, and
+  predicts the links kept from later nodes within 0.3 links and reverse links within 1.4 at M 16, but under-predicts
+  newer nodes' reverse links at M 32 by up to 4.3, and
   the list-process model trades that error for the oldest tenth's.
 - **Single-threaded construction.** All builds insert one vector at a time on one thread, so that the order is
   exact; concurrent insertion changes the effective order and is not studied.
