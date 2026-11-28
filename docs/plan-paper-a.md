@@ -39,7 +39,8 @@ dates, and its row count does not match. Design and predictions are recorded in 
 before any vector is embedded.
 
 **A2. Against the published repairs, at equal insertion cost.** CleanANN's bridge edges (SPAA 2026) and
-NGFix (already run on LongEval, `LONGEVAL_NGFIX.md`). CleanANN's code is public (`github.com/SylviaZiyuZhang/CleANN`,
+NGFix (run on LongEval before, `LONGEVAL_NGFIX.md`, but on an 8,192-vector sample and by overall recall only, so
+its arrival-level comparison needs new builds). CleanANN's code is public (`github.com/SylviaZiyuZhang/CleANN`,
 MIT, a fork of DiskANN with Python bindings, linked from the paper's §6.1; an earlier note here that it was not
 public came from a search that missed it). Its own implementation is the baseline, at the paper's settings (R 64,
 α 1.2, L 75, L_I 64) and at R 32 beside the other Vamana arms; its bridge rule is GuidedBridgeBuild (same-depth
