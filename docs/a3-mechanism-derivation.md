@@ -140,3 +140,31 @@ remove exactly one link.
 5%) checked the tracking (no untracked link; every list matched the tracking at the end) and showed that most
 pruning events remove 7 links or more (3,252 of 3,348), against prediction 5. The predictions above are unchanged
 and are scored on the full build as recorded.
+
+## 7. Result of the link-history build (28 November 2026)
+
+The full build (300,000 insertions, 64 s; `research/longeval/a3_links.py`; aggregates `research/longeval/a3-links.json`).
+The tracking was exact: no untracked link, and every list matched its tracked history at the end. 120,405 pruning
+events, 31,395 of them refusing the new reverse link; 2,464 events recorded with 81,312 candidates.
+
+| Prediction | Result |
+| --- | --- |
+| 1. Removed links' mean within-event age rank above 0.6 | **Failed**: 0.537 (kept 0.48) |
+| 2. Removed links' mean distance rank above 0.6 | **Failed**: 0.583 |
+| 3. Mean within-event Spearman correlation of age and distance above 0.1 | **Held**: 0.131 |
+| 4. Age coefficient less than half its value alone once distance is in the model | **Failed**: 0.68 alone, 0.51 with distance (−24%) |
+| 5. At least 80% of pruning events remove exactly one link | **Failed**: 14%; 74% remove 7 or more |
+
+Removal rate by within-event fifth: by distance 0.18, 0.33, 0.38, 0.42, 0.46 (closest to farthest); by age 0.27,
+0.34, 0.37, 0.39, 0.39 (youngest to oldest). An event removes 35% of its candidates on average, about 12 of 33.
+
+**Reading (after the result).** Pruning is mainly by length, with a smaller age effect of its own; it is not
+"oldest first". What random displacement got wrong is the rhythm: a full list is cut back in bulk, from 33
+candidates to about 21, and refills, so a saturated list holds fewer links on average than the model's M₀ and loses
+a link per addition faster than 1/(M₀ + 1). That costs most the links that face the most additions, the oldest
+nodes' incoming links (S and R in the first fifth), and the small age effect spares the newer nodes' reverse links
+(R above the model at M 32). Both are stated as readings.
+
+**Next test (to be recorded before it runs).** Replace the constant rate with the measured one: λ = k / (mean size
+of a saturated list), with the hazard scaled by the measured age profile, and predict S and R by tenth at M 16 and
+M 32 from quantities measured in a different build (seed 29) than the one scored.
