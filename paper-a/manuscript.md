@@ -18,7 +18,7 @@ rate set by the mean size of a full neighbour list; a model with no parameter fi
 reproduces in-degree by insertion position to within 0.3 links. DiskANN's 1.3× slack on neighbour lists, not
 its frozen start point, is what protects its late arrivals. A repair that asks each insertion's closest unchosen
 candidates for a link and refines each batch removes the bias for about 9% more insertion work. Heavy deletion
-with tombstones doubles the bias; *pending: compaction with the repair*.
+with tombstones doubles the bias; compaction together with the repair removes 85% of it.
 
 ## 1. Introduction
 
