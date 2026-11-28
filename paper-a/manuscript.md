@@ -1,7 +1,7 @@
 # Late Arrivals Are Found Last: Arrival Bias in Incrementally Built Graph Indexes
 
 *Working draft for PVLDB (plan: `docs/plan-paper-a.md`; evidence: `docs/paper-a-evidence-map.md`). Started on
-28 November 2026. Results marked* pending *wait for screens A1, A2 (the shallow window, NGFix) and A4 (the frozen copy).*
+28 November 2026. Results marked* pending *wait for screen A1 (on PACE) and NGFix by arrival.*
 
 ## Abstract
 
@@ -41,7 +41,7 @@ whether a graph index finds its newest vectors less often than its oldest, why, 
 3. **The mechanism**, derived and tested: exposure, exact without a fitted parameter, minus pruning, whose rate is
    set by the mean size of a full neighbour list; and the design choice that removes most of the bias in DiskANN
    (list slack).
-4. **A repair** and its cost, with deletions, and against published repairs (*pending: CleanANN, NGFix at equal
+4. **A repair** and its cost, with deletions, and against a published repair, CleanANN (*pending: NGFix at equal
    cost*).
 
 ## 2. Setting
@@ -139,10 +139,11 @@ driver (R 32, L 100, α 1.2):
 | --- | --- | --- | --- |
 | as published (FreshDiskANN) | 1.99 | 1.32 | 18.6 / 17.4 |
 | + list slack 1.3 | 1.29 [1.07, 1.56] | 1.04 [0.92, 1.17] | 25.0 / 27.4 |
-| + frozen start, copy of the first vector | *pending* | *pending* | *pending* |
+| + frozen start, copy of the first vector | 1.98 | 1.31 | 18.6 / 17.4 |
 | DiskANN's library | 1.43 | 0.99 | 26.4 / 28.1 |
 
-Slack alone moves the driver to DiskANN's behaviour on both datasets: a newcomer's reverse links are kept until a
+Slack alone moves the driver to DiskANN's behaviour on both datasets, and DiskANN's own frozen start (a copy of the
+first inserted vector) changes nothing: a newcomer's reverse links are kept until a
 list holds 41 links, so its incoming links are not pruned away as the build continues. (A frozen node at the data's
 mean, which DiskANN does not use, wrecked the graph on unit-normalised embeddings: α-pruning let it occlude most
 other candidates.)
@@ -198,8 +199,9 @@ tree, at depths ⌊log₂|D|⌋ + 2 to + 4. With the authors' code at that windo
 act: the as-arrived ratio is 1.47 without and 1.50 with them on SIFT 300K, and 1.01 with and without on LongEval
 300K, at no extra build time, because the insertions' search trees rarely reach depth 20. CleanANN's arrival
 behaviour is DiskANN's (1.43 and 0.99), set by the list slack it inherits (§5). In a depth probe on 50,000 SIFT
-vectors, shallower windows that do fire lowered recall@10 by about a point at 1.1–3.6× the build time. *Pending: a
-shallow-window arm at 300K; NGFix, which needs new builds scored by arrival.*
+vectors, shallower windows that do fire lowered recall@10 by about a point at 1.1–3.6× the build time; at 300K a
+window that fires ([14, 17)) left the ratio unchanged (1.53 against 1.47 on SIFT, 1.00 against 1.01 on LongEval) and
+recall within 0.06 points. *Pending: NGFix, which needs new builds scored by arrival.*
 
 ## 7. Related work
 
