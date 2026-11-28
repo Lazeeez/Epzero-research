@@ -5,7 +5,8 @@
 //
 // Screen A4 (docs/screen-a4-diskann-choices.md) adds two of DiskANN's choices, both off by default: SLACK (a
 // neighbour's list takes reverse links unpruned until it would exceed floor(SLACK * R), then is pruned back to R)
-// and FROZEN (1: every search starts from an extra node at the data's mean vector, never returned or counted).
+// and FROZEN (1: every search starts from an extra node at the data's mean vector, never returned or counted;
+// 2: the extra node is a copy of the first inserted vector, as DiskANN's frozen point is when built from empty).
 //
 // VECTORS.bin, QUERIES.bin: uint32 rows, uint32 dim, then row-major float32. ORDER.bin: uint32 count, then
 // the insertion sequence (row indices). Writes OUT_DIR/labels-L{w}.bin (int32 [queries x 100], row indices,
@@ -53,7 +54,7 @@ struct Graph {
     uint32_t stamp = 0;
     int64_t entry = -1;
 
-    Graph(const Matrix& data, uint32_t r, uint32_t l, float a, float slack, bool frz)
+    Graph(const Matrix& data, uint32_t r, uint32_t l, float a, float slack, bool frz, int64_t copy_of = -1)
         : x(data), R(r), L(l), alpha(a), cap(size_t(slack * float(r) + 1e-6f)), frozen(frz),
           out(data.n + (frz ? 1 : 0)), mark(data.n + (frz ? 1 : 0), 0) {
         if (cap < R) cap = R;
@@ -62,6 +63,7 @@ struct Graph {
             std::vector<double> sum(x.d, 0.0);
             for (uint32_t i = 0; i < x.n; ++i) for (uint32_t k = 0; k < x.d; ++k) sum[k] += x.row(i)[k];
             for (uint32_t k = 0; k < x.d; ++k) centre[k] = float(sum[k] / x.n);
+            if (copy_of >= 0) std::copy(x.row(uint32_t(copy_of)), x.row(uint32_t(copy_of)) + x.d, centre.begin());
             entry = x.n;
         }
     }
@@ -148,8 +150,10 @@ int main(int argc, char** argv) {
         oin.read(reinterpret_cast<char*>(order.data()), std::streamsize(count) * 4);
         std::string out_dir = argv[4];
         const float slack = argc == 11 ? std::stof(argv[9]) : 1.0f;
-        const bool frozen = argc == 11 && std::string(argv[10]) == "1";
-        Graph g(x, uint32_t(std::stoul(argv[5])), uint32_t(std::stoul(argv[6])), std::stof(argv[7]), slack, frozen);
+        const std::string frozen_mode = argc == 11 ? std::string(argv[10]) : "0";
+        const bool frozen = frozen_mode == "1" || frozen_mode == "2";
+        Graph g(x, uint32_t(std::stoul(argv[5])), uint32_t(std::stoul(argv[6])), std::stof(argv[7]), slack, frozen,
+                frozen_mode == "2" ? int64_t(order[0]) : -1);
         auto t0 = std::chrono::steady_clock::now();
         for (uint32_t i = 0; i < count; ++i) g.insert(order[i]);
         double build = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
