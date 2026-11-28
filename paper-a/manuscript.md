@@ -1,7 +1,7 @@
 # Late Arrivals Are Found Last: Arrival Bias in Incrementally Built Graph Indexes
 
 *Working draft for PVLDB (plan: `docs/plan-paper-a.md`; evidence: `docs/paper-a-evidence-map.md`). Started on
-28 November 2026. Results marked* pending *wait for screens A1, A2, A4 (LongEval in-degrees) and A5.*
+28 November 2026. Results marked* pending *wait for screens A1, A2 (the shallow window, NGFix) and A4 (the frozen copy).*
 
 ## Abstract
 
