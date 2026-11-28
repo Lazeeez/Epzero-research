@@ -41,3 +41,19 @@ A result against a prediction is reported as such. Aggregates only, in `research
 
 **Check (28 November 2026).** With both switches off, the changed driver rebuilt M3's SIFT as-arrived seed-11
 build in 224 s; its returned labels at every width and its in-degrees are byte-identical to M3's.
+
+## Amendment (28 November 2026, after the frozen-start builds, before any frozen-copy build)
+
+**The frozen arms tested a start DiskANN does not use.** DiskANN fills its frozen slot with a copy of the medoid
+of the points present when it first needs one (`generate_frozen_point`, which copies `calculate_entry_point()`'s
+vector); diskannpy's dynamic index never sets the start point otherwise, so when inserting into an empty index the
+frozen node is a copy of the first inserted vector, the driver's own entry, held as a separate node that is never
+returned. The arms above put it at the data's mean. On the LongEval sample (unit-normalised vectors) that point is
+close to every vector, and α-pruning let it occlude most other candidates: 277,421 of 300,000 nodes linked to it,
+29% kept at most two out-links, 27.5% had no incoming link, and recall@100 fell to 0.685 (`frozen`) and 0.699
+(`both`); on SIFT the degrees stayed normal. Those arms are reported but do not test DiskANN's frozen start.
+
+**Added arm `frozen-copy`:** the frozen node is a copy of the first inserted vector (FROZEN 2 in the driver),
+otherwise as `frozen`; as arrived and shuffled, seed 11, both samples. **Prediction:** its as-arrived ratio is
+within 0.10 of the driver's (1.32 LongEval, 1.99 SIFT) and its newest tenth's in-degree within 1 link of the
+driver's (17.4, 18.6), on both samples.
