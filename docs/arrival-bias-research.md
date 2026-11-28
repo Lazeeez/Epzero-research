@@ -740,6 +740,15 @@ the measurement and its shuffle control would establish priority early; whether 
   insertion age, in-degree by insertion position, or which points bear the loss. Checked on 26 November
   2026 with five other dynamic-index papers found in the same search (arXiv 2508.07218, 2610.15130,
   2510.02774, 2602.21247, 2510.25401), none of which addresses arrival-dependent misses.
+- A search-width table fitted before insertions goes stale (Ada-ef, Zhang and Miller, SIGMOD 2026,
+  arXiv:2512.06636): after inserting 10% or 50% of the data, the stale table "may fall slightly below the
+  target recall, particularly with large batch sizes" (DeepImage at 50%, target 0.95: mean 0.945 against
+  0.967 recomputed). Overall recall and its tail only; not by insertion age, and not as calibration
+  growing optimistic on its own queries over snapshots.
+- Tombstoned (lazily deleted) nodes keep being visited and use up the search budget, which in-place
+  deletion avoids (MERIT, Wu et al., arXiv:2607.29173, July 2026, formatted for PVLDB). Overall recall per
+  batch only; not which points lose recall, and nothing on deleted nodes favouring older survivors or on
+  arrival order. Both checked on 28 November 2026.
 
 ### 7.2 New (among the sources checked to 23 November 2026)
 
