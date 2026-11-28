@@ -149,23 +149,83 @@ other candidates.)
 
 ## 6. Repair
 
-*Draft from `research/longeval/paper/manuscript-long.md` §13 and `docs/screen-m2-deletions.md`: extra back-links (8)
-plus a refine of each batch at width 100 removes the newest cohort's excess at full scale (3.36 → 0.57 points,
-indistinguishable from a rebuild), on the Big-ANN stream (5.63 → −0.65) and under sparse deletions (−1.93 points),
-for 1.09× single-threaded insertion time. Under heavy deletion with tombstones the bias doubles (+8.37 against +4.22
-rebuilt) and the repair closes a quarter of it.* *Pending: compaction with the repair (A5); CleanANN's bridges and
-NGFix at equal cost (A2).*
+**The idea.** A late insertion lacks the incoming links that exposure gives earlier nodes from later arrivals. Stand
+in for those later arrivals: when a vector is inserted, ask its closest construction candidates that it did not
+choose to link to it (`extra_backlinks`), and reconnect each new batch once (`refine_links` from the batch's first
+position, at a search width of 100). Both are a few lines in an HNSW implementation; neither is saved in the index or
+changes search.
+
+**How it was found.** Seventeen development screens on a 300,000-document LongEval sample, each with its prediction
+recorded before its run, narrowed the design: extra incoming links remove most of the newest cohort's excess at
+small cost (4 links: 1.62 → 0.78 points, 8 links: → 0.41); a guaranteed floor of incoming links at insertion does
+nothing, because the gradient is accumulation, not rejection; refining each batch at width 100 removes the rest.
+
+**At full scale** (all 1,661,900 LongEval documents, three seeds, ef 200, decision margins recorded first):
+
+| Repair | Newest cohort's excess (381 queries) | Confirmation queries (100) |
+| --- | --- | --- |
+| none (grown) | 3.36 points | 1.12 |
+| 8 links + refine each batch at 100 | 0.57 (−2.79 [−3.41, −2.21]) | −0.37 |
+| rebuild | 0.43 | |
+
+The repaired index is indistinguishable from a rebuild (excess +0.14 [−0.48, +0.79] against it), the oldest cohort is
+no worse (+0.20 [−0.02, +0.42] points, less than a rebuild's +0.40), and recall@100 rises 0.56 points. The cost is
+1.09× single-threaded insertion time and 54 s of refining on 24 cores per batch, against a 182 s rebuild; search work
+rises 2.5%. On the Big-ANN stream the newest third's excess goes from 5.63 to −0.65 points and recall@100 at ef 200
+from 74.7% to 80.9%, above a rebuild's 79.2%. With a second encoder, 3.31 → 0.36 points.
+
+**With deletions.** Sparse deletions (10% of the live documents tombstoned before each later cohort) leave the bias as
+it was (+1.88 grown against +1.64 rebuilt) and the repair removes it (−1.93 [−2.36, −1.52] points). Heavy deletion
+with tombstones (Big-ANN's deletion runbook: 10 million inserted, 5.4 million deleted) doubles it, in both
+implementations measured:
+
+| Arm (Epzero, three seeds) | Newest cohort's excess | Miss rate, oldest / newest third | Recall@100 |
+| --- | --- | --- | --- |
+| grown, tombstones | +8.37 [+7.99, +8.74] | 13.5 / 18.6% | 0.772 |
+| rebuilt from the live set | +4.22 [+3.81, +4.62] | 20.1 / 21.6% | 0.731 |
+| repaired, tombstones kept | +6.20 [+5.86, +6.53] | 11.4 / 14.5% | 0.827 |
+| rebuilt and repaired | *pending (screen A5)* | | |
+
+Tombstoned nodes keep routing searches, which raises recall by 4 points but mostly for the old documents built around
+them; new arrivals cannot link to them. The repair helps every cohort but closes only a quarter of the gap.
+
+**Against published repairs.** CleanANN's GuidedBridgeBuild links nodes of the same depth in an insertion's search
+tree, at depths ⌊log₂|D|⌋ + 2 to + 4. With the authors' code at that window (R 32, L 100, α 1.2), the bridges barely
+act on SIFT 300K and change the as-arrived ratio by +0.03 (1.47 without, 1.50 with), at no extra build time; the
+ratio CleanANN inherits from DiskANN, through its list slack, is what sets it. *Pending: LongEval; NGFix.*
 
 ## 7. Related work
 
-Insertion order changes HNSW's recall when the order is correlated with the data [Elliott and Clark]. CleanANN shows
-that FreshVamana's insertion is not robust to the order and repairs it with bridge edges, measuring recall per round
-[Zhang et al., SPAA 2026]. Ada-ef shows that a search-width table fitted before insertions can fall below its target
-afterwards [Zhang and Miller, SIGMOD 2026]; MERIT shows that tombstones waste search budget [Wu et al. 2026];
-newcomer isolation is named qualitatively by GRAB-ANNS, and average recall hiding per-query failures by PQR-Search.
-None measures which vectors bear the misses or why. *Full assessment: `docs/arrival-bias-research.md` §7.*
+**Insertion order.** Elliott and Clark showed that HNSW's recall depends on insertion order when the order is
+correlated with the data (ordering by intrinsic dimensionality or category moves recall by up to 12 points).
+CleanANN showed that FreshVamana's insertion is not robust to the order of insertion on clustered synthetic data
+(recall per round about 10 points below a rebuild under a uniformly random order) and repaired it with bridge edges.
+Neither measures which vectors bear the misses: both report recall over the collection.
+
+**Dynamic indexes.** FreshDiskANN introduced incremental Vamana with lazy deletion and consolidation; MERIT shows that
+tombstoned nodes keep being visited and use up the search budget, and replaces them in place; Ada-ef shows that a
+search-width table fitted before insertions falls slightly below its target after them. GRAB-ANNS names newcomer
+isolation qualitatively. None reports recall by arrival, or a model of in-degree by insertion position.
+
+**Evaluation.** Streaming benchmarks (Big-ANN's streaming track, CANDOR-Bench) average recall over the queries and
+the collection; PQR-Search and VIBE's hard-query split show that averages hide per-query failures. Our measure adds
+the other axis: which documents, by when they arrived.
+
+**Growing networks.** In preferential-attachment models a node's degree grows with its age; the HNSW and Vamana graphs
+studied here grow by uniform attachment (exposure) and lose links through pruning, a mechanism without a
+preferential term, which we model in §4.
 
 ## 8. Limitations
 
-*To write: one real collection with labels; random-displacement and list-process models bound pruning but neither
-is exact; the measure was chosen after the first pooled result (every replication since used it as recorded).*
+- **One labelled real collection.** LongEval-Sci is the only real growing collection with relevance labels; the
+  neighbour-level bias is replicated on public data, a public runbook and (pending) arXiv, the effectiveness results
+  only on LongEval.
+- **The measure was chosen after the first pooled result.** Every replication since (order rerun, second encoder,
+  Big-ANN stream, hnswlib, Vamana, deletions, A1-A5) used it as recorded before its run.
+- **The pruning model is an approximation.** Exposure is exact without a fitted parameter; the measured-rate model
+  predicts in-degree within 0.3 links at M 16 but under-predicts newer nodes' reverse links at M 32 by up to 4.3, and
+  the list-process model trades that error for the oldest tenth's.
+- **Single-threaded construction.** All builds insert one vector at a time on one thread, so that the order is
+  exact; concurrent insertion changes the effective order and is not studied.
+- **Implementations.** Three HNSW implementations (FAISS, hnswlib, Epzero) and two Vamana (DiskANN, an independent
+  driver); other graph families (NSG, τ-MNG, RoarGraph) are untested.
