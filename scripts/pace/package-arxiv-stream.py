@@ -20,6 +20,7 @@ NAME = 'arxiv-stream-01'
 CODE = ('research/__init__.py', 'research/longeval/encoder-requirements.txt',
         'research/longeval/tests/test_bge_encoder.py', 'research/arxiv_stream/__init__.py',
         'research/arxiv_stream/prepare.py', 'research/arxiv_stream/encode.py', 'research/arxiv_stream/stream.py',
+        'research/arxiv_stream/analyze.py',
         'research/arxiv_stream/tests/test_prepare.py', 'research/arxiv_stream/tests/test_stream.py',
         'docs/screen-a1-arxiv-stream.md', 'scripts/pace/longeval-node-env.sh', 'scripts/pace/arxiv-bge.sbatch',
         'scripts/pace/arxiv-stream.sbatch',
