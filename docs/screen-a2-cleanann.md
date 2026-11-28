@@ -83,3 +83,25 @@ Bridges that act lower SIFT's recall by about a point here (on random 64-dimensi
 size, which is [14, 17) for 300,000; as arrived and shuffled, seed 11, both samples. **Predictions:** (a) the
 as-arrived ratio changes by less than 0.15 from bridges off on both samples; (b) recall@100 at L 200 is within 0.5
 points of bridges off; (c) the build takes at most 1.5× as long.
+
+## Result, the paper's window (28 November 2026)
+
+Eight builds; aggregates `research/longeval/a2-cleanann.json`. Within-query miss ratio of cohort 3 against cohort 1
+at L 200, k 100, query-bootstrap intervals.
+
+| Sample | Bridges | As arrived | Shuffled | Recall@100 at L 200 | Build, as arrived / shuffled |
+| --- | --- | --- | --- | --- | --- |
+| SIFT | off | 1.47 [1.19, 1.81] | 0.95 | 0.9944 | 963 / 1,000 s |
+| SIFT | on, [20, 23) | 1.50 [1.21, 1.86] | 0.89 | 0.9944 | 950 / 994 s |
+| SIFT | DiskANN library (M3) | 1.43 [1.16, 1.76] | 0.90 | 0.994 | |
+| LongEval | off | 1.01 [0.86, 1.18] | 0.99 | 0.9629 | 3,087 / 3,214 s |
+| LongEval | on, [20, 23) | 1.01 [0.85, 1.19] | 0.96 | 0.9630 | 3,087 / 3,227 s |
+| LongEval | DiskANN library (M3) | 0.99 [0.84, 1.16] | 0.97 | 0.96 | |
+
+**Predictions.** (1) Without bridges CleanANN matches DiskANN's library within 0.15: **held** (SIFT 1.47 against
+1.43, LongEval 1.01 against 0.99). (2) Bridges change the as-arrived ratio by less than 0.15: **held** (+0.03,
++0.00). (3) Bridges raise build time by at least 20%: **failed** on both (−1%, 0%): at the paper's window they
+barely fire (amendment 2). The shallow-window arm is pending.
+
+**Reading.** At its stated bridge setting, CleanANN's arrival behaviour is DiskANN's, which the list slack sets
+(screen A4); its bridges neither cause nor remove the bias here.
