@@ -951,4 +951,4 @@ beside the code (`research/longeval/*.json`).
 23. Greenland and Robins. Estimation of a Common Effect Parameter from Sparse Follow-Up Data. Biometrics 41(1), pp. 55–68, 1985. https://doi.org/10.2307/2530643
 24. Simhadri et al. Results of the Big ANN: NeurIPS'23 Competition. NeurIPS 2025 Datasets and Benchmarks Track, 2025. arXiv:2409.17424.
 25. Wang, Dong, Liao and Jin. CANDOR-Bench: Benchmarking In-Memory Continuous ANNS under Dynamic Open-World Streams. SIGMOD 2026. https://doi.org/10.1145/3786630
-26. Zhang, Wei, Engels and Shun. CleanANN: Efficient and Robust Full Dynamism in Graph-Based Approximate Nearest Neighbor Search. SPAA 2026. https://doi.org/10.1145/3816782.3819219 (arXiv:2507.19802)
+26. Zhang, Wei, Engels and Shun. CleanANN: Efficient and Robust Full Dynamism in Graph-Based Approximate Nearest Neighbor Search. SPAA 2026. https://doi.org/10.1145/3816782.3819219 (preprint: "CleANN: Efficient Full Dynamism in Graph-based Approximate Nearest Neighbor Search", arXiv:2507.19802)
