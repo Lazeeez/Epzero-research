@@ -76,3 +76,39 @@ graph was sparse, so they are longer than the links that arrive later and are dr
   2. R within 1 link of k̄(i/n)^(k̄/65) in tenths 3-10, and below it in the first tenth.
   3. S within 1 link of the formula with M₀ = 64 in tenths 3-10, and below it in the first tenth.
   4. Pruning reaches fewer nodes than at M 16: the measured S/C is at least 0.95 from the third tenth on.
+
+## 5. Result of the M 32 predictions (28 November 2026)
+
+Two builds (`research/longeval/accumulation.py run --M 32 --ef-construction 200`, Epzero 0.5.0 from
+`~/epzero-dev-venv` as in M1, the 300,000-vector SIFT sample, shuffled, seeds 11 and 29; 112 s each). Scored by
+`research/longeval/a3_model.py`; aggregates `research/longeval/a3-m32.json`. Each insertion chose 16.03
+neighbours on average. Both seeds agree to 0.1 links in every tenth; seed 11:
+
+| | 1st | 2nd | 3rd | 4th | 5th | 6th | 7th | 8th | 9th | 10th |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| C, model (k̄ ln(n/i)) | 52.9 | 30.7 | 22.3 | 16.9 | 12.8 | 9.6 | 6.9 | 4.6 | 2.6 | 0.8 |
+| C, measured | 49.9 | 31.0 | 22.9 | 17.5 | 13.3 | 10.0 | 7.2 | 4.9 | 2.8 | 0.9 |
+| S, model | 51.3 | 30.7 | 22.3 | 16.9 | 12.8 | 9.6 | 6.9 | 4.6 | 2.6 | 0.8 |
+| S, measured | 42.0 | 29.9 | 22.6 | 17.4 | 13.3 | 10.0 | 7.2 | 4.9 | 2.8 | 0.9 |
+| R, model | 7.3 | 10.0 | 11.4 | 12.4 | 13.2 | 13.8 | 14.4 | 14.9 | 15.4 | 15.8 |
+| R, measured | 5.8 | 10.3 | 12.6 | 14.0 | 15.0 | 15.6 | 16.1 | 16.6 | 16.8 | 17.0 |
+
+**Predictions.** (1) C within 3% in every tenth: **failed**, both seeds (6% low in the first tenth, 3-8% high
+after). (2) R within 1 link in tenths 3-10: **failed** (1.2-1.6 links above the model in tenths 4-10); below
+the model in the first tenth: **held**. (3) S within 1 link in tenths 3-10 and below it in the first tenth:
+**held**, both. (4) S/C at least 0.95 from the third tenth: **held** (0.988-1.000).
+
+**Diagnosis (after the result).** The number of neighbours an insertion keeps grows over the build, from 13.1 in
+the first tenth to 17.1 in the last at M 32 (10.6 to 12.3 at M 16), and the model used one mean. Exposure computed
+from each insertion's own choices, Σ_{j>i} k_j/(j − 1), matches C to within 1% (49.6 against 49.9 in the first
+tenth): exposure holds; the constant k̄ was the simplification that failed. With each node's own k and the later
+arrivals' mean k in the displacement rate, R is still 1.0-1.6 links above random displacement in tenths 2-5. So
+at both M the selection heuristic departs from random displacement in the same direction: it removes more of the
+oldest nodes' incoming links (S in the first tenth: 26 against 34 at M 16, 42 against 51 at M 32) and fewer of
+the newer nodes' reverse links than random displacement would. That is what dropping the longest, oldest links
+first would do; the instrumented build (section 4) is the test.
+
+**The model's status for the paper.** Exposure, with each insertion's own number of choices, is the term that
+makes the newest nodes the least linked; it held at M 16 and M 32 without a fitted parameter. Random displacement
+gives the size of the pruning term to within about a link except in the oldest fifth, where pruning is stronger
+than random, and it is stated as an approximation.
