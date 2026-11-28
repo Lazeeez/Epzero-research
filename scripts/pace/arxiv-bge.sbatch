@@ -64,8 +64,9 @@ export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 TOKENIZERS_PARALLELISM=false OMP_
 
 PHASE=tests
 echo "phase=$PHASE"
+# The encoder's and the preparation's tests; the stream's need Epzero 0.6.0 and run in arxiv-stream.sbatch.
 (cd /tmp && "$CPU_PYTHON" -P -m pytest -q -p no:cacheprovider \
-    "$PACKAGE/research/longeval/tests/test_bge_encoder.py" "$PACKAGE/research/arxiv_stream/tests" \
+    "$PACKAGE/research/longeval/tests/test_bge_encoder.py" "$PACKAGE/research/arxiv_stream/tests/test_prepare.py" \
     --junitxml="$OUTPUT/tests.xml")
 
 PHASE=gpu-environment
