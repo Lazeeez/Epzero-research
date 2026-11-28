@@ -66,11 +66,11 @@ graph was sparse, so they are longer than the links that arrive later and are dr
 
 ## 4. What is next
 
-- **An instrumented build** (laptop, 200,000 SIFT vectors): record every layer-0 link's creation step and the
+- **An instrumented build** (laptop, the 300,000-vector SIFT sample): record every layer-0 link's creation step and the
   step it is pruned, to measure survival against link age and against its distance rank in the list. This tests
   the reading above and gives the displacement rate as a function of age instead of a constant.
 - **Out-of-sample predictions, recorded now** for a setting never built in this project's measurements of S and
-  R: M 32, efConstruction 200 (M₀ = 64), SIFT 200,000, shuffled, seeds 11 and 29, with k̄ as measured in those
+  R: M 32, efConstruction 200 (M₀ = 64), the 300,000-vector SIFT sample of M1, shuffled, seeds 11 and 29, with k̄ as measured in those
   builds and no parameter fitted to them:
   1. C(i) within 3% of k̄ ln(n/i) in every tenth.
   2. R within 1 link of k̄(i/n)^(k̄/65) in tenths 3-10, and below it in the first tenth.
