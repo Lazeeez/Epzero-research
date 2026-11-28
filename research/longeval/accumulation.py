@@ -218,12 +218,14 @@ def main():
     r.add_argument('output', type=Path)
     r.add_argument('--order', choices=('appended', 'shuffled'), required=True)
     r.add_argument('--seed', type=int, required=True)
+    r.add_argument('--M', type=int, default=16)
+    r.add_argument('--ef-construction', type=int, default=100)
     a = sub.add_parser('analyze')
     a.add_argument('output', type=Path)
     a.add_argument('builds', type=Path, nargs='+')
     args = parser.parse_args()
     if args.command == 'run':
-        run(args.sample, args.output, order=args.order, seed=args.seed)
+        run(args.sample, args.output, order=args.order, seed=args.seed, M=args.M, ef_construction=args.ef_construction)
     else:
         out = analyze(args.builds)
         args.output.write_text(json.dumps(out, indent=2) + '\n')
