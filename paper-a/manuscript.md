@@ -96,7 +96,7 @@ its own cluster adds only 0.7–1.1 points. What counts is the global insertion 
 arrived 1.32 on LongEval, 1.99 on SIFT; reversed 0.65 and 0.42). DiskANN's library shows it on SIFT (1.43) but
 hardly on LongEval (0.99); §5 explains why.
 
-**arXiv in submission order.** *Pending (screen A1): about 2.8 million abstracts, BGE-base vectors, inserted in the
+**arXiv in submission order.** *Pending (screen A1, on PACE): 3,259,971 abstracts from 1986 to November 2026, BGE-base vectors, inserted in the
 order they were submitted, new-content and uniform held-out queries.*
 
 ## 4. The mechanism
