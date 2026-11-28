@@ -43,3 +43,18 @@ last insertion tenths in shuffled builds; recall@100 at L 200; build seconds.
 3. Bridges raise build time by at least 20%.
 
 A result against a prediction is reported as such. Aggregates only, in `research/longeval/`.
+
+## Amendments (28 November 2026, from checks on synthetic data, before any A2 build)
+
+- **Start.** CleanANN's index refuses inserts until it has been built (`assert(_has_built)` in `insert_point`);
+  its experiments bulk-build a first batch (`_index.build`). Here the first 1% of each insertion order (3,000
+  vectors) is bulk-built and the rest inserted one at a time, identically for both arms. M3's DiskANN arm
+  inserted everything from empty; prediction 1 compares across that difference.
+- **The bridges-on window.** The paper's own rule, both depth windows [⌊log₂|D|⌋ + 2, ⌊log₂|D|⌋ + 5), which is
+  [20, 23) for 300,000 vectors, replaces B10 as the primary arm. Checked on 30,000 random 64-dimensional vectors
+  (inserted after a 300-vector bulk start, L 100, R 32): with the window at the same rule ([16, 19)), recall@10
+  rose from 0.150 / 0.243 / 0.361 to 0.185 / 0.302 / 0.426 at L 10 / 20 / 40, and the build took 1.21× as long;
+  B10's window also changed results but less. A shallow window ([3, 12)) doubled recall at 7.5× the build time,
+  so the bridge code changes the graph whenever its window is reached.
+- **No in-degree.** `save()` fails an assertion in `reposition_points` after inserts, so the graph cannot be read
+  back; the in-degree measure is dropped for A2. The miss ratios and recall come from searches, as for every arm.
