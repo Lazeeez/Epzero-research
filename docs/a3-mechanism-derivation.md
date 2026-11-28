@@ -219,3 +219,17 @@ link's age rank is the next term, to be fitted on seed-29 builds and scored on s
 the newest nodes the least linked, minus pruning, which takes links in bulk, mainly by length, at a rate set by the
 mean size of a saturated list. That rate explains the oldest nodes' losses at M 16 exactly. Newer nodes keep more
 reverse links than a uniform rate predicts.
+
+## 10. The list-process model: design (recorded 28 November 2026, before it is computed)
+
+**Model.** One neighbour list is simulated addition by addition. When an addition brings it to M₀ + 1 candidates,
+a pruning event removes r of them, r drawn from the distribution measured in the seed-29 link-history build at
+the same M, and the removed candidates are drawn without replacement with weights by their age rank within the
+list (tenths, youngest to oldest), also measured there; the new candidate can be among them (a refused reverse
+link). Two survival curves follow, as functions of the number of additions a since a link was made: for a
+chooser's own links (the list starts with its k choices) and for a reverse link entering a list already in its
+steady state. Then S(i) = Σ_{j>i} (k_j/(j − 1)) · surv_own(A(j)) and R(i) = k_i · surv_reverse(A(i)), with A as
+in section 8. No parameter comes from the scored builds (seed 11, both M).
+
+**Predictions.** (1) S within 1.5 links in every tenth at both M. (2) R within 1.5 links in every tenth at both
+M. (3) At M 32, the largest R error is less than half the measured-rate model's (4.3 links).
