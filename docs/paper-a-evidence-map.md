@@ -39,7 +39,9 @@ the numbers. Epzero is named as one HNSW implementation among others. Rows marke
 | Extra back-links plus batch refine, LongEval full scale | gap removed, about 9% more insertion work | `research/longeval/paper/manuscript-long.md` §13 |
 | Big-ANN stream | gap removed | `BIGANN_STREAM.md` |
 | Sparse deletions (LongEval, 10% per step) | −1.93 [−2.36, −1.52] points, all of it | `docs/screen-m2-deletions.md` Part B |
-| Against CleanANN and NGFix at equal cost | *pending* | `plan-paper-a.md` A2 |
+| CleanANN (authors' code) at the paper's bridge window | bridges barely fire; as arrived 1.47 / 1.50 (SIFT, off / on), 1.01 / 1.01 (LongEval): DiskANN's behaviour | `docs/screen-a2-cleanann.md` |
+| CleanANN at a shallow window that fires | SIFT: as arrived 1.53, recall −0.06 points, 0.74× build; LongEval *pending* | same, amendment 2 |
+| NGFix by arrival | needs new builds on PACE (AVX-512, query-fitted) | `plan-paper-a.md` A2 |
 
 ## C5. Deletion and other graph designs
 
@@ -47,8 +49,9 @@ the numbers. Epzero is named as one HNSW implementation among others. Rows marke
 | --- | --- | --- |
 | Heavy deletion with tombstones doubles the gap | +8.37 grown against +4.22 rebuilt | `docs/screen-m2-deletions.md` Part A |
 | The repair alone closes a quarter of it | +6.20 | same |
-| Compaction with the repair | *pending* | `docs/screen-a5-deletion-repair.md` |
-| DiskANN's list slack protects late arrivals; its frozen start does not | SIFT: slack 1.29, frozen 2.03, both 1.35 (driver 1.99, DiskANN 1.43); LongEval *pending* | `docs/screen-a4-diskann-choices.md` |
+| Compaction with the repair | +1.23 [+0.87, +1.60] points (85% of the grown excess removed), recall 0.797 | `docs/screen-a5-deletion-repair.md` |
+| DiskANN's list slack protects late arrivals | slack: as arrived 1.29 SIFT, 1.04 LongEval; newest tenth's in-degree 25.0 and 27.4 (driver 1.99 / 1.32, 18.6 / 17.4; DiskANN 1.43 / 0.99, 26.4 / 28.1) | `docs/screen-a4-diskann-choices.md` |
+| DiskANN's frozen start does not | a copy of the first vector: SIFT 1.98, in-degree 18.6 (as the driver); LongEval *pending*. A frozen node at the mean broke the graph on unit vectors | same, amendment |
 
 ## C6. Why benchmarks miss it
 
